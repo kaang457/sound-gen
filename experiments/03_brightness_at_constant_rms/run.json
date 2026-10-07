@@ -1,0 +1,89 @@
+{
+  "experiment_id": "03_brightness_at_constant_rms",
+  "run_time_utc": "2026-10-07T15:35:35.943781+00:00",
+  "python": "3.12.14",
+  "platform": "Linux",
+  "packages": {
+    "numpy": "2.3.5",
+    "librosa": "1.0.0",
+    "matplotlib": "3.10.8",
+    "soundfile": "0.14.0"
+  },
+  "settings": {
+    "sr": 24000,
+    "duration_s": 2.0,
+    "low_hz": 200.0,
+    "high_hz": 2000.0,
+    "high_amplitude_ratios": [
+      0.0,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+    ],
+    "target_rms": 0.15,
+    "frame_length": 1200,
+    "hop_length": 240,
+    "center": false,
+    "rms_window": "rectangular",
+    "stft_window": "hann",
+    "centroid_weights": "STFT magnitude",
+    "wav_subtype": "PCM_24",
+    "measurements": "float64 signals before WAV encoding"
+  },
+  "signal_float64_sha256": [
+    "3a01d99f39382e2dc2c9234ea310faa8809173719cd2d4d7d446b220fb8c65ff",
+    "0e244c2e2dfbebd1d1de84eaadec547b7df2e9d5b00f72a28f25e83b3269d2d7",
+    "c5974a933b8d9898671e14b4057d995d816bc989131deb67826e30a124a92456",
+    "c48a48642e09c744cc5aa5d382b1b92dfe484c6b74d47935a2b68c8fc9e504fc",
+    "2194f0ca644369a3e8c5dd31c67f8213ea9fe3ff82eea4d70d2a4d07b86be1f8"
+  ],
+  "results": [
+    {
+      "high_amplitude_ratio": 0.0,
+      "global_rms": 0.15,
+      "mean_frame_rms": 0.15000000000000002,
+      "max_frame_rms_target_error": 1.942890293094024e-16,
+      "peak": 0.2121320343559643,
+      "mean_centroid_hz": 200.00000000394505,
+      "expected_centroid_hz": 200.0
+    },
+    {
+      "high_amplitude_ratio": 0.25,
+      "global_rms": 0.15,
+      "mean_frame_rms": 0.15,
+      "max_frame_rms_target_error": 1.1102230246251565e-15,
+      "peak": 0.25471415911134576,
+      "mean_centroid_hz": 560.000000008443,
+      "expected_centroid_hz": 560.0
+    },
+    {
+      "high_amplitude_ratio": 0.5,
+      "global_rms": 0.15,
+      "mean_frame_rms": 0.15,
+      "max_frame_rms_target_error": 2.1094237467877974e-15,
+      "peak": 0.28226901628542844,
+      "mean_centroid_hz": 800.0000000121285,
+      "expected_centroid_hz": 800.0
+    },
+    {
+      "high_amplitude_ratio": 1.0,
+      "global_rms": 0.15,
+      "mean_frame_rms": 0.15,
+      "max_frame_rms_target_error": 3.3584246494910985e-15,
+      "peak": 0.2981532510892788,
+      "mean_centroid_hz": 1100.0000000164516,
+      "expected_centroid_hz": 1100.0
+    },
+    {
+      "high_amplitude_ratio": 2.0,
+      "global_rms": 0.15,
+      "mean_frame_rms": 0.15,
+      "max_frame_rms_target_error": 3.802513859341161e-15,
+      "peak": 0.2834370028502914,
+      "mean_centroid_hz": 1400.0000000202979,
+      "expected_centroid_hz": 1400.0
+    }
+  ],
+  "scope": "controlled signal-processing experiment; no perceptual or model evaluation"
+}

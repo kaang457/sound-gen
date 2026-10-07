@@ -43,3 +43,12 @@ For every notebook or reusable code module, record: exact source path, related p
 | [librosa official feature implementation](https://librosa.org/doc/0.11.0/_modules/librosa/feature/spectral.html) | Waveform RMS and STFT magnitude centroid | RMS uses a rectangular frame; centroid uses a Hann-window STFT. Same frame centers, different window weights. |
 
 The -60 dBFS RMS mask is this demo's analysis choice, not the paper's evaluation mask. Published model results remain separate from the [measured CSV](../../results/tables/02_feature_extraction/summary.csv). Fixed gain ×0.5 reduces RMS by 6.0206 dB and preserves centroid on the same original-frame mask; this verifies feature behavior, not model disentanglement.
+
+
+## 03_brightness_at_constant_rms.ipynb
+
+**Status:** Controlled synthetic feature experiment. [Notebook](../../notebooks/03_brightness_at_constant_rms.ipynb); [experiment results](../../experiments/03_brightness_at_constant_rms/README.md).
+
+The experiment increases a 2000 Hz component relative to a 200 Hz component, then rescales every signal to RMS 0.15. It checks whether magnitude-weighted centroid changes while global and frame RMS remain constant. This investigates centroid as a candidate descriptor; it does not implement a generator, perceptual brightness test or model disentanglement benchmark.
+
+Relation to Sketch2Sound is limited to the centroid descriptor discussed in [our paper note](sketch2sound_controls.md). No paper results are reproduced. Constant RMS does not imply constant perceptual loudness or pitch.
