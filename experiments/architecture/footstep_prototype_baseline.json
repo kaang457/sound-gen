@@ -1,0 +1,18 @@
+{
+  "status": "baseline_inference_completed",
+  "event_id": "footstep",
+  "user_text_prompt": null,
+  "runtime_reference_wav_required": false,
+  "positive_condition": "cached single-exemplar audio embedding",
+  "steps": 50,
+  "seed": 42,
+  "duration_s": 5.0,
+  "output_rms": 0.023491969836994968,
+  "output_peak": 0.7211963534355164,
+  "numeric_controls_applied": false,
+  "quality_evaluation": "not measured",
+  "scope": "Pretrained backbone inference; adapter not trained for usable controls.",
+  "output_wav_sha256": "d06b101d7c30f6517639cbeb17a0dcc3347acc04da6c765fb1efeace21626ef4",
+  "upstream_revision": "4054cb418ba3d947d94f6ad302f1d6a320e2313c",
+  "backbone_weights": "pretrained inference EMA installed before freezing"
+}

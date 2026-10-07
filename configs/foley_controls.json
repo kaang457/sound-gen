@@ -1,0 +1,11 @@
+{
+  "format": "foley-controls-v1",
+  "width": 32,
+  "controls": [
+    {"name":"rms_envelope","kind":"curve","unit":"linear digital RMS of preprocessed audio","minimum":0,"maximum":0.5,"label_source":"measured after model preprocessing"},
+    {"name":"centroid_hz","kind":"curve","unit":"Hz; magnitude-weighted spectral centroid","minimum":0,"maximum":8000,"label_source":"measured after model preprocessing"},
+    {"name":"material","kind":"categorical","unit":"category","categories":["wood","metal","glass","plastic","stone"],"families":["impact","scrape","roll"],"label_source":"requires source metadata or controlled recordings"},
+    {"name":"force_n","kind":"scalar","unit":"N","minimum":0,"maximum":10000,"families":["impact","footstep","scrape"],"label_source":"requires calibrated force measurement; unavailable"}
+  ],
+  "status": "schema examples only; ranges are provisional engineering bounds, not validated training support"
+}

@@ -32,4 +32,8 @@ Genel müzik, video-to-audio, yalnız referans kopyalama ve sırf sayısal özni
 
 ## Bugünkü durum
 
-TFOLEY temporal baseline; AudioLDM referans-conditioning deneyi; tek-kayıt spectral CVAE küçük mühendislik deneyi; F-RAVE mimari referans. Hiçbiri bütün gereksinimleri karşılayan ana model olarak seçilmedi. Yeni çalışma bu kapsam ve model seçim planına göre ilerlemeli.
+TFOLEY temporal baseline; AudioLDM referans-conditioning baseline ve ilk adapter-backbone entegrasyonu; tek-kayıt spectral CVAE küçük mühendislik deneyi; F-RAVE mimari referans. Hiçbiri bütün gereksinimleri karşılayan ana model olarak seçilmedi. Yeni çalışma bu kapsam ve model seçim planına göre ilerlemeli.
+
+## İlk mimari entegrasyonu
+
+[ADR 001](decisions/001_foley_conditioning_architecture.md): AudioLDM m-full + audio prototype bankası + modüler epsilon residual kontrol adapter’ı. Scalar/curve/categorical schema ve gerçek pretrained gradient bağlantısı var; çok-kayıt adapter eğitimi ve kalite/kontrol değerlendirmesi yok. Ana modelin başarılı kabulü bu kararın tamamlandığı anlamına gelmez.

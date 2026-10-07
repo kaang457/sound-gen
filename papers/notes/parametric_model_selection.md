@@ -29,3 +29,7 @@ Resmî repo [neurorave/neurorave](https://github.com/neurorave/neurorave), incel
 Tek kayıtla kalite/genelleme seçimi yapılamaz. Sonraki eğitim için çoklu, lisansı açık Footstep kayıtları ve kayıt bazında train/validation/test ayrımı gerekir; aynı kaydın kareleri iki split'e dağılmamalıdır. Öznitelikler yalnız train istatistikleriyle ölçeklenmeli, sessiz bloklar maskelenmeli ve ortak RMS/centroid kapsaması denetlenmelidir. Bu, küçük deneyin olası devamıdır; aktif projede önce Foley kalitesi ve genişletilebilirlik üzerinden ana mimari seçimi yapılır. GPU batch/step süresi ölçülmeden eğitim süresi verilmez.
 
 Kabul protokolü: ayrı kayıtlarda hedef hata, üçten fazla seed, sabit diğer kontrol altında değişim, ortak-gain dinleme, blok sınırı/artefakt ve ses sınıfı değerlendirmesi. Bu küçük deney yalnız sınırlı iki-kontrol uygulamasını gösterir; güncel ana modelin seçimi veya genişletilebilir Foley hedefinin karşılanması değildir.
+
+## Yeni entegrasyon kararı
+
+[ADR 001](../../docs/decisions/001_foley_conditioning_architecture.md) AudioLDM m-full üstünde audio prototype + modüler residual kontrol adapter’ını ilk engineering backbone olarak seçer. Bu eski deney notu yeni mimari kararının yerine geçmez; kalite/control kabulü henüz yok.

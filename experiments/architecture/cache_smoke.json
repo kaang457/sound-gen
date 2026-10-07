@@ -1,0 +1,28 @@
+{
+  "status": "cache_prepared",
+  "records": 1,
+  "splits": {
+    "train": 1,
+    "validation": 0,
+    "test": 0
+  },
+  "preprocessing": "mono16k, crop, mean-center, peak .5, zero-pad to codec grid; controls measured afterward",
+  "source_manifest_sha256": "d4f87eb988d4b8f6ab2ce806f8951d38dc70fcfec445c9e23d2c4ad10414c9f8",
+  "scope": "Single real recording native codec/cache verification only; adapter production training blocked by split/recording guard.",
+  "latent_shape": [
+    1,
+    8,
+    128,
+    16
+  ],
+  "condition_shape": [
+    1,
+    1,
+    512
+  ],
+  "control_names": [
+    "rms_envelope",
+    "centroid_hz"
+  ],
+  "conditioning_duration_s": 5.12
+}

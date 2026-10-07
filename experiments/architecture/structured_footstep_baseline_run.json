@@ -1,0 +1,22 @@
+{
+  "request": {
+    "event_id": "footstep",
+    "family": "footstep",
+    "duration_s": 5,
+    "seed": 42,
+    "steps": 50,
+    "controls": {}
+  },
+  "device": "cpu",
+  "user_text_prompt": null,
+  "runtime_reference_wav_required": false,
+  "positive_condition": "cached audio exemplar embedding",
+  "prototype_support_count": 1,
+  "prototype_sha256": "e162af83c8512755be0fa596eefde2ca4a2208357d17577023a582c096e82c02",
+  "numeric_controls_applied": false,
+  "quality_evaluation": "not measured",
+  "adapter_checkpoint_sha256": null,
+  "output_wav_sha256": "e51978965a4f41a4d4b9a3108f10db775db5c47277aee87241665f8162752ab9",
+  "output_peak": 0.7211963534355164,
+  "output_rms": 0.023491969836994968
+}

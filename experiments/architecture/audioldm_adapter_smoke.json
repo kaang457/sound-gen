@@ -1,0 +1,52 @@
+{
+  "status": "integration_smoke_passed",
+  "device": "cpu",
+  "torch": "2.11.0+cpu",
+  "latent_shape": [
+    1,
+    8,
+    128,
+    16
+  ],
+  "condition_shape": [
+    1,
+    1,
+    512
+  ],
+  "trainable_adapter_parameters": 41288,
+  "frozen_backbone": true,
+  "zero_initialization_preserves_epsilon": true,
+  "absent_controls_zero_after_optimizer": true,
+  "optimizer_steps": [
+    {
+      "step": 0,
+      "loss": 0.058660734444856644,
+      "baseline_loss": 0.058660734444856644,
+      "residual_rms": 0.0
+    },
+    {
+      "step": 1,
+      "loss": 0.05865737050771713,
+      "baseline_loss": 0.058660734444856644,
+      "residual_rms": 0.00013418440357781947
+    }
+  ],
+  "two_step_seconds": 1.373138001999905,
+  "source": {
+    "title": "footsteps.wav",
+    "creator": "freefire66",
+    "license": "CC0-1.0",
+    "source": "https://freesound.org/people/freefire66/sounds/175954/",
+    "download": "https://cdn.freesound.org/previews/175/175954_2542588-hq.mp3",
+    "description": "Boots on a sidewalk; public compressed preview, not original WAV",
+    "preview_sha256": "25a963b13fb2b1ab7415525a27326b59cccf3e3ee755d6e8857a38566d268894",
+    "source_sample_rate": 44100,
+    "crop_start_s": 5,
+    "crop_duration_s": 4,
+    "sample_rate": 22050,
+    "peak_normalization": false,
+    "changes": "Decode MP3 preview; mono; fixed 5\u20139 s crop; resample to 22050 Hz; FLOAT WAV",
+    "reference_wav_sha256": "3de54b4b5260e1e16c0892bb25ec762072691f9e79f825d780bee372fcae8737"
+  },
+  "scope": "Two optimization steps on one real encoded recording. Numerical integration/gradient check only; no trained control accuracy, quality, generalization or new-parameter retention demonstrated."
+}

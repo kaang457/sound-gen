@@ -97,3 +97,7 @@ Notebook 07'nin kullanıcı GPU çıktıları [ayrı provenance ile kaydedildi](
 | `src/control/generate.py` | Ortak parametrik arayüz; desteklenmeyen kontroller reddedilir | İki backend; metin girdisi yok |
 
 [Detaylı seçim, ilk başarısız deneme ve kapsam](parametric_model_selection.md); [ölçülen sonuçlar](../../experiments/parametric/README.md).
+
+## 11: İlk genişletilebilir Foley backbone entegrasyonu
+
+`src/foley/` AudioLDM m-full'ün native audio conditioning ve epsilon denoising yolunu kullanır. ControlBank ve residual epsilon adapter bu projenin yeni tasarımıdır; ControlNet/Sketch2Sound/F-RAVE gerçeklenmesi değildir. Gerçek kaydın mel/codec latentleriyle iki optimizer adımı ve cached audio prototype baseline inference tamamlandı. Learned kontrol kalitesi henüz yok. [Karar / kaynak denetimi](../../docs/decisions/001_foley_conditioning_architecture.md), [koşumlar](../../experiments/architecture/README.md).

@@ -1,0 +1,9 @@
+{
+ "status":"single-recording cache smoke; not a training dataset",
+ "records":[{
+  "recording_id":"freesound-175954","path":"../data/raw/footsteps_freefire66_5s_9s_22050.wav",
+  "event_id":"footstep","family":"footstep","license":"CC0-1.0",
+  "source_url":"https://freesound.org/people/freefire66/sounds/175954/","split":"train",
+  "duration_s":5,"crop_start_s":0,"controls":{},"control_provenance":{}
+ }]
+}

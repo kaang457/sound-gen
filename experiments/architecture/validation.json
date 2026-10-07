@@ -1,0 +1,16 @@
+{
+  "unit_tests": 8,
+  "unit_test_status": "passed",
+  "native_pretrained_integration": "two optimizer steps passed; backbone frozen",
+  "real_audio_cache": "one-recording preparation passed",
+  "structured_baseline_inference": "50 steps / 5 s / cached audio condition; CLI passed",
+  "notebook11": "schema/AST and setup/playback/report cells passed; production CLI tested separately",
+  "extension_retention": "old residual unchanged after new-encoder-only optimizer step when new control absent",
+  "not_demonstrated": [
+    "multi-recording adapter training",
+    "numeric control accuracy on AudioLDM outputs",
+    "Foley perceptual quality",
+    "physical parameter learning",
+    "Windows/GPU run"
+  ]
+}

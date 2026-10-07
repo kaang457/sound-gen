@@ -18,12 +18,12 @@ Bunlar **hedef yeteneklerdir**; mevcut modellerin bunları desteklediği iddia e
 
 ## Mevcut durum ve deneylerin rolü
 
-**Ana üretim modeli henüz seçilmedi.** Hazır kaliteli bir modelin sayısal koşullandırmaya uyarlanması ile kendi modelimizi eğitme seçenekleri, Foley kapsamı, kalite, genişletilebilirlik ve eğitim maliyeti üzerinden karşılaştırılacak. İç mimaride text encoder bulunması tek başına eleme nedeni değildir; kullanıcının prompt'a ihtiyaç duymadan hedef sesi ve kontrolleri verebilmesi gerekir.
+**İlk entegrasyon backbone’u AudioLDM m-full olarak seçildi; ana modelin kalite/kontrol kabulü henüz tamamlanmadı.** Hazır kaliteli bir modelin sayısal koşullandırmaya uyarlanması ile kendi modelimizi eğitme seçenekleri, Foley kapsamı, kalite, genişletilebilirlik ve eğitim maliyeti üzerinden karşılaştırılacak. İç mimaride text encoder bulunması tek başına eleme nedeni değildir; kullanıcının prompt'a ihtiyaç duymadan hedef sesi ve kontrolleri verebilmesi gerekir.
 
 | Çalışma | Güncel rol | Henüz göstermediği |
 |---|---|---|
 | TFOLEY, 06–07–09 | Pretrained sınıf + RMS/zaman baseline | Geniş Foley kapsamı, çoklu fiziksel/akustik kontrol, doğrulanmış kullanılabilir kalite |
-| AudioLDM, 08 | Referans-audio koşullandırma deneyi | Bağımsız, genişletilebilir sayısal kontrol |
+| AudioLDM, 08–11 | Referans baseline ve ilk genişletilebilir adapter backbone entegrasyonu | Bağımsız, genişletilebilir sayısal kontrol |
 | Kendi spectral CVAE'miz, 10 | Küçük iki-kontrol mühendislik deneyi; ana model değil | Doğal Foley, temporal yapı ve kayıtlar arası genelleme |
 | F-RAVE | Descriptor conditioning / ayrıştırma için mimari referans | Bu projeye uygun hazır Foley modeli veya burada doğrulanmış kalite |
 
@@ -31,7 +31,9 @@ Bunlar **hedef yeteneklerdir**; mevcut modellerin bunları desteklediği iddia e
 
 ## Sıradaki teslim
 
-Yeni bir küçük sentez demosu yerine, **ana mimari için gerekçeli seçim**: Foley üretebilen adayların dinlenebilir örnekleri, parametre koşullandırma yolu, yeni parametre ekleme tasarımı, veri/etiket ihtiyacı ve donanım maliyeti birlikte değerlendirilecek. Model seçimi öncesinde kontrol eklemenin temel ses kalitesini koruyabileceği gösterilmeli.
+İlk [mimari kararı](docs/decisions/001_foley_conditioning_architecture.md) ve gerçek entegrasyon tamamlandı: AudioLDM audio-semantic prototype + genişletilebilir residual kontrol adapter’ı. Gerçek latentlerde iki optimizer adımı ve prompt/runtime WAV gerektirmeyen baseline inference çalıştırıldı; bunlar eğitilmiş kontrol/kalite sonucu değildir. [Kod ve koşumlar](experiments/architecture/README.md), [11 notebook](notebooks/11_foley_backbone.ipynb).
+
+**Sıradaki teslim: çok-kayıt Foley verisiyle adapter eğitimi ve kalite/kontrol değerlendirmesi.** Önce veri/split ve temel kalite doğrulanacak. Model seçimi sürecinde: Foley üretebilen adayların dinlenebilir örnekleri, parametre koşullandırma yolu, yeni parametre ekleme tasarımı, veri/etiket ihtiyacı ve donanım maliyeti birlikte değerlendirilecek. Ana model kabulü için temel ses kalitesi ve kontrol başarısı birlikte doğrulanacak.
 
 ## Notebooklar
 
@@ -47,6 +49,7 @@ Yeni bir küçük sentez demosu yerine, **ana mimari için gerekçeli seçim**: 
 | [08 AudioLDM reference](notebooks/08_audioldm_reference_audio.ipynb) | Referans içerik koşullandırma deneyi |
 | [09 Numeric TFOLEY](notebooks/09_parametric_tfoley.ipynb) | Doğrudan RMS kontrol baseline'ı |
 | [10 Spectral CVAE](notebooks/10_parametric_spectral_cvae.ipynb) | Sınırlı iki-kontrol prototipi |
+| [11 Foley backbone](notebooks/11_foley_backbone.ipynb) | Yapılandırılmış event isteği; ilk ana-mimari entegrasyonu |
 
 Notebook numaraları tarihsel deney sırasıdır, ana modelin geliştirme aşamaları değildir. [Kod–makale eşleşmesi](papers/notes/code_literature_map.md) uygulanan bileşenleri ve sınırları kaydeder.
 

@@ -1,0 +1,1 @@
+{"event_id":"footstep","family":"footstep","duration_s":5,"seed":42,"steps":50,"controls":{"rms_envelope":{"times_s":[0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5],"values":[0,0.08,0,0.08,0,0.08,0,0.08,0,0.08,0]},"centroid_hz":{"times_s":[0,5],"values":[1800,2600]}}}
