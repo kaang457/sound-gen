@@ -798,48 +798,26 @@ The exact formulation will depend on experimental findings.
 
 # 13. Repository Structure
 
-```text
-controllable-sound-playground/
-│
-├── README.md
-│
-├── papers/
-│   ├── controllable_generation/
-│   ├── diffusion/
-│   ├── evaluation/
-│   └── notes/
-│
-├── notebooks/
-│   ├── 01_audio_basics.ipynb
-│   ├── 02_feature_extraction.ipynb
-│   ├── 03_pretrained_models.ipynb
-│   └── 04_controllability.ipynb
-│
-├── src/
-│   ├── audio/
-│   ├── features/
-│   ├── models/
-│   ├── metrics/
-│   └── evaluation/
-│
-├── experiments/
-│   ├── baselines/
-│   ├── controllability/
-│   └── disentanglement/
-│
-├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── generated/
-│
-├── results/
-│   ├── audio/
-│   ├── figures/
-│   └── tables/
-│
-├── .gitignore
-└── requirements.txt
-```
+The current repository follows the local `sound-gen` directory layout.
+
+| Path | Current contents / purpose |
+|---|---|
+| `notebooks/` | `01_audio_basics.ipynb`: Turkish explanations and runnable audio basics |
+| `src/` | Reserved for reusable utilities; currently empty |
+| `experiments/01_audio_basics/` | Experiment notes and run metadata |
+| `papers/controllable_generation/` | Reserved for controllable-generation references |
+| `papers/evaluation/` | Reserved for evaluation references |
+| `papers/notes/` | Code–literature mapping and paper-note template |
+| `data/raw/` | Local input recordings; ignored by Git |
+| `data/processed/` | Local processed recordings; ignored by Git |
+| `data/generated/` | Reproducible demo audio; ignored by Git |
+| `results/audio/` | Local output audio; ignored by Git |
+| `results/figures/01_audio_basics/` | Exported waveform, spectrogram and mel-spectrogram figures |
+| `results/tables/01_audio_basics/` | Measured audio basics results |
+| `.gitignore` | Excludes environments, audio and model weights; keeps folder placeholders |
+| `requirements.txt` | Basic notebook dependencies; CUDA/PyTorch setup remains separate |
+
+Empty directories are preserved with `.gitkeep`. Later notebooks and model-specific subdirectories will be added when their steps begin; they do not exist yet.
 
 ---
 
@@ -900,6 +878,9 @@ This will make it easier to convert the playground into a structured literature 
 - Initial evaluation dimensions identified
 - Initial papers identified
 - Initial model candidates identified
+- Local folder structure tracked in Git
+- Audio basics notebook implemented and executed on a synthetic demo
+- Figures, numerical results and code–literature links recorded
 
 ### Not Yet Finalized
 
@@ -944,3 +925,21 @@ The immediate goal is not to design a new architecture.
 The goal is to understand:
 
 > **What can currently be controlled, how accurately it can be controlled, and where existing controllable sound-generation systems still fail.**
+
+
+---
+
+# 17. Run and Record the First Experiment
+
+Open [`notebooks/01_audio_basics.ipynb`](notebooks/01_audio_basics.ipynb) in VS Code and select the project's Python 3.11 `.venv` kernel. The notebook works from the repository root or from `notebooks/`. Run all cells. With `AUDIO_PATH = None`, it creates a reproducible synthetic WAV locally without downloading data.
+
+Outputs are saved automatically to `results/figures/01_audio_basics/`, `results/tables/01_audio_basics/` and `experiments/01_audio_basics/run.json`. Re-running replaces those outputs; preserve a copy before comparing different inputs.
+
+- [Experiment and measured results](experiments/01_audio_basics/README.md)
+- [Code–literature mapping](papers/notes/code_literature_map.md)
+- [Paper-note template](papers/notes/paper_note_template.md)
+
+The committed results were measured in the execution environment recorded in `run.json`. They are a synthetic signal-processing demonstration, not generated-model benchmarks or reproductions of paper results. The local Windows/Python 3.11 run is still to be confirmed.
+
+For each future experiment, record the source notebook, related paper, implementation status, settings, results and limitations. Keep published paper results separate from our measured results.
+

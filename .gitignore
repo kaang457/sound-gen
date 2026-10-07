@@ -1,0 +1,32 @@
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Keep directory placeholders; exclude local audio/data
+/data/raw/*
+!/data/raw/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
+/data/generated/*
+!/data/generated/.gitkeep
+/results/audio/*
+!/results/audio/.gitkeep
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+# Model weights
+*.ckpt
+*.pth
+*.pt
+*.safetensors
+
+# Local credentials and editor/system files
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

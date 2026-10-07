@@ -1,0 +1,15 @@
+metric,value
+sample_rate_hz,24000
+channels,1
+samples_mono,72000
+duration_s,3.0
+peak_mono,0.79998779296875
+rms_mono,0.0839561973409626
+window_ms,42.666666666666664
+hop_ms,10.666666666666666
+fft_bin_spacing_hz,23.4375
+stft_frequency_bins,513
+frames,282
+mel_bands,64
+half_amplitude_rms_ratio,0.5
+half_amplitude_delta_db,-6.020599913279624

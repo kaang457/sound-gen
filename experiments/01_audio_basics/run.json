@@ -1,0 +1,45 @@
+{
+  "experiment_id": "01_audio_basics",
+  "run_time_utc": "2026-10-07T14:57:28.636560+00:00",
+  "source": "data/generated/audio_basics_demo.wav",
+  "audio_sha256": "6a367d5b9c996bf61218c00f1599ff9d0ab31b392db3e12bdbed8d7dec33b542",
+  "python": "3.12.14",
+  "platform": "Linux",
+  "packages": {
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "matplotlib": "3.10.8",
+    "librosa": "1.0.0",
+    "soundfile": "0.14.0"
+  },
+  "analysis": {
+    "n_fft": 1024,
+    "win_length": 1024,
+    "hop_length": 256,
+    "n_mels": 64,
+    "window": "hann",
+    "center": true,
+    "fmin": 0,
+    "fmax": 12000.0,
+    "power_exponent": 2,
+    "db_reference": "per-representation maximum",
+    "top_db": 80
+  },
+  "metrics": {
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "samples_mono": 72000,
+    "duration_s": 3.0,
+    "peak_mono": 0.79998779296875,
+    "rms_mono": 0.0839561973409626,
+    "window_ms": 42.666666666666664,
+    "hop_ms": 10.666666666666666,
+    "fft_bin_spacing_hz": 23.4375,
+    "stft_frequency_bins": 513,
+    "frames": 282,
+    "mel_bands": 64,
+    "half_amplitude_rms_ratio": 0.5,
+    "half_amplitude_delta_db": -6.020599913279624
+  },
+  "scope": "audio representation demo; no trained model or paper reproduction"
+}

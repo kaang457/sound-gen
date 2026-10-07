@@ -1,0 +1,10 @@
+# Audio basics only; use Python 3.11 for the project environment.
+# Tested dependency versions are recorded per run in experiments/01_audio_basics/.
+# PyTorch/CUDA is installed separately for the local GPU setup.
+numpy>=1.24,<3
+scipy>=1.10,<2
+matplotlib>=3.7,<4
+librosa>=0.10.2,<2
+soundfile>=0.12,<1
+jupyter>=1,<2
+ipykernel>=6,<8
