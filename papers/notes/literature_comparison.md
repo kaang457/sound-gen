@@ -46,3 +46,7 @@ Bir sonraki seçim eşiği: T-FOLEY'de sabit seed/sınıf ile RMS/onset sweep; F
 
 Yazar sonuçları kendi deney sonuçlarımızdan ayrı tutulur. FAD değerleri farklı embedding, veri, örnek sayısı ve protokol üzerinden doğrudan sıralanmaz.
 
+
+## Parametrik prototip güncellemesi
+
+09 doğrudan TFOLEY RMS taraması, 10 ise kendi küçük spectral CVAE'mizin RMS/centroid kontrolünü içerir. CVAE tek gerçek kayıtla eğitildi; F-RAVE gerçeklenmesi veya doğal Foley üstünlüğü sonucu değildir. F-RAVE yöntem adayı, TFOLEY temporal baseline, AudioLDM referans-içerik baseline olarak kalır. [Ölçülen sonuçlar ve seçim](parametric_model_selection.md).

@@ -1,0 +1,66 @@
+{
+  "status": "training_completed",
+  "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+  "steps": 3000,
+  "parameter_count": 35877,
+  "history": [
+    {
+      "step": 0,
+      "loss": 393.9949035644531,
+      "control_loss": 26.170608520507812
+    },
+    {
+      "step": 500,
+      "loss": 4.896857261657715,
+      "control_loss": 0.1842893809080124
+    },
+    {
+      "step": 1000,
+      "loss": 2.5384790897369385,
+      "control_loss": 0.03646009415388107
+    },
+    {
+      "step": 1500,
+      "loss": 2.0539636611938477,
+      "control_loss": 0.015396976843476295
+    },
+    {
+      "step": 2000,
+      "loss": 1.9206066131591797,
+      "control_loss": 0.01449953019618988
+    },
+    {
+      "step": 2500,
+      "loss": 1.4728379249572754,
+      "control_loss": 0.004733118694275618
+    }
+  ],
+  "prior_sampling_metrics": {
+    "train": {
+      "frames": 103,
+      "rms_relative_mae": 0.039653338491916656,
+      "centroid_mae_hz": 24.324472427368164
+    },
+    "validation": {
+      "frames": 34,
+      "rms_relative_mae": 0.054785579442977905,
+      "centroid_mae_hz": 48.45236587524414
+    },
+    "test": {
+      "frames": 35,
+      "rms_relative_mae": 0.04465223848819733,
+      "centroid_mae_hz": 30.81532859802246
+    }
+  },
+  "split": "Contiguous nonoverlapping 512-sample blocks: first 60% train, next 20% validation, last 20% test. Statistics fit on train only. Initial exploratory metrics motivated a prior-control loss change; these are development diagnostics, not an untouched test benchmark. One recording, no recording-level generalization.",
+  "scope": "Real-recording magnitude-spectrum CVAE. Fixed random-phase renderer. No learned temporal structure, category guarantee, pitch control or F-RAVE reproduction.",
+  "packages": {
+    "torch": "2.14.1+cpu",
+    "numpy": "2.3.5",
+    "soundfile": "0.14.0"
+  },
+  "objective": "log1p magnitude reconstruction + 5 posterior control + 10 prior control + .1 KL",
+  "device": "cpu",
+  "threads": 2,
+  "timing": "Not measured"
+}

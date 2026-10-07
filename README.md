@@ -1,5 +1,12 @@
 # Controllable Sound Generation Playground
 
+## 09–10: Parametrik neural üretim
+
+[09 doğrudan RMS kontrolü](notebooks/09_parametric_tfoley.ipynb) pretrained TFOLEY'yi sayısal koşul vektörüyle çalıştırır. [10 RMS + centroid CVAE](notebooks/10_parametric_spectral_cvae.ipynb) bu repo için eğitilmiş küçük neural spektrum modelini iki sayısal parametreyle çalıştırır. **10'un eğitimli küçük JSON ağırlıkları repoda; yeniden eğitim zorunlu değil.** Mevcut PyTorch/TFOLEY `.venv` kullanılır, AudioLDM kurulumu gerekmez.
+
+Üç seed'li 12 CVAE üretiminde iki kontrol monoton değişti; diğer kontrol üzerindeki etki ayrıca ölçüldü. Tek kayıt ve random-phase rendering nedeniyle bu doğal/genel Foley modeli sonucu değildir. [Sonuç ve yeniden üretim](experiments/parametric/README.md), [model seçimi ve makale eşleşmesi](papers/notes/parametric_model_selection.md). Parametrik kontrol açısından TFOLEY enerji/zaman baseline, küçük CVAE çalışan iki-kontrol prototipi, F-RAVE ölçekleme için yöntem adayıdır.
+
+
 
 ## 08: Referans-audio baseline ve yerel GPU sonuçları
 
@@ -30,7 +37,7 @@ Paylaşılan özellik kodu `src/audio/`, model çalıştırıcısı `src/baselin
 
 Temel ortam: `pip install -r requirements.txt`. T-FOLEY için mevcut PyTorch/CUDA kurulumundan sonra `pip install -r requirements-tfoley.txt`. 04 ve 05 gerçek ses kaynağını checksum doğrulayarak indirir; 06 resmî kaynak ve checkpoint'i indirir. Büyük ağırlıklar, haricî kaynak checkout'u ve WAV dosyaları Git dışında; yeniden üretim kodu, kaynak/lisans bilgisi, tablo, grafik ve koşum metadata'sı Git içindedir.
 
-Sıradaki deney: sabit seed/sınıfta RMS ve onset sweep ile hedef uyumunu ölçmek; F-RAVE checkpoint/veri alanını denetlemek. Tek inference kalite veya controllability benchmark'ı değildir.
+Güncel parametrik deneyler 09–10 ve `experiments/parametric` altındadır. Sonraki kalite/genelleme eşiği çoklu kayıtlarla kayıt bazında ayrılmış eğitim ve değerlendirmedir.
 
 ## 1. Project Overview
 

@@ -84,3 +84,13 @@ T-FOLEY resmî pretrained inference + gerçek Footstep RMS referansı. `src/audi
 Resmî AudioLDM m-full pretrained audio-reference inference. CLAP audio koşulu; text prompt yok, empty unconditional branch var. `src/baselines/audioldm_reference_inference.py`: pinned source/checkpoint/tokenizer, safe mmap load, şartlı dropout 0, candidate 1, text-scoring guard, portatif reference I/O. [Koşum/sonuç](../../experiments/baselines/audioldm/README.md), [makale ilişkisi ve değişiklikler](audioldm_reference_baseline.md). Model mimarisi/yeniden eğitim, FAD veya bağımsız RMS/pitch/brightness kontrolü uygulanmadı.
 
 Notebook 07'nin kullanıcı GPU çıktıları [ayrı provenance ile kaydedildi](../../experiments/baselines/tfoley/real_footstep/user_gpu_results.md); yerel WAV burada doğrulanmadı.
+
+## 09–10: sayısal kontrollü üretim
+
+| Kod | Çalışma ilişkisi | Çalıştırılmış kapsam |
+|---|---|---|
+| 09, `src/control/tfoley.py`, `tfoley_sweep.py` | TFOLEY'nin class + RMS koşulu; 690 karelik vektör doğrudan modele girer | 3 eğri × 2 seed pretrained kontrol taraması |
+| 10, `src/control/spectral_cvae.py` | Descriptor-conditioning prensibi F-RAVE ile ilişkili; kendi küçük conditional VAE, makale gerçeklenmesi değil | Gerçek tek kayıtla 3000 adım eğitim; 12 klip / 3 seed RMS-centroid taraması |
+| `src/control/generate.py` | Ortak parametrik arayüz; desteklenmeyen kontroller reddedilir | İki backend; metin girdisi yok |
+
+[Detaylı seçim, ilk başarısız deneme ve kapsam](parametric_model_selection.md); [ölçülen sonuçlar](../../experiments/parametric/README.md).

@@ -1,0 +1,35 @@
+{
+  "status": "inference_completed",
+  "time_utc": "2026-10-07T19:57:38.175324+00:00",
+  "upstream_revision": "7a0fb41c193625b7edbed86e823e4b91b55c886c",
+  "checkpoint_sha256": "64e3d7c3642f74cb16caccd5948a31cb06832bb5157be34c00f40b59ef675e7d",
+  "device": "cpu",
+  "torch": "2.14.1+cpu",
+  "seed": 42,
+  "steps": 50,
+  "class_name": "Footstep",
+  "sample_rate": 22050,
+  "duration_s": 4,
+  "cond_scale": 3,
+  "reference": "direct numeric RMS condition; reference waveform is not used",
+  "reference_sha256": null,
+  "condition_sha256": "d1cd885953bc940ccb18c218fb7ddc24000ce549e9ff750704500ff4eff1bc0a",
+  "conditioning": "direct_rms",
+  "inference_seconds": 82.66919429900008,
+  "parameter_count": 74092851,
+  "output_peak": 0.06102096119217993,
+  "output_rms": 0.0107435019176692,
+  "output_wav_sha256": "6c4a4f43ca7265a6afbfe371cbf77bec691d3cf5c6931277e15f7f4a262725fa",
+  "quality_evaluation": "not measured",
+  "paper_reproduction": false,
+  "adapter_changes": [
+    "RFF frequencies use sigma.device instead of hardcoded CUDA",
+    "soundfile I/O; portable checkpoint loading"
+  ],
+  "packages": {
+    "numpy": "2.3.5",
+    "librosa": "1.0.0",
+    "soundfile": "0.14.0",
+    "einops": "0.8.2"
+  }
+}

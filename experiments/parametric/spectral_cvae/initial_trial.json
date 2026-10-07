@@ -1,0 +1,57 @@
+{
+  "status": "training_completed",
+  "checkpoint_sha256": "615f9bcc673834d0abc002cd40dfc1003fc51f9c4c3ad87f57c19e4c41f9461f",
+  "steps": 3000,
+  "parameter_count": 35877,
+  "history": [
+    {
+      "step": 0,
+      "loss": 53.692562103271484,
+      "control_loss": 26.170608520507812
+    },
+    {
+      "step": 500,
+      "loss": 0.6258682012557983,
+      "control_loss": 0.021838881075382233
+    },
+    {
+      "step": 1000,
+      "loss": 0.26228222250938416,
+      "control_loss": 0.01113271526992321
+    },
+    {
+      "step": 1500,
+      "loss": 0.4039715528488159,
+      "control_loss": 0.013146039098501205
+    },
+    {
+      "step": 2000,
+      "loss": 0.22932180762290955,
+      "control_loss": 0.0023608235642313957
+    },
+    {
+      "step": 2500,
+      "loss": 0.2048313170671463,
+      "control_loss": 0.0029233943205326796
+    }
+  ],
+  "prior_sampling_metrics": {
+    "train": {
+      "frames": 103,
+      "rms_relative_mae": 0.8525744080543518,
+      "centroid_mae_hz": 1764.9451904296875
+    },
+    "validation": {
+      "frames": 34,
+      "rms_relative_mae": 0.8460919260978699,
+      "centroid_mae_hz": 1849.7081298828125
+    },
+    "test": {
+      "frames": 35,
+      "rms_relative_mae": 0.8499382138252258,
+      "centroid_mae_hz": 1954.4892578125
+    }
+  },
+  "split": "Contiguous nonoverlapping 512-sample blocks: first 60% train, next 20% validation, last 20% test. Statistics fit on train only. Validation not used for tuning. One recording, no recording-level generalization.",
+  "scope": "Real-recording magnitude-spectrum CVAE. Fixed random-phase renderer. No learned temporal structure, category guarantee, pitch control or F-RAVE reproduction."
+}

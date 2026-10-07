@@ -68,12 +68,14 @@ def main():
     p.add_argument('--weights-dir',type=Path)
     p.add_argument('--class-name',choices=LABELS,default='Footstep')
     p.add_argument('--target-audio',type=Path)
+    p.add_argument('--rms-json',type=Path, help='Direct 690-frame nonnegative RMS condition; mutually exclusive with target audio')
     p.add_argument('--steps',type=int,default=100)
     p.add_argument('--seed',type=int,default=42)
     p.add_argument('--device',choices=['auto','cpu','cuda'],default='auto')
     p.add_argument('--threads',type=int,default=4)
     p.add_argument('--output-name',default='smoke_test')
     args=p.parse_args()
+    if args.rms_json and args.target_audio:raise ValueError('Choose rms-json or target-audio')
     if args.steps<2:raise ValueError('steps must be >= 2')
     if Path(args.output_name).name!=args.output_name:raise ValueError('output-name must be a filename stem')
     root=Path(__file__).resolve().parents[2]
@@ -128,6 +130,12 @@ def main():
     b,a=ellip(4,0.01,120,0.125)
     events=filtfilt(b,a,rms,method='gust').astype(np.float32)
     if len(events)!=params['event_dims']['rms']:raise ValueError('Condition length mismatch.')
+    if args.rms_json:
+        specification=json.loads(args.rms_json.read_text(encoding='utf-8'))
+        events=np.asarray(specification['rms'],dtype=np.float32)
+        if events.shape!=(params['event_dims']['rms'],) or not np.isfinite(events).all() or np.any(events<0):
+            raise ValueError('rms-json requires exactly 690 finite nonnegative values')
+        source='direct numeric RMS condition; reference waveform is not used'
     cond=torch.from_numpy(events.copy()).unsqueeze(0).to(device)
     sampler=SDESampling_batch(model,VpSdeCos(),batch_size=1,device=device)
     noise=torch.randn(1,length,device=device)
@@ -142,12 +150,15 @@ def main():
     if not np.isfinite(samples).all():raise ValueError('Nonfinite generated audio')
     output=root/'results'/'audio'/'tfoley';output.mkdir(parents=True,exist_ok=True)
     sf.write(output/(args.output_name+'.wav'),samples,sr,subtype='FLOAT')
-    sf.write(output/(args.output_name+'_reference.wav'),target,sr,subtype='FLOAT')
+    if not args.rms_json:sf.write(output/(args.output_name+'_reference.wav'),target,sr,subtype='FLOAT')
+    (output/(args.output_name+'_condition.json')).write_text(json.dumps({'rms':events.tolist(),'sample_rate':sr,'hop_length':128}),encoding='utf-8')
     report={'status':'inference_completed','time_utc':datetime.now(timezone.utc).isoformat(),
             'upstream_revision':actual_revision,'checkpoint_sha256':hashlib.sha256(model_paths[0].read_bytes()).hexdigest(),
             'device':str(device),'torch':torch.__version__,'seed':args.seed,'steps':args.steps,
             'class_name':args.class_name,'sample_rate':sr,'duration_s':4,'cond_scale':3,
-            'reference':source,'reference_sha256':hashlib.sha256(target.astype('<f4').tobytes()).hexdigest(),
+            'reference':source,'reference_sha256':None if args.rms_json else hashlib.sha256(target.astype('<f4').tobytes()).hexdigest(),
+            'condition_sha256':hashlib.sha256(events.astype('<f4').tobytes()).hexdigest(),
+            'conditioning': 'direct_rms' if args.rms_json else 'reference_rms',
             'inference_seconds':elapsed,'parameter_count':sum(p.numel() for p in model.parameters()),
             'output_peak':float(np.max(np.abs(samples))),'output_rms':float(np.sqrt(np.mean(samples**2))),
             'output_wav_sha256':hashlib.sha256((output/(args.output_name+'.wav')).read_bytes()).hexdigest(),
@@ -159,3 +170,4 @@ def main():
     print(json.dumps(report,indent=2),flush=True)
 
 if __name__=='__main__':main()
+

@@ -1,0 +1,111 @@
+{
+  "status": "completed",
+  "steps": 50,
+  "seeds": [
+    42,
+    43
+  ],
+  "results": [
+    {
+      "name": "control_low_seed42",
+      "seed": 42,
+      "target_peak_rms": 0.015,
+      "mae": 0.0013283582838750005,
+      "normalized_mae": 0.08855721892500004,
+      "pearson": 0.9556939286412406,
+      "output_rms": 0.005387640658864775,
+      "output_peak": 0.02097286842763424,
+      "fraction_above_1": 0.0,
+      "detected_rms_peaks": 3,
+      "matched_within_150ms": 3,
+      "missing_target_peaks": 0,
+      "extra_detected_peaks": 0,
+      "mean_matched_offset_s": 0.02034769463340887
+    },
+    {
+      "name": "control_high_seed42",
+      "seed": 42,
+      "target_peak_rms": 0.045,
+      "mae": 0.0027059545914347076,
+      "normalized_mae": 0.06013232425410461,
+      "pearson": 0.9720542257574722,
+      "output_rms": 0.015913791814421856,
+      "output_peak": 0.14911934733390808,
+      "fraction_above_1": 0.0,
+      "detected_rms_peaks": 3,
+      "matched_within_150ms": 3,
+      "missing_target_peaks": 0,
+      "extra_detected_peaks": 0,
+      "mean_matched_offset_s": 0.037218442932728725
+    },
+    {
+      "name": "control_shift_seed42",
+      "seed": 42,
+      "target_peak_rms": 0.03,
+      "mae": 0.0018941137391131375,
+      "normalized_mae": 0.06313712463710458,
+      "pearson": 0.9755161005004187,
+      "output_rms": 0.010743501912300616,
+      "output_peak": 0.06102096289396286,
+      "fraction_above_1": 0.0,
+      "detected_rms_peaks": 4,
+      "matched_within_150ms": 3,
+      "missing_target_peaks": 0,
+      "extra_detected_peaks": 1,
+      "mean_matched_offset_s": 0.035888133030990144
+    },
+    {
+      "name": "control_low_seed43",
+      "seed": 43,
+      "target_peak_rms": 0.015,
+      "mae": 0.0007535648934253503,
+      "normalized_mae": 0.05023765956169002,
+      "pearson": 0.9706146931612817,
+      "output_rms": 0.005282520487364813,
+      "output_peak": 0.024733485653996468,
+      "fraction_above_1": 0.0,
+      "detected_rms_peaks": 3,
+      "matched_within_150ms": 3,
+      "missing_target_peaks": 0,
+      "extra_detected_peaks": 0,
+      "mean_matched_offset_s": 0.039939531368102875
+    },
+    {
+      "name": "control_high_seed43",
+      "seed": 43,
+      "target_peak_rms": 0.045,
+      "mae": 0.0024324026978979557,
+      "normalized_mae": 0.05405339328662124,
+      "pearson": 0.9588432725783389,
+      "output_rms": 0.015363864910469507,
+      "output_peak": 0.1277485489845276,
+      "fraction_above_1": 0.0,
+      "detected_rms_peaks": 3,
+      "matched_within_150ms": 3,
+      "missing_target_peaks": 0,
+      "extra_detected_peaks": 0,
+      "mean_matched_offset_s": 0.02754346182917607
+    },
+    {
+      "name": "control_shift_seed43",
+      "seed": 43,
+      "target_peak_rms": 0.03,
+      "mae": 0.001397754659039835,
+      "normalized_mae": 0.0465918219679945,
+      "pearson": 0.9766304978654464,
+      "output_rms": 0.010815573232065018,
+      "output_peak": 0.0792350023984909,
+      "fraction_above_1": 0.0,
+      "detected_rms_peaks": 3,
+      "matched_within_150ms": 3,
+      "missing_target_peaks": 0,
+      "extra_detected_peaks": 0,
+      "mean_matched_offset_s": 0.04169312169312182
+    }
+  ],
+  "high_over_low_rms": {
+    "42": true,
+    "43": true
+  },
+  "scope": "Six samples, two seeds; RMS peaks not semantic events. Hungarian one-to-one assignment, 150ms acceptance. No perceptual quality or paper benchmark claim."
+}

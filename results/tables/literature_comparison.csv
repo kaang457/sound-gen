@@ -9,3 +9,4 @@ Make-An-Audio 2,structured text,yes,instructions documented; not run,low priorit
 Stable Audio Open,text + duration,yes,documented; not run,text baseline/backbone,no native multiattribute control verified
 AudioLDM audio-to-audio,reference waveform -> CLAP audio embedding,no user prompt; text branch/unconditional token remains,official pinned m-full; first CPU reference-audio inference completed,reference-content baseline candidate; perceptual success unmeasured,"no independent numeric multi-control; condition dropout 0, one candidate, no text ranking"
 DarkGAN,semantic soft labels,no free text,appropriate environmental checkpoint unverified,method reference only,musical-domain evaluation
+Repo spectral CVAE,numeric RMS + magnitude centroid + 2D latent,no,trained small JSON weights included,working two-control engineering prototype,one 4s recording; random phase; no general Foley quality or F-RAVE reproduction

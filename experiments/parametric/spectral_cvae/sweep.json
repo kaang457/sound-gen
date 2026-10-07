@@ -1,0 +1,207 @@
+{
+  "results": [
+    {
+      "name": "cvae_0_seed42",
+      "seed": 42,
+      "target_rms": 0.01731731405016035,
+      "target_centroid_hz": 1953.6852416992188,
+      "actual_mean_block_rms": 0.017644163221120834,
+      "actual_mean_block_centroid_hz": 1950.5755615234375,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.07207078009056149,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "682c8c12db502b5eb439fd46fe1dda09f976b347d2246f8427c35a4e2904a55e",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_1_seed42",
+      "seed": 42,
+      "target_rms": 0.04371021327096969,
+      "target_centroid_hz": 1953.6852416992188,
+      "actual_mean_block_rms": 0.04025902971625328,
+      "actual_mean_block_centroid_hz": 1913.3751220703125,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.1680327968289813,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "1f32f5fa7e71ab1ee920824368a4870f9122b58ed591728b50e8c9e78c2885cb",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_2_seed42",
+      "seed": 42,
+      "target_rms": 0.03051376366056502,
+      "target_centroid_hz": 1416.9863586425781,
+      "actual_mean_block_rms": 0.030453212559223175,
+      "actual_mean_block_centroid_hz": 1378.0989990234375,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.12161432986804005,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "8aa02e72379bf2a0c86761ff1110c55c7b3c59ae1b834c2f537a9d7af5a3bb7a",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_3_seed42",
+      "seed": 42,
+      "target_rms": 0.03051376366056502,
+      "target_centroid_hz": 2490.3841247558594,
+      "actual_mean_block_rms": 0.02990351803600788,
+      "actual_mean_block_centroid_hz": 2452.5458984375,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.12830818465173766,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "df3daeb55d0e9ae99f5d94d7e0aa30b4ea727a5c0c5ed1fcfeb8b2b1e89c3f74",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_0_seed43",
+      "seed": 43,
+      "target_rms": 0.01731731405016035,
+      "target_centroid_hz": 1953.6852416992188,
+      "actual_mean_block_rms": 0.017580749467015266,
+      "actual_mean_block_centroid_hz": 1950.3829345703125,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.07254467740035737,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "acc5227b8638f1eead4d7d24a1dec9dad527ba9baa22535eaa98653ca45ad0cd",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_1_seed43",
+      "seed": 43,
+      "target_rms": 0.04371021327096969,
+      "target_centroid_hz": 1953.6852416992188,
+      "actual_mean_block_rms": 0.04024090990424156,
+      "actual_mean_block_centroid_hz": 1912.5257568359375,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.16649035022687256,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "1afe73ef9223c9603801cc7029e33bd5b61b9675cdd7f12afdbe691e643fc561",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_2_seed43",
+      "seed": 43,
+      "target_rms": 0.03051376366056502,
+      "target_centroid_hz": 1416.9863586425781,
+      "actual_mean_block_rms": 0.030459260568022728,
+      "actual_mean_block_centroid_hz": 1376.3631591796875,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.120229006636349,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "c7f0138f7954a4b790889ae3e18067b7dd552e23fe6ba61841738025b89b3227",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_3_seed43",
+      "seed": 43,
+      "target_rms": 0.03051376366056502,
+      "target_centroid_hz": 2490.3841247558594,
+      "actual_mean_block_rms": 0.02980153262615204,
+      "actual_mean_block_centroid_hz": 2454.927490234375,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.1279226178294046,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "877dcaa7018fd66f3a6d6d72edc3f61fcc61a3be304b08af6ce2ca69c975268b",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_0_seed44",
+      "seed": 44,
+      "target_rms": 0.01731731405016035,
+      "target_centroid_hz": 1953.6852416992188,
+      "actual_mean_block_rms": 0.017611809074878693,
+      "actual_mean_block_centroid_hz": 1951.254150390625,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.07077721695543579,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "af3857a8a025749d21f5a47caef49f6cef0cb38b72b156ab1108719d1e19fcda",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_1_seed44",
+      "seed": 44,
+      "target_rms": 0.04371021327096969,
+      "target_centroid_hz": 1953.6852416992188,
+      "actual_mean_block_rms": 0.040288183838129044,
+      "actual_mean_block_centroid_hz": 1912.6741943359375,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.163543187578858,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "29c508492195c2ca7048e07d207036a56d9cbf14aaf2d50451d74b5972eab6a2",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_2_seed44",
+      "seed": 44,
+      "target_rms": 0.03051376366056502,
+      "target_centroid_hz": 1416.9863586425781,
+      "actual_mean_block_rms": 0.030467435717582703,
+      "actual_mean_block_centroid_hz": 1377.2186279296875,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.122085763218272,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "80ce0e53b3f3fa10cf2d92ab88c35f8d593870c76d78a572945fca09a4e6abff",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    },
+    {
+      "name": "cvae_3_seed44",
+      "seed": 44,
+      "target_rms": 0.03051376366056502,
+      "target_centroid_hz": 2490.3841247558594,
+      "actual_mean_block_rms": 0.029873041436076164,
+      "actual_mean_block_centroid_hz": 2454.90673828125,
+      "duration_s": 1.9969160997732427,
+      "output_peak": 0.12017615801687401,
+      "fraction_above_1": 0.0,
+      "wav_sha256": "4d09cd0863f5c6b057cc34622603c83442a9cb2bf7d397816c2a1c95589f1e21",
+      "checkpoint_sha256": "943702bb94574f409253935a082b9fbe325824a33d6e869581253ee1c1f19ed0",
+      "scope": "Block RMS and rectangular FFT magnitude centroid; not interchangeable with Hann/STFT whole-recording metrics. Controls within marginal ranges may lie outside joint training support."
+    }
+  ],
+  "rms_sweep": [
+    {
+      "seed": 42,
+      "rms_monotonic": true,
+      "centroid_drift_hz": 37.200439453125
+    },
+    {
+      "seed": 43,
+      "rms_monotonic": true,
+      "centroid_drift_hz": 37.857177734375
+    },
+    {
+      "seed": 44,
+      "rms_monotonic": true,
+      "centroid_drift_hz": 38.5799560546875
+    }
+  ],
+  "centroid_sweep": [
+    {
+      "seed": 42,
+      "centroid_monotonic": true,
+      "rms_relative_drift": 0.018014641829506628
+    },
+    {
+      "seed": 43,
+      "centroid_monotonic": true,
+      "rms_relative_drift": 0.021555123425194358
+    },
+    {
+      "seed": 44,
+      "centroid_monotonic": true,
+      "rms_relative_drift": 0.019479546611115492
+    }
+  ],
+  "scope": "12 clips, 3 seeds. Small single-recording proof of learned two-control spectral synthesis; no Foley quality or broad generalization claim."
+}
