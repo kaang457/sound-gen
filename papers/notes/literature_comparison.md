@@ -4,7 +4,7 @@ Kontrol tarihi: 2026-10-07. Bu karar kod ve kaynak incelemesine dayanır; bütü
 
 ## Referans sesi taklit etme hedefi için güncelleme
 
-İlk dinlemede beklenen benzerlik sağlanmadı. T-FOLEY yalnız temporal baseline olarak tutuluyor. Kuş/çevresel referansın içeriğini koşul olarak kullanmak için **AudioLDM audio-to-audio** yeni öncelikli inference adayı; caption gerektirmeyen yol kodda doğrulandı, henüz çalıştırılmadı. Sayısal çoklu kontrol hedefinde F-RAVE yöntem adayı sürüyor. [Kod denetimi ve güncel seçim](reference_audio_selection.md).
+İlk dinlemede beklenen benzerlik sağlanmadı. T-FOLEY yalnız temporal baseline olarak tutuluyor. Kuş/çevresel referansın içeriğini koşul olarak kullanmak için **AudioLDM audio-to-audio** yeni öncelikli inference adayı; caption gerektirmeyen yol kodda doğrulandı, ilk kuş referansı koşumu çalıştırıldı; algısal başarı ölçülmedi. Sayısal çoklu kontrol hedefinde F-RAVE yöntem adayı sürüyor. [Kod denetimi ve güncel seçim](reference_audio_selection.md).
 
 ## Önceki temporal / descriptor seçimi
 

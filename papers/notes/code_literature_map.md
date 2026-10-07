@@ -76,4 +76,11 @@ Gerçek kayıt üzerinde ortak RMS/centroid analizi. `src/audio/real_sample.py` 
 
 T-FOLEY resmî pretrained inference + gerçek Footstep RMS referansı. `src/audio/footstep_sample.py` CC0 kamuya açık MP3 önizlemesini checksum doğrular, sabit 5–9 s crop/resample yapar. `src/audio/tfoley_comparison.py` aynı smoothing ile tek çift RMS MAE/korelasyon ve RMS peak zamanı tanılarını kaydeder. Peak zamanı onset değildir; bu timbre taklidi veya paper E-L1 benchmark reprodüksiyonu değildir. [Deney](../../experiments/baselines/tfoley/real_footstep/README.md).
 
-[Referans-audio seçim notu](reference_audio_selection.md): AudioLDM waveform/CLAP yolu yeni aday; henüz inference uygulanmadı. F-RAVE sayısal kontrol yöntemi incelemesi olarak kalır.
+[Referans-audio seçim notu](reference_audio_selection.md): AudioLDM waveform/CLAP yolu notebook 08 ilk CPU koşumunda çalıştırıldı; algısal başarı ölçülmedi. F-RAVE sayısal kontrol yöntemi incelemesi olarak kalır.
+
+
+## 08_audioldm_reference_audio.ipynb
+
+Resmî AudioLDM m-full pretrained audio-reference inference. CLAP audio koşulu; text prompt yok, empty unconditional branch var. `src/baselines/audioldm_reference_inference.py`: pinned source/checkpoint/tokenizer, safe mmap load, şartlı dropout 0, candidate 1, text-scoring guard, portatif reference I/O. [Koşum/sonuç](../../experiments/baselines/audioldm/README.md), [makale ilişkisi ve değişiklikler](audioldm_reference_baseline.md). Model mimarisi/yeniden eğitim, FAD veya bağımsız RMS/pitch/brightness kontrolü uygulanmadı.
+
+Notebook 07'nin kullanıcı GPU çıktıları [ayrı provenance ile kaydedildi](../../experiments/baselines/tfoley/real_footstep/user_gpu_results.md); yerel WAV burada doğrulanmadı.

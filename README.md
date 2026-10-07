@@ -1,9 +1,17 @@
 # Controllable Sound Generation Playground
 
 
+## 08: Referans-audio baseline ve yerel GPU sonuçları
+
+[Notebook 08](notebooks/08_audioldm_reference_audio.ipynb) AudioLDM m-full'ü kuş referansının audio embedding'iyle çalıştırır. Kullanıcı text prompt yok; empty unconditional branch modelde kalır. **İlk CPU üretimi tamamlandı**; düşük seviyeli çıktının algısal başarısı henüz ölçülmedi. [Koşum/kurulum](experiments/baselines/audioldm/README.md), [makale/kod eşleşmesi](papers/notes/audioldm_reference_baseline.md).
+
+Model ayrı `.venv-audioldm` ortamında; kurulum notebook başında. İlk checkpoint yaklaşık 4.57 GB. Mevcut T-FOLEY/CUDA `.venv` korunur. Notebook referans, ortak gain çıktı ve ayrıca normalize edilmiş içerik dinlemesi sağlar.
+
+[07 kullanıcı GPU sonuçları](experiments/baselines/tfoley/real_footstep/user_gpu_results.md) ayrı kaydedildi: 30.656 s, RMS Pearson 0.77258, 8/7 RMS peak. Sonuçlar kullanıcı tarafından sağlandı; WAV burada alınmadı. Bütün hedefleri karşılayan tek model henüz seçilmedi; T-FOLEY temporal, AudioLDM referans-içerik ve F-RAVE numeric-descriptor rolleri ayrı.
+
 ## Referans ses hedefi için güncelleme
 
-Notebook 06 ilk dinlemede beklenen benzerliği sağlamadı. **T-FOLEY temporal baseline**, genel ses/timbre taklit modeli değildir. [Notebook 07](notebooks/07_tfoley_real_footstep.ipynb) gerçek Footstep referansını ve çıktıyı aynı gain ile dinletir; RMS/zaman tanılarını kaydeder. Kuş/çevresel referans içeriği için sıradaki aday **AudioLDM audio-to-audio**; metinsiz inference yolu kodda doğrulandı fakat bu ortamda henüz çalıştırılmadı. [Güncel seçim](papers/notes/reference_audio_selection.md), [gerçek Footstep deneyi](experiments/baselines/tfoley/real_footstep/README.md).
+Notebook 06 ilk dinlemede beklenen benzerliği sağlamadı. **T-FOLEY temporal baseline**, genel ses/timbre taklit modeli değildir. [Notebook 07](notebooks/07_tfoley_real_footstep.ipynb) gerçek Footstep referansını ve çıktıyı aynı gain ile dinletir; RMS/zaman tanılarını kaydeder. Kuş/çevresel referans içeriği için sıradaki aday **AudioLDM audio-to-audio**; metinsiz inference yolu kodda doğrulandı fakat ilk CPU kuş koşumu tamamlandı, algısal başarı ölçülmedi. [Güncel seçim](papers/notes/reference_audio_selection.md), [gerçek Footstep deneyi](experiments/baselines/tfoley/real_footstep/README.md).
 
 ## Önceki temporal / descriptor kararı — 2026-10-07
 
@@ -823,7 +831,7 @@ The current repository follows the local `sound-gen` directory layout.
 | `.gitignore` | Excludes environments, audio and model weights; keeps folder placeholders |
 | `requirements.txt` | Basic notebook dependencies; CUDA/PyTorch setup remains separate |
 
-Empty directories are preserved with `.gitkeep`. Notebooks 01–07 and baseline/analysis result subdirectories are available; current paths are listed above.
+Empty directories are preserved with `.gitkeep`. Notebooks 01–08 and baseline/analysis result subdirectories are available; current paths are listed above.
 
 ---
 

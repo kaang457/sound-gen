@@ -1,0 +1,94 @@
+{
+  "provenance": "User-pasted notebook output, 2026-10-07; WAV files not received or verified here",
+  "run": {
+    "status": "inference_completed",
+    "time_utc": "2026-10-07T18:36:40.807064+00:00",
+    "upstream_revision": "7a0fb41c193625b7edbed86e823e4b91b55c886c",
+    "checkpoint_sha256": "64e3d7c3642f74cb16caccd5948a31cb06832bb5157be34c00f40b59ef675e7d",
+    "device": "cuda",
+    "torch": "2.14.1+cu130",
+    "seed": 42,
+    "steps": 100,
+    "class_name": "Footstep",
+    "sample_rate": 22050,
+    "duration_s": 4,
+    "cond_scale": 3,
+    "reference": "user WAV (mono, resampled if necessary, crop/pad to four seconds)",
+    "reference_sha256": "eef23e9817523eb96aaf209ccf3d6ae834788dfaff2a8a4aa8cb2fd60cf8bcbb",
+    "inference_seconds": 30.655999999988126,
+    "parameter_count": 74092851,
+    "output_peak": 0.12089782993078144,
+    "output_rms": 0.021728560611333166,
+    "output_wav_sha256": "2618d9a5925f2702c928e24416678ad53c39e6e3f95c54cd82b11b97e9310b46",
+    "quality_evaluation": "not measured",
+    "paper_reproduction": false,
+    "adapter_changes": [
+      "RFF frequencies use sigma.device instead of hardcoded CUDA",
+      "soundfile I/O; portable checkpoint loading"
+    ],
+    "packages": {
+      "numpy": "2.4.6",
+      "librosa": "0.11.0",
+      "soundfile": "0.14.0",
+      "einops": "0.8.2"
+    }
+  },
+  "comparison": {
+    "source": {
+      "title": "footsteps.wav",
+      "creator": "freefire66",
+      "license": "CC0-1.0",
+      "source": "https://freesound.org/people/freefire66/sounds/175954/",
+      "download": "https://cdn.freesound.org/previews/175/175954_2542588-hq.mp3",
+      "description": "Boots on a sidewalk; public compressed preview, not original WAV",
+      "preview_sha256": "25a963b13fb2b1ab7415525a27326b59cccf3e3ee755d6e8857a38566d268894",
+      "source_sample_rate": 44100,
+      "crop_start_s": 5,
+      "crop_duration_s": 4,
+      "sample_rate": 22050,
+      "peak_normalization": false,
+      "changes": "Decode MP3 preview; mono; fixed 5–9 s crop; resample to 22050 Hz; FLOAT WAV",
+      "reference_wav_sha256": "8e5830d001d383ddd05b4d9bfb2e012acdb0bfb77b2274f54836308a513541db"
+    },
+    "output_stem": "local_real_footstep",
+    "sample_rate": 22050,
+    "duration_s": 4.0,
+    "smoothed_rms_mae": 0.005229722024378784,
+    "smoothed_rms_pearson": 0.7725803016974913,
+    "reference_global_rms": 0.023299580214979226,
+    "generated_global_rms": 0.021728560615980025,
+    "generated_peak": 0.12089782953262329,
+    "generated_fraction_abs_above_1": 0.0,
+    "reference_rms_peak_times_s": [
+      0.2147845804988662,
+      0.7024036281179138,
+      1.2712925170068028,
+      1.5441269841269842,
+      2.0027210884353743,
+      2.478730158730159,
+      3.1579138321995464,
+      3.680362811791383
+    ],
+    "generated_rms_peak_times_s": [
+      0.18575963718820862,
+      0.7140136054421768,
+      1.2829024943310658,
+      1.991111111111111,
+      2.478730158730159,
+      3.1230839002267574,
+      3.709387755102041
+    ],
+    "nearest_peak_offsets_s": [
+      -0.02902494331065758,
+      0.011609977324263054,
+      0.011609977324263054,
+      -0.2612244897959184,
+      -0.011609977324263276,
+      0.0,
+      -0.03482993197278894,
+      0.029024943310657747
+    ],
+    "peak_diagnostic": "Relative prominence 15%, distance 250 ms; RMS peaks, not onsets; nearest matching may reuse peaks",
+    "scope": "Single-pair engineering diagnostics; no benchmark, perceptual similarity or category verification"
+  }
+}

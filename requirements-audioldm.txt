@@ -1,0 +1,16 @@
+# Install only in .venv-audioldm, after the matching torch/audio/vision trio.
+numpy==1.26.4
+librosa==0.11.0
+transformers==4.44.2
+torchlibrosa==0.1.0
+einops==0.8.2
+soundfile==0.14.0
+tqdm==4.70.1
+progressbar==2.5
+ftfy==6.3.1
+chardet==7.6.0
+pandas>=2.2,<3
+scipy>=1.13,<2
+matplotlib>=3.7,<4
+pyyaml>=6,<7
+Pillow>=10,<13

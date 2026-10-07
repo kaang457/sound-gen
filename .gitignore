@@ -34,3 +34,7 @@ Thumbs.db
 # Downloaded third-party code and checkpoints
 /external/
 /models/
+
+
+# Isolated baseline environments
+.venv-*/

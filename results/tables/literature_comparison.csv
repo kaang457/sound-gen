@@ -7,5 +7,5 @@ Multiple Conditional Diffusion,text + timestamp/pitch/energy,yes,unverified,arch
 PicoAudio,text + event/timing structure,yes,instructions documented; not run,temporal reference,LLM removal does not remove text encoder
 Make-An-Audio 2,structured text,yes,instructions documented; not run,low priority,manual structure still text conditioning
 Stable Audio Open,text + duration,yes,documented; not run,text baseline/backbone,no native multiattribute control verified
-AudioLDM audio-to-audio,reference waveform -> CLAP audio embedding,no user prompt; text branch/unconditional token remains,"official documented; code audited, not run",next reference-content baseline candidate,not explicit multiattribute control; use batch/candidate 1 to bypass text ranking
+AudioLDM audio-to-audio,reference waveform -> CLAP audio embedding,no user prompt; text branch/unconditional token remains,official pinned m-full; first CPU reference-audio inference completed,reference-content baseline candidate; perceptual success unmeasured,"no independent numeric multi-control; condition dropout 0, one candidate, no text ranking"
 DarkGAN,semantic soft labels,no free text,appropriate environmental checkpoint unverified,method reference only,musical-domain evaluation

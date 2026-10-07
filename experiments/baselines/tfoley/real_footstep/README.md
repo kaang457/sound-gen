@@ -35,3 +35,8 @@ Bizim yorumumuz: enerji zarfında benzerlik var, kusursuz temporal kopya yok. Ko
 WAV dosyaları Git dışında. Notebook 07 ilk hücrelerde referansı indirip dinletir; üretim hücresi `local_real_footstep.wav` oluşturur. Sonraki iki player referans/çıktıya aynı gain uygular; kayıtlar değiştirilmez. CSV/metadata/grafik `local_real_footstep` adıyla ilk CPU koşumunu koruyarak yazılır. Temel requirements + mevcut CUDA PyTorch + `requirements-tfoley.txt` kullanılır. Windows/GPU koşumu henüz doğrulanmadı.
 
 Bu deney T-FOLEY'nin kendi desteklediği sınıfta temporal koşullamayı inceler. Kuş/çevresel referansın ses karakteri için sıradaki aday [AudioLDM audio-to-audio](../../../../papers/notes/reference_audio_selection.md); henüz çalıştırılmadı.
+
+
+## Yerel GPU sonuçları
+
+Kullanıcının paylaştığı CUDA koşumu ayrı [sonuç notu](user_gpu_results.md) ve [ham rapor](user_gpu_report.json) olarak kaydedildi. WAV burada alınmadı/doğrulanmadı.

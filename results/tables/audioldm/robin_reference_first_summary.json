@@ -1,0 +1,28 @@
+[
+  {
+    "signal": "reference",
+    "duration_s": 2.6986875,
+    "rms": 0.06834728997990061,
+    "peak": 0.6605548858642578,
+    "mean_centroid_active_hz": 5208.603087207534,
+    "active_frames": 118,
+    "frames": 169,
+    "frame_length": 1024,
+    "hop_length": 256,
+    "rms_threshold_dbfs": -50,
+    "role": "signal diagnostics only; not semantic similarity or control success"
+  },
+  {
+    "signal": "generated",
+    "duration_s": 5.0,
+    "rms": 0.001704358184366654,
+    "peak": 0.03535870090126991,
+    "mean_centroid_active_hz": 4950.240102935083,
+    "active_frames": 24,
+    "frames": 313,
+    "frame_length": 1024,
+    "hop_length": 256,
+    "rms_threshold_dbfs": -50,
+    "role": "signal diagnostics only; not semantic similarity or control success"
+  }
+]

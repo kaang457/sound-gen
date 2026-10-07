@@ -5,7 +5,7 @@ Kontrol tarihi: 2026-10-07. İlk dinlemede kullanıcı beklenen benzerliği bulm
 | Hedef | Öncelik | Kanıt / sınır |
 |---|---|---|
 | Gerçek Footstep'in RMS ve zaman yapısını takip | T-FOLEY, notebook 07 | Metinsiz class + RMS; kuş sınıfı yok, timbre taklidi yok |
-| Referans kuş/çevresel kayıtla benzer içerik üretme | AudioLDM audio-to-audio, sonraki inference adayı | Resmî kodda waveform → CLAP audio embedding yolu var; bu ortamda henüz çalıştırılmadı |
+| Referans kuş/çevresel kayıtla benzer içerik üretme | AudioLDM audio-to-audio, sonraki inference adayı | Resmî kodda waveform → CLAP audio embedding yolu var; ilk kuş koşumu çalıştırıldı; algısal başarı henüz ölçülmedi |
 | Sayısal öznitelikleri bağımsız değiştirme | F-RAVE yöntem incelemesi | Metinsiz descriptor conditioning; uygun genel Foley checkpoint doğrulanmadı, published çoklu kontrol skorları sınırlı |
 
 ## AudioLDM kaynak denetimi
@@ -24,4 +24,9 @@ AudioLDM bu kez referansın enerji zarfıyla sınırlı kalmadan içerik embeddi
 
 ## Sonraki kabul ölçütü
 
-Aynı kuş/Footstep referanslarıyla audio-to-audio; sabit seed, tek aday, caption yok. Referans ve çıktıyı etiketli player'da dinleme, kategori/içerik uyumu ve temporal sapma. Bunun ardından sayısal kontrol için ayrı sweep gerekir. Bu not kod inceleme sonucudur; AudioLDM inference başarısı veya benchmark raporu değildir.
+Aynı kuş/Footstep referanslarıyla audio-to-audio; sabit seed, tek aday, caption yok. Referans ve çıktıyı etiketli player'da dinleme, kategori/içerik uyumu ve temporal sapma. Bunun ardından sayısal kontrol için ayrı sweep gerekir. İlk AudioLDM inference artık çalıştırıldı: [uygulama/sonuç notu](audioldm_reference_baseline.md). Kod incelemesi ve tek koşum, algısal başarı veya benchmark üstünlüğü anlamına gelmez.
+
+
+## 08 uygulaması sonrası karar
+
+Referans-audio üretim yolu çalışıyor; düşük seviyeli tek kuş çıktısı dinleme/kategori başarısı olarak doğrulanmadı. Henüz bütün hedefleri birlikte karşılayan model seçilmiş değil. T-FOLEY temporal baseline, AudioLDM referans-içerik baseline adayı, F-RAVE sayısal descriptor yöntemi adayı olarak ayrı tutuluyor.
