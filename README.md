@@ -802,7 +802,7 @@ The current repository follows the local `sound-gen` directory layout.
 
 | Path | Current contents / purpose |
 |---|---|
-| `notebooks/` | `01_audio_basics.ipynb`: Turkish explanations and runnable audio basics |
+| `notebooks/` | `01_audio_basics.ipynb` and `02_feature_extraction.ipynb`: audio representations and frame features |
 | `src/` | Reserved for reusable utilities; currently empty |
 | `experiments/01_audio_basics/` | Experiment notes and run metadata |
 | `papers/controllable_generation/` | Reserved for controllable-generation references |
@@ -943,3 +943,14 @@ The committed results were measured in the execution environment recorded in `ru
 
 For each future experiment, record the source notebook, related paper, implementation status, settings, results and limitations. Keep published paper results separate from our measured results.
 
+
+
+## Frame Feature Extraction
+
+[`notebooks/02_feature_extraction.ipynb`](notebooks/02_feature_extraction.ipynb) computes per-frame unweighted RMS, RMS level and spectral centroid, plots the curves, and checks their response to a fixed gain change. It runs independently with a synthetic demo or a user-supplied WAV.
+
+- [Experiment settings and results](experiments/02_feature_extraction/README.md)
+- [Frame values](results/tables/02_feature_extraction/frame_features.csv)
+- [Feature curves](results/figures/02_feature_extraction/feature_curves.svg)
+
+This is shared feature-extraction infrastructure, not a Sketch2Sound implementation. Pitch extraction is not included yet. Outputs are overwritten on rerun; preserve earlier runs separately when comparing inputs.

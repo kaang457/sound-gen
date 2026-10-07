@@ -1,0 +1,43 @@
+{
+  "experiment_id": "02_feature_extraction",
+  "run_time_utc": "2026-10-07T15:25:58.812320+00:00",
+  "source": "data/generated/audio_basics_demo.wav",
+  "synthetic_demo": true,
+  "audio_sha256": "6a367d5b9c996bf61218c00f1599ff9d0ab31b392db3e12bdbed8d7dec33b542",
+  "python": "3.12.14",
+  "platform": "Linux",
+  "packages": {
+    "numpy": "2.3.5",
+    "librosa": "1.0.0",
+    "soundfile": "0.14.0",
+    "matplotlib": "3.10.8"
+  },
+  "analysis": {
+    "frame_length": 1024,
+    "hop_length": 256,
+    "rms_window": "rectangular",
+    "stft_window": "hann",
+    "center": true,
+    "pad_mode": "constant",
+    "rms_db_reference": 1,
+    "rms_floor": 1e-10,
+    "active_threshold_db": -60.0,
+    "centroid_weights": "STFT magnitude",
+    "comparison_mask": "original active frames"
+  },
+  "metrics": {
+    "sample_rate_hz": 24000,
+    "duration_s": 3.0,
+    "channels": 1,
+    "frames": 282,
+    "active_frames": 204,
+    "frame_ms": 42.666666666666664,
+    "hop_ms": 10.666666666666666,
+    "mean_rms_all_frames": 0.0434996208854964,
+    "max_frame_rms": 0.28111977653286135,
+    "mean_centroid_active_hz": 4637.495581364711,
+    "half_amplitude_mean_delta_db": -6.020599913279624,
+    "half_amplitude_max_centroid_difference_hz": 0.0
+  },
+  "scope": "unweighted frame RMS and centroid; not Sketch2Sound reproduction"
+}

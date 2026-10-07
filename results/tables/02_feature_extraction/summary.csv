@@ -1,0 +1,13 @@
+metric,value
+sample_rate_hz,24000
+duration_s,3.0
+channels,1
+frames,282
+active_frames,204
+frame_ms,42.666666666666664
+hop_ms,10.666666666666666
+mean_rms_all_frames,0.0434996208854964
+max_frame_rms,0.28111977653286135
+mean_centroid_active_hz,4637.495581364711
+half_amplitude_mean_delta_db,-6.020599913279624
+half_amplitude_max_centroid_difference_hz,0.0

@@ -31,3 +31,15 @@ The connections above are our interpretation of where basic signal tools can be 
 ## Rule for the next notebook
 
 For every notebook or reusable code module, record: exact source path, related paper/source, implemented component, status (preparation / partial implementation / inference / reproduction), missing components, run settings, measured results, output paths, limitations and source version. Separate author-reported results from results measured by this project.
+
+
+## 02_feature_extraction.ipynb
+
+**Status:** Feature-extraction preparation. [Notebook](../../notebooks/02_feature_extraction.ipynb) and [experiment](../../experiments/02_feature_extraction/README.md).
+
+| Related work / source | Current implementation | Difference / remaining work |
+|---|---|---|
+| [Sketch2Sound, Section II-A](https://arxiv.org/html/2412.08550v2#S2.SS1) | Per-frame RMS and magnitude-weighted spectral centroid in Hz | RMS is unweighted rather than the paper's A-weighted loudness. No MIDI-like centroid scaling, CREPE probabilities, latent alignment, median-filter conditioning or generator is implemented. |
+| [librosa official feature implementation](https://librosa.org/doc/0.11.0/_modules/librosa/feature/spectral.html) | Waveform RMS and STFT magnitude centroid | RMS uses a rectangular frame; centroid uses a Hann-window STFT. Same frame centers, different window weights. |
+
+The -60 dBFS RMS mask is this demo's analysis choice, not the paper's evaluation mask. Published model results remain separate from the [measured CSV](../../results/tables/02_feature_extraction/summary.csv). Fixed gain ×0.5 reduces RMS by 6.0206 dB and preserves centroid on the same original-frame mask; this verifies feature behavior, not model disentanglement.
