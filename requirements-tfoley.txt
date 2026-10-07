@@ -1,0 +1,3 @@
+# Install after requirements.txt and the existing CUDA-enabled PyTorch setup.
+# Do not reinstall/replace PyTorch here. torch >= 2.0 is required.
+einops>=0.8,<1

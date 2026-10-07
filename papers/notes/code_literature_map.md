@@ -26,7 +26,7 @@ The connections above are our interpretation of where basic signal tools can be 
 - [Numerical results](../../results/tables/01_audio_basics/summary.csv)
 - [Figures](../../results/figures/01_audio_basics/)
 
-**Published results:** Not extracted into this map yet. Quantitative paper results must be added with table/section references during each full paper review. Do not copy our synthetic-demo metrics into a paper-results field.
+**Published results:** T-FOLEY Table 1 and F-RAVE Tables 1–2 are extracted in their linked notes below. Other papers are compared for conditioning and availability; complete quantitative reviews remain pending. Our experiment metrics remain separate from author-reported values.
 
 ## Rule for the next notebook
 
@@ -52,3 +52,20 @@ The -60 dBFS RMS mask is this demo's analysis choice, not the paper's evaluation
 The experiment increases a 2000 Hz component relative to a 200 Hz component, then rescales every signal to RMS 0.15. It checks whether magnitude-weighted centroid changes while global and frame RMS remain constant. This investigates centroid as a candidate descriptor; it does not implement a generator, perceptual brightness test or model disentanglement benchmark.
 
 Relation to Sketch2Sound is limited to the centroid descriptor discussed in [our paper note](sketch2sound_controls.md). No paper results are reproduced. Constant RMS does not imply constant perceptual loudness or pitch.
+
+
+## 04_real_audio_analysis.ipynb
+
+Gerçek kayıt üzerinde ortak RMS/centroid analizi. `src/audio/real_sample.py` lisanslı InspectorJ Robin kaynağının librosa 22050 Hz mono OGG türevini doğrular ve FLOAT WAV'a çözer. `src/audio/features.py` RMS/centroid ve düşük enerji maskesini hesaplar. [Deney](../../experiments/04_real_audio/README.md) sonuçları gerçek analizdir; hiçbir paper generator'ı uygulanmaz. Sketch2Sound/F-RAVE descriptor ölçümlerine hazırlık; A-weighted veya makaleye özel normalize extractor değildir.
+
+## 05_pitch_periodicity.ipynb
+
+[pYIN](https://librosa.org/doc/0.11.0/generated/librosa.pyin.html) F0 ve voicing probability; yalnız güvenilir voiced karelerde normalize ACF proxy'si. Sketch2Sound'un CREPE pitch/periodicity extractor'ı ile eşdeğer değildir. [Ölçümler](../../experiments/05_pitch_periodicity/README.md) ve 440 Hz/noise/silence diagnostics kaydedildi. F0 ground truth'u olmayan kuş kaydında accuracy iddiası yok.
+
+## 06_tfoley_inference.ipynb
+
+**Durum: resmî pretrained model inference; benchmark reprodüksiyonu değil.** `src/baselines/tfoley_inference.py`, [T-FOLEY](tfoley_baseline.md) model/sampler/SDE ve EMA checkpoint'ini kullanır; sınıf + RMS koşullama. Tek cihaz yerleştirme düzeltmesi, taşınabilir I/O ve checkpoint yükleme uygulanır. [Koşum ve ölçülen sonuçlar](../../experiments/baselines/tfoley/README.md) yazarın Table 1 sonuçlarından ayrıdır. Pitch, parlaklık, eğitim ve çoklu örnek kalite/kontrol benchmark'ı uygulanmadı.
+
+## Güncel uygunluk kararı
+
+[F-RAVE](frave_controls.md) text-free sürekli çoklu kontrol için yöntem önceliği; T-FOLEY hazır inference için baseline. [Karşılaştırma](literature_comparison.md) text/hybrid bağımlılıkları ve doğrulanmamış erişimi ayrı gösterir. Önceki eşleşmeler, notebook'ların makaleleri gerçeklemiş olduğunu ifade etmez.

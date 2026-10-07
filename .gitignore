@@ -30,3 +30,7 @@ __pycache__/
 !.env.example
 .DS_Store
 Thumbs.db
+
+# Downloaded third-party code and checkpoints
+/external/
+/models/

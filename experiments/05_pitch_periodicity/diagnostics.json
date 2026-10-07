@@ -1,0 +1,14 @@
+{
+  "tone_440": {
+    "reliable_fraction": 1.0,
+    "median_f0_hz": 439.22570878368765
+  },
+  "noise": {
+    "reliable_fraction": 0.0,
+    "median_f0_hz": null
+  },
+  "silence": {
+    "reliable_fraction": 0.0,
+    "median_f0_hz": null
+  }
+}

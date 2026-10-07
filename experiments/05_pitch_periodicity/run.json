@@ -1,0 +1,36 @@
+{
+  "experiment_id": "05_pitch_periodicity",
+  "time_utc": "2026-10-07T15:43:53.234437+00:00",
+  "source": {
+    "title": "Bird Whistling, Robin, Single, 13.wav",
+    "creator": "InspectorJ",
+    "license": "CC-BY-4.0",
+    "source": "https://freesound.org/people/InspectorJ/sounds/456440/",
+    "mirror": "https://librosa.org/data/audio/456440__inspectorj__bird-whistling-robin-single-13.ogg",
+    "change": "Decode OGG mirror to mono FLOAT WAV; no resampling"
+  },
+  "source_ogg_sha256": "57c2b861d028e25d7c086b48853f20eda1ae9a7a33e1125a1f3bec91539b4208",
+  "python": "3.12.14",
+  "platform": "Linux",
+  "settings": {
+    "frame_length": 2048,
+    "hop_length": 256,
+    "fmin": 150,
+    "fmax": 8000,
+    "threshold_db": -50,
+    "probability_threshold": 0.8
+  },
+  "metrics": {
+    "frames": 233,
+    "reliable_pitch_frames": 60,
+    "reliable_pitch_fraction": 0.2575107296137339,
+    "median_f0_reliable_hz": 5561.75588119227,
+    "mean_voicing_probability": 0.39250468330235677
+  },
+  "packages": {
+    "numpy": "2.3.5",
+    "librosa": "1.0.0",
+    "soundfile": "0.14.0",
+    "matplotlib": "3.10.8"
+  }
+}

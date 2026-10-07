@@ -1,0 +1,11 @@
+{
+  "description": "Single-sample engineering diagnostics, not a benchmark",
+  "single_sample_smoothed_rms_mae": 0.008100001560638195,
+  "fraction_abs_output_above_1": 0.0005668934240362812,
+  "output_samples": 88200,
+  "finite_output": true,
+  "frame_length": 512,
+  "hop_length": 128,
+  "rms_smoothing": "ellip(4,0.01,120,0.125), filtfilt method=gust",
+  "audio_storage": "FLOAT WAV without peak normalization; notebook playback normalized independently"
+}

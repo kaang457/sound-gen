@@ -1,5 +1,25 @@
 # Controllable Sound Generation Playground
 
+
+## Güncel karar ve deneyler — 2026-10-07
+
+Ana hedef: **serbest metin gerektirmeyen, ölçülebilir ses kontrolü**. İlk hazır-model baseline **T-FOLEY** (sınıf + RMS/zaman). Sürekli çoklu öznitelik ve ayrıştırma için ilk yöntem adayı **F-RAVE**; uygun Foley checkpoint'i henüz doğrulanmadı. T-FOLEY pitch/parlaklık kontrolü sunmaz. Aşağıdaki eski aday listesi tarihsel kapsam tartışmasıdır; güncel öncelik [karşılaştırma ve seçim notundadır](papers/notes/literature_comparison.md).
+
+| Notebook | Durum / sonuç kaydı |
+|---|---|
+| [01 Audio basics](notebooks/01_audio_basics.ipynb) | Sentetik sinyal analizi |
+| [02 Feature extraction](notebooks/02_feature_extraction.ipynb) | RMS ve centroid; gain deneyi |
+| [03 Brightness at constant RMS](notebooks/03_brightness_at_constant_rms.ipynb) | Sabit RMS ile centroid değişimi |
+| [04 Real audio analysis](notebooks/04_real_audio_analysis.ipynb) | Lisanslı gerçek WAV; [sonuç](experiments/04_real_audio/README.md) |
+| [05 Pitch / periodicity](notebooks/05_pitch_periodicity.ipynb) | pYIN, güvenilir kare maskesi ve ACF; [sonuç](experiments/05_pitch_periodicity/README.md) |
+| [06 T-FOLEY inference](notebooks/06_tfoley_inference.ipynb) | Metinsiz pretrained inference; [koşum kaydı](experiments/baselines/tfoley/README.md) |
+
+Paylaşılan özellik kodu `src/audio/`, model çalıştırıcısı `src/baselines/` altındadır. [Kod–çalışma eşleşmesi](papers/notes/code_literature_map.md) ve [karşılaştırma CSV](results/tables/literature_comparison.csv) günceldir.
+
+Temel ortam: `pip install -r requirements.txt`. T-FOLEY için mevcut PyTorch/CUDA kurulumundan sonra `pip install -r requirements-tfoley.txt`. 04 ve 05 gerçek ses kaynağını checksum doğrulayarak indirir; 06 resmî kaynak ve checkpoint'i indirir. Büyük ağırlıklar, haricî kaynak checkout'u ve WAV dosyaları Git dışında; yeniden üretim kodu, kaynak/lisans bilgisi, tablo, grafik ve koşum metadata'sı Git içindedir.
+
+Sıradaki deney: sabit seed/sınıfta RMS ve onset sweep ile hedef uyumunu ölçmek; F-RAVE checkpoint/veri alanını denetlemek. Tek inference kalite veya controllability benchmark'ı değildir.
+
 ## 1. Project Overview
 
 This repository is a research playground for investigating **deep learning-based controllable sound generation**.
@@ -625,32 +645,14 @@ Useful for understanding relatively lightweight diffusion-based audio generation
 
 ---
 
-# 11. Initial Experimental Candidates
+# 11. Current Experimental Selection
 
-The current candidate set is:
+1. **T-FOLEY:** executable prompt-free class + temporal RMS baseline.
+2. **F-RAVE:** primary continuous multiattribute method candidate; domain-appropriate checkpoint remains unverified.
+3. **Sketch2Sound / Audio ControlNet:** descriptor and hybrid-control references; text-free semantic capability must be demonstrated before promotion.
+4. Text-conditioned models remain secondary comparators.
 
-```text
-Stable Audio Open
-        ↓
-Text-based baseline
-
-
-T-FOLEY
-        ↓
-Class + temporal conditioning baseline
-
-
-Sketch2Sound
-        ↓
-Continuous acoustic/perceptual conditioning
-
-
-Audio ControlNet
-        ↓
-Fine-grained controllable generation
-```
-
-This selection is preliminary.
+Full evidence and limitations: [literature comparison](papers/notes/literature_comparison.md).
 
 ---
 
@@ -803,7 +805,7 @@ The current repository follows the local `sound-gen` directory layout.
 | Path | Current contents / purpose |
 |---|---|
 | `notebooks/` | `01_audio_basics.ipynb` and `02_feature_extraction.ipynb`: audio representations and frame features |
-| `src/` | Reserved for reusable utilities; currently empty |
+| `src/` | Reusable audio features and T-FOLEY inference adapter |
 | `experiments/01_audio_basics/` | Experiment notes and run metadata |
 | `papers/controllable_generation/` | Reserved for controllable-generation references |
 | `papers/evaluation/` | Reserved for evaluation references |
@@ -817,7 +819,7 @@ The current repository follows the local `sound-gen` directory layout.
 | `.gitignore` | Excludes environments, audio and model weights; keeps folder placeholders |
 | `requirements.txt` | Basic notebook dependencies; CUDA/PyTorch setup remains separate |
 
-Empty directories are preserved with `.gitkeep`. Later notebooks and model-specific subdirectories will be added when their steps begin; they do not exist yet.
+Empty directories are preserved with `.gitkeep`. Notebooks 01–06 and baseline/analysis result subdirectories are available; current paths are listed above.
 
 ---
 
@@ -868,64 +870,20 @@ This will make it easier to convert the playground into a structured literature 
 
 # 15. Current Status
 
-**Current Stage: Literature Review + Playground Setup**
+Completed: synthetic audio basics, frame RMS/centroid, constant-RMS centroid experiment, licensed real-audio analysis, masked pitch/periodicity diagnostics, literature comparison and selection, portable T-FOLEY inference runner.
 
-### Completed
-
-- Research scope defined
-- Initial research questions defined
-- Conditioning strategies identified
-- Initial evaluation dimensions identified
-- Initial papers identified
-- Initial model candidates identified
-- Local folder structure tracked in Git
-- Audio basics notebook implemented and executed on a synthetic demo
-- Figures, numerical results and code–literature links recorded
-
-### Not Yet Finalized
-
-- Conditioning parameter space
-- Dataset
-- Benchmark protocol
-- Model architecture
-- Training objective
-
-These decisions will be based on literature analysis and preliminary experiments.
+Our first model run and actual metrics are recorded in [experiments/baselines/tfoley](experiments/baselines/tfoley/README.md). Dataset, multiattribute conditioning space, benchmark protocol and a new architecture are not finalized.
 
 ---
 
 # 16. Immediate Next Steps
 
-```text
-1. Create repository
-        ↓
-2. Add README
-        ↓
-3. Collect papers
-        ↓
-4. Analyze Sketch2Sound
-        ↓
-5. Analyze Audio ControlNet
-        ↓
-6. Analyze T-FOLEY
-        ↓
-7. Build literature comparison table
-        ↓
-8. Investigate measurable sound parameters
-        ↓
-9. Select first pretrained model
-        ↓
-10. Run first experiment
-```
+- T-FOLEY RMS gain/onset sweeps with fixed class/seed, then multiple seeds.
+- Target/output error, temporal alignment and unintended descriptor changes.
+- F-RAVE domain, checkpoint and reproducible training-cost audit.
+- Quality/category listening evaluation and a matched dataset protocol.
 
-The playground should remain exploratory during these stages.
-
-The immediate goal is not to design a new architecture.
-
-The goal is to understand:
-
-> **What can currently be controlled, how accurately it can be controlled, and where existing controllable sound-generation systems still fail.**
-
+Method development follows evidence of a specific control failure.
 
 ---
 
@@ -953,4 +911,4 @@ For each future experiment, record the source notebook, related paper, implement
 - [Frame values](results/tables/02_feature_extraction/frame_features.csv)
 - [Feature curves](results/figures/02_feature_extraction/feature_curves.svg)
 
-This is shared feature-extraction infrastructure, not a Sketch2Sound implementation. Pitch extraction is not included yet. Outputs are overwritten on rerun; preserve earlier runs separately when comparing inputs.
+This is shared feature-extraction infrastructure, not a Sketch2Sound implementation. Pitch extraction is implemented separately in notebook 05. Outputs are overwritten on rerun; preserve earlier runs separately when comparing inputs.
