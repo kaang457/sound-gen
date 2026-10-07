@@ -2,7 +2,11 @@
 
 Kontrol tarihi: 2026-10-07. Bu karar kod ve kaynak incelemesine dayanır; bütün adayların aynı veri üzerinde karşılaştırıldığı bir benchmark değildir.
 
-## Seçim
+## Referans sesi taklit etme hedefi için güncelleme
+
+İlk dinlemede beklenen benzerlik sağlanmadı. T-FOLEY yalnız temporal baseline olarak tutuluyor. Kuş/çevresel referansın içeriğini koşul olarak kullanmak için **AudioLDM audio-to-audio** yeni öncelikli inference adayı; caption gerektirmeyen yol kodda doğrulandı, henüz çalıştırılmadı. Sayısal çoklu kontrol hedefinde F-RAVE yöntem adayı sürüyor. [Kod denetimi ve güncel seçim](reference_audio_selection.md).
+
+## Önceki temporal / descriptor seçimi
 
 **İlk çalıştırılabilir baseline: T-FOLEY. Sürekli çoklu öznitelik kontrolü için öncelikli yöntem: F-RAVE.**
 
@@ -41,3 +45,4 @@ Bir sonraki seçim eşiği: T-FOLEY'de sabit seed/sınıf ile RMS/onset sweep; F
 - [Baseline koşum kaydı](../../experiments/baselines/tfoley/)
 
 Yazar sonuçları kendi deney sonuçlarımızdan ayrı tutulur. FAD değerleri farklı embedding, veri, örnek sayısı ve protokol üzerinden doğrudan sıralanmaz.
+

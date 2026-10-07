@@ -1,7 +1,11 @@
 # Controllable Sound Generation Playground
 
 
-## Güncel karar ve deneyler — 2026-10-07
+## Referans ses hedefi için güncelleme
+
+Notebook 06 ilk dinlemede beklenen benzerliği sağlamadı. **T-FOLEY temporal baseline**, genel ses/timbre taklit modeli değildir. [Notebook 07](notebooks/07_tfoley_real_footstep.ipynb) gerçek Footstep referansını ve çıktıyı aynı gain ile dinletir; RMS/zaman tanılarını kaydeder. Kuş/çevresel referans içeriği için sıradaki aday **AudioLDM audio-to-audio**; metinsiz inference yolu kodda doğrulandı fakat bu ortamda henüz çalıştırılmadı. [Güncel seçim](papers/notes/reference_audio_selection.md), [gerçek Footstep deneyi](experiments/baselines/tfoley/real_footstep/README.md).
+
+## Önceki temporal / descriptor kararı — 2026-10-07
 
 Ana hedef: **serbest metin gerektirmeyen, ölçülebilir ses kontrolü**. İlk hazır-model baseline **T-FOLEY** (sınıf + RMS/zaman). Sürekli çoklu öznitelik ve ayrıştırma için ilk yöntem adayı **F-RAVE**; uygun Foley checkpoint'i henüz doğrulanmadı. T-FOLEY pitch/parlaklık kontrolü sunmaz. Aşağıdaki eski aday listesi tarihsel kapsam tartışmasıdır; güncel öncelik [karşılaştırma ve seçim notundadır](papers/notes/literature_comparison.md).
 
@@ -819,7 +823,7 @@ The current repository follows the local `sound-gen` directory layout.
 | `.gitignore` | Excludes environments, audio and model weights; keeps folder placeholders |
 | `requirements.txt` | Basic notebook dependencies; CUDA/PyTorch setup remains separate |
 
-Empty directories are preserved with `.gitkeep`. Notebooks 01–06 and baseline/analysis result subdirectories are available; current paths are listed above.
+Empty directories are preserved with `.gitkeep`. Notebooks 01–07 and baseline/analysis result subdirectories are available; current paths are listed above.
 
 ---
 
@@ -912,3 +916,4 @@ For each future experiment, record the source notebook, related paper, implement
 - [Feature curves](results/figures/02_feature_extraction/feature_curves.svg)
 
 This is shared feature-extraction infrastructure, not a Sketch2Sound implementation. Pitch extraction is implemented separately in notebook 05. Outputs are overwritten on rerun; preserve earlier runs separately when comparing inputs.
+

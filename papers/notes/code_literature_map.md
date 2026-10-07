@@ -69,3 +69,11 @@ Gerçek kayıt üzerinde ortak RMS/centroid analizi. `src/audio/real_sample.py` 
 ## Güncel uygunluk kararı
 
 [F-RAVE](frave_controls.md) text-free sürekli çoklu kontrol için yöntem önceliği; T-FOLEY hazır inference için baseline. [Karşılaştırma](literature_comparison.md) text/hybrid bağımlılıkları ve doğrulanmamış erişimi ayrı gösterir. Önceki eşleşmeler, notebook'ların makaleleri gerçeklemiş olduğunu ifade etmez.
+
+
+
+## 07_tfoley_real_footstep.ipynb
+
+T-FOLEY resmî pretrained inference + gerçek Footstep RMS referansı. `src/audio/footstep_sample.py` CC0 kamuya açık MP3 önizlemesini checksum doğrular, sabit 5–9 s crop/resample yapar. `src/audio/tfoley_comparison.py` aynı smoothing ile tek çift RMS MAE/korelasyon ve RMS peak zamanı tanılarını kaydeder. Peak zamanı onset değildir; bu timbre taklidi veya paper E-L1 benchmark reprodüksiyonu değildir. [Deney](../../experiments/baselines/tfoley/real_footstep/README.md).
+
+[Referans-audio seçim notu](reference_audio_selection.md): AudioLDM waveform/CLAP yolu yeni aday; henüz inference uygulanmadı. F-RAVE sayısal kontrol yöntemi incelemesi olarak kalır.

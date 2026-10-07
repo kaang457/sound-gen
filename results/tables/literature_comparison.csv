@@ -1,5 +1,5 @@
 work,conditioning,text_dependence,checkpoint_status,decision,limitations
-T-FOLEY,class + temporal RMS,no,yes: downloaded/checksum verified,first inference baseline,no pitch/brightness
+T-FOLEY,class + temporal RMS,no,yes: downloaded/checksum verified,first inference baseline,temporal baseline only; no bird class or timbre imitation
 F-RAVE,latent + continuous descriptors,no,appropriate Foley checkpoint unverified,first multiattribute method candidate,domain/checkpoint gap
 Sketch2Sound,text + descriptor curves; text dropout,hybrid; text removal possible,unverified,descriptor reference,text-free semantic success unverified
 Audio ControlNet,caption + controls,documented inference uses caption,adapter weights documented; not run,hybrid comparator,caption-free ablation unverified
@@ -7,3 +7,5 @@ Multiple Conditional Diffusion,text + timestamp/pitch/energy,yes,unverified,arch
 PicoAudio,text + event/timing structure,yes,instructions documented; not run,temporal reference,LLM removal does not remove text encoder
 Make-An-Audio 2,structured text,yes,instructions documented; not run,low priority,manual structure still text conditioning
 Stable Audio Open,text + duration,yes,documented; not run,text baseline/backbone,no native multiattribute control verified
+AudioLDM audio-to-audio,reference waveform -> CLAP audio embedding,no user prompt; text branch/unconditional token remains,"official documented; code audited, not run",next reference-content baseline candidate,not explicit multiattribute control; use batch/candidate 1 to bypass text ranking
+DarkGAN,semantic soft labels,no free text,appropriate environmental checkpoint unverified,method reference only,musical-domain evaluation

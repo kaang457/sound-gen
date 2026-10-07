@@ -1,0 +1,61 @@
+{
+  "source": {
+    "title": "footsteps.wav",
+    "creator": "freefire66",
+    "license": "CC0-1.0",
+    "source": "https://freesound.org/people/freefire66/sounds/175954/",
+    "download": "https://cdn.freesound.org/previews/175/175954_2542588-hq.mp3",
+    "description": "Boots on a sidewalk; public compressed preview, not original WAV",
+    "preview_sha256": "25a963b13fb2b1ab7415525a27326b59cccf3e3ee755d6e8857a38566d268894",
+    "source_sample_rate": 44100,
+    "crop_start_s": 5,
+    "crop_duration_s": 4,
+    "sample_rate": 22050,
+    "peak_normalization": false,
+    "changes": "Decode MP3 preview; mono; fixed 5–9 s crop; resample to 22050 Hz; FLOAT WAV",
+    "reference_wav_sha256": "4d7cb63b07102254fc303743ed2c385039494b407eab0d63b5001cf58c92f8a8"
+  },
+  "output_stem": "real_footstep_inference",
+  "sample_rate": 22050,
+  "duration_s": 4.0,
+  "smoothed_rms_mae": 0.00581105071033467,
+  "smoothed_rms_pearson": 0.7625404551223934,
+  "reference_global_rms": 0.023299580233543785,
+  "generated_global_rms": 0.02022865523564183,
+  "generated_peak": 0.21650201082229614,
+  "generated_fraction_abs_above_1": 0.0,
+  "reference_rms_peak_times_s": [
+    0.2147845804988662,
+    0.7024036281179138,
+    1.2712925170068028,
+    1.5441269841269842,
+    2.0027210884353743,
+    2.478730158730159,
+    3.1579138321995464,
+    3.680362811791383
+  ],
+  "generated_rms_peak_times_s": [
+    0.1799546485260771,
+    0.4818140589569161,
+    0.8475283446712019,
+    1.2829024943310658,
+    1.5499319727891157,
+    1.991111111111111,
+    2.4439002267573695,
+    2.693514739229025,
+    3.152108843537415,
+    3.6745578231292515
+  ],
+  "nearest_peak_offsets_s": [
+    -0.03482993197278911,
+    0.14512471655328807,
+    0.011609977324263054,
+    0.005804988662131416,
+    -0.011609977324263276,
+    -0.034829931972789385,
+    -0.005804988662131194,
+    -0.005804988662131638
+  ],
+  "peak_diagnostic": "Relative prominence 15%, distance 250 ms; RMS peaks, not onsets; nearest matching may reuse peaks",
+  "scope": "Single-pair engineering diagnostics; no benchmark, perceptual similarity or category verification"
+}
