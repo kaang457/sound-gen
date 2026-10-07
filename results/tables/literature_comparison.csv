@@ -1,6 +1,6 @@
 work,conditioning,text_dependence,checkpoint_status,decision,limitations
-T-FOLEY,class + temporal RMS,no,yes: downloaded/checksum verified,first inference baseline,temporal baseline only; no bird class or timbre imitation
-F-RAVE,latent + continuous descriptors,no,appropriate Foley checkpoint unverified,first multiattribute method candidate,domain/checkpoint gap
+T-FOLEY,class + temporal RMS,no,yes: downloaded/checksum verified,temporal control baseline; not selected main model,temporal baseline only; no bird class or timbre imitation
+F-RAVE,latent + continuous descriptors,no,appropriate Foley checkpoint unverified,descriptor-conditioning architecture reference; main model unselected,domain/checkpoint gap
 Sketch2Sound,text + descriptor curves; text dropout,hybrid; text removal possible,unverified,descriptor reference,text-free semantic success unverified
 Audio ControlNet,caption + controls,documented inference uses caption,adapter weights documented; not run,hybrid comparator,caption-free ablation unverified
 Multiple Conditional Diffusion,text + timestamp/pitch/energy,yes,unverified,architecture reference,not run
@@ -9,4 +9,4 @@ Make-An-Audio 2,structured text,yes,instructions documented; not run,low priorit
 Stable Audio Open,text + duration,yes,documented; not run,text baseline/backbone,no native multiattribute control verified
 AudioLDM audio-to-audio,reference waveform -> CLAP audio embedding,no user prompt; text branch/unconditional token remains,official pinned m-full; first CPU reference-audio inference completed,reference-content baseline candidate; perceptual success unmeasured,"no independent numeric multi-control; condition dropout 0, one candidate, no text ranking"
 DarkGAN,semantic soft labels,no free text,appropriate environmental checkpoint unverified,method reference only,musical-domain evaluation
-Repo spectral CVAE,numeric RMS + magnitude centroid + 2D latent,no,trained small JSON weights included,working two-control engineering prototype,one 4s recording; random phase; no general Foley quality or F-RAVE reproduction
+Repo spectral CVAE,numeric RMS + magnitude centroid + 2D latent,no,trained small JSON weights included,limited auxiliary two-control experiment; not main model,one 4s recording; random phase; no general Foley quality or F-RAVE reproduction

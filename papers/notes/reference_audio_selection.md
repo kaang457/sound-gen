@@ -1,5 +1,8 @@
 # Referans benzerliği ve sayısal kontrol için güncellenen seçim
 
+> Güncel yön: [parametrik Foley kapsamı](../../docs/PROJECT_SCOPE.md) ve [ilerleme planı](../../docs/ROADMAP.md). Bu not önceki deneyleri/kod denetimini belgeliyor; TFOLEY, AudioLDM, küçük CVAE veya F-RAVE ana üretim modeli olarak seçilmiş değildir. Seçim, Foley kalitesi ve yeni parametre ekleme kapasitesi üzerinden yapılacak.
+
+
 Kontrol tarihi: 2026-10-07. İlk dinlemede kullanıcı beklenen benzerliği bulmadı. Bu nedenle üç ayrı hedef için ayrı aday tutuluyor; tek bir modeli bütün ihtiyaçlara uygun kabul etmiyoruz.
 
 | Hedef | Öncelik | Kanıt / sınır |

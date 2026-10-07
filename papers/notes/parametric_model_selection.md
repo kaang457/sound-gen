@@ -1,4 +1,7 @@
-# Parametrik model seçimi — 2026-10-07
+# Önceki parametrik deneylerin değerlendirmesi — 2026-10-07
+
+> Güncel yön: [parametrik Foley kapsamı](../../docs/PROJECT_SCOPE.md) ve [ilerleme planı](../../docs/ROADMAP.md). Bu not önceki deneyleri/kod denetimini belgeliyor; TFOLEY, AudioLDM, küçük CVAE veya F-RAVE ana üretim modeli olarak seçilmiş değildir. Seçim, Foley kalitesi ve yeni parametre ekleme kapasitesi üzerinden yapılacak.
+
 
 Hedef: kullanıcı metni olmadan sayısal özniteliklerle deep learning çıktısını kontrol etmek. Referans sesin semantik embedding'i ile üretim ayrı bir yetenektir.
 
@@ -6,7 +9,7 @@ Hedef: kullanıcı metni olmadan sayısal özniteliklerle deep learning çıktı
 |---|---|---|---|
 | TFOLEY | Sınıf + doğrudan 690 karelik RMS | Pretrained 4 s / 22050 Hz; 3 eğri × 2 seed | Enerji/zaman baseline. Pitch/centroid desteklenmez. |
 | Repo spectral CVAE | Log RMS + magnitude centroid + iki boyutlu z | Gerçek 4 s Footstep kaydında 3000 eğitim adımı; 12 üretim | Küçük, çalışan iki-parametre kontrol prototipi. Doğal Foley/timbre başarısı doğrulanmadı. |
-| F-RAVE | Descriptor conditioning ve latent discriminator | Kod/config denetlendi, model burada eğitilmedi | Gerçek veriyle çoklu kontrol için öncelikli araştırma mimarisi. |
+| F-RAVE | Descriptor conditioning ve latent discriminator | Kod/config denetlendi, model burada eğitilmedi | Descriptor conditioning için mimari referans; ana model seçilmedi. |
 | AudioLDM m-full | CLAP referans-audio embedding | İlk kuş inference tamamlandı | Referans içeriği baseline; bağımsız RMS/centroid kontrolü sunan çözüm olarak seçilmedi. |
 
 ## F-RAVE kod denetimi
@@ -23,6 +26,6 @@ Resmî repo [neurorave/neurorave](https://github.com/neurorave/neurorave), incel
 
 ## Bir sonraki ölçekleme eşiği
 
-Tek kayıtla kalite/genelleme seçimi yapılamaz. Sonraki eğitim için çoklu, lisansı açık Footstep kayıtları ve kayıt bazında train/validation/test ayrımı gerekir; aynı kaydın kareleri iki split'e dağılmamalıdır. Öznitelikler yalnız train istatistikleriyle ölçeklenmeli, sessiz bloklar maskelenmeli ve ortak RMS/centroid kapsaması denetlenmelidir. Sonrasında temporal decoder ve F-RAVE tarzı latent descriptor ayrıştırması değerlendirilir. GPU batch/step süresi ölçülmeden eğitim süresi verilmez.
+Tek kayıtla kalite/genelleme seçimi yapılamaz. Sonraki eğitim için çoklu, lisansı açık Footstep kayıtları ve kayıt bazında train/validation/test ayrımı gerekir; aynı kaydın kareleri iki split'e dağılmamalıdır. Öznitelikler yalnız train istatistikleriyle ölçeklenmeli, sessiz bloklar maskelenmeli ve ortak RMS/centroid kapsaması denetlenmelidir. Bu, küçük deneyin olası devamıdır; aktif projede önce Foley kalitesi ve genişletilebilirlik üzerinden ana mimari seçimi yapılır. GPU batch/step süresi ölçülmeden eğitim süresi verilmez.
 
-Kabul protokolü: ayrı kayıtlarda hedef hata, üçten fazla seed, sabit diğer kontrol altında değişim, ortak-gain dinleme, blok sınırı/artefakt ve ses sınıfı değerlendirmesi. Bu küçük deney yalnız parametrik neural çıktıya erişim eşiğini karşılar.
+Kabul protokolü: ayrı kayıtlarda hedef hata, üçten fazla seed, sabit diğer kontrol altında değişim, ortak-gain dinleme, blok sınırı/artefakt ve ses sınıfı değerlendirmesi. Bu küçük deney yalnız sınırlı iki-kontrol uygulamasını gösterir; güncel ana modelin seçimi veya genişletilebilir Foley hedefinin karşılanması değildir.

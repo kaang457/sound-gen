@@ -1,5 +1,8 @@
 # Sayısal kontrollü neural ses üretimi
 
+**Rol:** Bu klasör önceki sınırlı kontrol deneylerini saklar. Küçük spectral CVAE ana model değildir; iki-parametre başarısı güncel genişletilebilir Foley hedefini karşılamaz. Aktif kapsam [PROJECT_SCOPE.md](../../docs/PROJECT_SCOPE.md), sıradaki çalışma [ana mimari seçimi](../../docs/ROADMAP.md).
+
+
 09: pretrained TFOLEY'ye RMS vektörünü doğrudan verme. 10: kendi eğitilmiş küçük spectral CVAE'mize RMS ve centroid verme. İkisinde de kullanıcı text prompt yok. `src/control/generate.py` ortak giriş noktasıdır; desteklenmeyen kontrol hata verir.
 
 ```python

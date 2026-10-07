@@ -1,5 +1,8 @@
 # Code–literature map
 
+> Güncel yön: [parametrik Foley kapsamı](../../docs/PROJECT_SCOPE.md) ve [ilerleme planı](../../docs/ROADMAP.md). Bu not önceki deneyleri/kod denetimini belgeliyor; TFOLEY, AudioLDM, küçük CVAE veya F-RAVE ana üretim modeli olarak seçilmiş değildir. Seçim, Foley kalitesi ve yeni parametre ekleme kapasitesi üzerinden yapılacak.
+
+
 Last checked: 2026-10-07. This is a preliminary relationship map, not a completed literature review.
 
 ## 01_audio_basics.ipynb

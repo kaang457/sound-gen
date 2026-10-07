@@ -1,5 +1,8 @@
 # Çalışma seçimi: metinsiz, ölçülebilir kontrol
 
+> Güncel yön: [parametrik Foley kapsamı](../../docs/PROJECT_SCOPE.md) ve [ilerleme planı](../../docs/ROADMAP.md). Bu not önceki deneyleri/kod denetimini belgeliyor; TFOLEY, AudioLDM, küçük CVAE veya F-RAVE ana üretim modeli olarak seçilmiş değildir. Seçim, Foley kalitesi ve yeni parametre ekleme kapasitesi üzerinden yapılacak.
+
+
 Kontrol tarihi: 2026-10-07. Bu karar kod ve kaynak incelemesine dayanır; bütün adayların aynı veri üzerinde karşılaştırıldığı bir benchmark değildir.
 
 ## Referans sesi taklit etme hedefi için güncelleme
@@ -8,7 +11,7 @@ Kontrol tarihi: 2026-10-07. Bu karar kod ve kaynak incelemesine dayanır; bütü
 
 ## Önceki temporal / descriptor seçimi
 
-**İlk çalıştırılabilir baseline: T-FOLEY. Sürekli çoklu öznitelik kontrolü için öncelikli yöntem: F-RAVE.**
+**İlk çalıştırılabilir baseline: T-FOLEY. F-RAVE çoklu öznitelik koşullandırması için yöntem referansıdır; ana mimari seçilmedi.**
 
 Projeye uygunluk ölçütümüz, serbest metin kullanmadan ses sınıfı ve sayısal kontrol sunabilmek. Hazır checkpoint erişimi ikinci ölçüt; pitch/parlaklık gibi birden fazla özelliği bağımsız değiştirmek üçüncü ölçüt. Bir modelin boş caption kabul etmesi, metinsiz koşullamada eğitildiğini veya sınıf anlamını koruduğunu kanıtlamaz.
 
