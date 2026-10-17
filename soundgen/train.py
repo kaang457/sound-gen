@@ -64,6 +64,7 @@ class TrainConfig:
     replay_labels: list = None          # base labels mixed in during fine-tuning
     replay_ratio: float = 0.0
     log_every: int = 100
+    max_minutes: float = None           # time budget: stop cleanly (eval + save + samples) when reached
 
 
 # ------------------------------------------------------------------ checkpoints
@@ -240,6 +241,8 @@ def train(cfg: TrainConfig, device=None):
         opt, lambda s: _cosine(s, cfg.warmup, cfg.steps, cfg.lr, cfg.min_lr))
     ema = EMA(model, cfg.ema_decay)
     meta = dict(mel_cfg=mel_cfg.to_dict(), train_cfg=asdict(cfg))
+    if not (out / "sketch_bank.pt").exists():      # data-only: build first so an early stop can still generate
+        build_sketch_bank(cfg.packs, vocab, mel_cfg, out / "sketch_bank.pt")
     step, best = 0, float("inf")
     last = out / "last.pt"
     if last.exists():                                     # resume
@@ -276,6 +279,9 @@ def train(cfg: TrainConfig, device=None):
     model.train()
     t0, running, bad = time.time(), [], 0
     bar = tqdm(total=cfg.steps, initial=step, desc="training", unit="step", dynamic_ncols=True, mininterval=2)
+    t_start = time.time()
+    if cfg.max_minutes:
+        tqdm.write(f"time budget: {cfg.max_minutes:.1f} min -> stops cleanly with a checkpoint and samples")
     last_val = best
     while step < cfg.steps:
         x, y = next(batches)
@@ -314,7 +320,10 @@ def train(cfg: TrainConfig, device=None):
             logger.writerow([step, np.mean(running), "", gnorm, sched.get_last_lr()[0], sps])
             log_f.flush()
             running, t0 = [], time.time()
-        if step % cfg.eval_every == 0 or step == cfg.steps:
+        stop = bool(cfg.max_minutes) and (time.time() - t_start) / 60 >= cfg.max_minutes
+        if stop:
+            tqdm.write(f"time budget reached at step {step}")
+        if step % cfg.eval_every == 0 or step == cfg.steps or stop:
             bar.set_description("validating")
             v = validate()
             last_val = v
@@ -328,15 +337,18 @@ def train(cfg: TrainConfig, device=None):
             save_checkpoint(last, model, ema, opt, sched, step, meta, vocab, best)
             if step in cfg.keep_steps:
                 save_checkpoint(out / f"step_{step}.pt", model, ema, None, None, step, meta, vocab, best)
-        if step % cfg.sample_every == 0 or step == cfg.steps:
+        if step % cfg.sample_every == 0 or step == cfg.steps or stop:
             bar.set_description("writing samples")
             _write_samples(ema.model, mel, val_ds, vocab, out / "samples" / f"step_{step:06d}", device)
             bar.set_description("training")
             tqdm.write(f"step {step}: samples -> {out / 'samples' / f'step_{step:06d}'}")
             model.train()
+        if stop:
+            break
     bar.close()
     log_f.close()
-    build_sketch_bank(cfg.packs, vocab, mel_cfg, out / "sketch_bank.pt")
+    if not (out / "sketch_bank.pt").exists():
+        build_sketch_bank(cfg.packs, vocab, mel_cfg, out / "sketch_bank.pt")
     print("done. checkpoints in", out)
     return out
 
