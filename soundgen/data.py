@@ -280,6 +280,10 @@ def split_of(src_id, val=0.05, test=0.05):
 
 def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label=2000, seed=0):
     """Load, resample, trim, chunk and append everything into one int16 file."""
+    if not items:
+        raise ValueError("no audio files found for the requested labels: put files in "
+                         "MyDrive/sound-gen/custom/<label>/ (e.g. custom/footsteps/snow/*.wav) "
+                         "or set a FREESOUND_API_KEY secret")
     pack = Path(pack_dir)
     pack.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(seed)
