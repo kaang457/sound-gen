@@ -35,7 +35,6 @@ class FlowConfig:
     dropout: float = 0.05
     height_dilations: list = field(default_factory=list)
     width_dilations: list = field(default_factory=list)
-    upsampler: str = "interp"   # "interp" (smooth, new) | "transposed" (WaveFlow paper; checkpoints before v2)
 
     def __post_init__(self):
         if not self.height_dilations:
@@ -68,25 +67,6 @@ class Upsampler(nn.Module):
         for conv in self.convs:
             x = F.leaky_relu(conv(x), 0.4)
         return x.squeeze(1)
-
-
-class InterpUpsampler(nn.Module):
-    """Sketch frames -> sample rate by linear interpolation after a learnable 1-D conv.
-    Unlike stride-16 transposed convs it adds no pattern that repeats every 16 samples,
-    which WaveFlow's 16-row squeeze turned into tones at 22050/16 Hz and harmonics."""
-
-    def __init__(self, n_mels, hop):
-        super().__init__()
-        self.hop = hop
-        self.conv = nn.Conv1d(n_mels, n_mels, 3, padding=1)
-        nn.init.zeros_(self.conv.weight)
-        nn.init.zeros_(self.conv.bias)
-
-    def forward(self, sketch):                      # [B, C, F] -> [B, C, F*hop]
-        x = sketch + self.conv(sketch)
-        n = x.shape[-1]
-        y = F.interpolate(x, size=(n - 1) * self.hop + 1, mode="linear", align_corners=True)
-        return F.pad(y, (0, self.hop - 1), mode="replicate")   # frame k centred on sample k*hop
 
 
 class WN2D(nn.Module):
@@ -163,7 +143,7 @@ class WaveFlow(nn.Module):
     def __init__(self, cfg: FlowConfig, n_labels: int):
         super().__init__()
         self.cfg = cfg
-        self.upsample = InterpUpsampler(cfg.n_mels, cfg.hop) if cfg.upsampler == "interp" else Upsampler(cfg.hop)
+        self.upsample = Upsampler(cfg.hop)
         self.embed = nn.Embedding(n_labels, cfg.label_dim)
         nn.init.normal_(self.embed.weight, std=0.1)
         self.flows = nn.ModuleList([WN2D(cfg) for _ in range(cfg.n_flows)])

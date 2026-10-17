@@ -80,7 +80,7 @@ def save_checkpoint(path, model, ema, opt, sched, step, cfg, vocab, best):
 
 def load_model(path, device="cpu", use_ema=True):
     ck = torch.load(path, map_location="cpu", weights_only=False)
-    fcfg = FlowConfig(**{"upsampler": "transposed", **ck["flow_cfg"]})
+    fcfg = FlowConfig(**ck["flow_cfg"])
     model = WaveFlow(fcfg, len(ck["vocab"]))
     model.load_state_dict(ck["ema"] if use_ema else ck["model"])
     model.to(device).eval()
@@ -172,7 +172,7 @@ def train(cfg: TrainConfig, device=None):
         vocab = list(base_ck["vocab"])
         new = [l for l in targets if l not in vocab]
         mel_cfg = MelConfig(**base_ck["mel_cfg"])
-        model = WaveFlow(FlowConfig(**{"upsampler": "transposed", **base_ck["flow_cfg"]}), len(vocab))
+        model = WaveFlow(FlowConfig(**base_ck["flow_cfg"]), len(vocab))
         model.load_state_dict(base_ck["ema"])            # transfer the EMA (smoother) weights
         parents = [_label_parent(l, vocab) for l in new]
         if new:
@@ -183,11 +183,7 @@ def train(cfg: TrainConfig, device=None):
     else:
         vocab = [NULL] + targets
         mel_cfg = MelConfig(**cfg.mel)
-        fcfg = FlowConfig(n_mels=mel_cfg.n_mels, hop=mel_cfg.hop, **cfg.model)
-        if (out / "last.pt").exists():      # resuming: keep the architecture the run started with
-            saved = torch.load(out / "last.pt", map_location="cpu", weights_only=False)["flow_cfg"]
-            fcfg = FlowConfig(**{"upsampler": "transposed", **saved})
-        model = WaveFlow(fcfg, len(vocab))
+        model = WaveFlow(FlowConfig(n_mels=mel_cfg.n_mels, hop=mel_cfg.hop, **cfg.model), len(vocab))
         n_old = 0
     model.to(device)
     mel = MelSketch(mel_cfg).to(device)
