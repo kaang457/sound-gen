@@ -339,7 +339,8 @@ def train(cfg: TrainConfig, device=None):
                 save_checkpoint(out / f"step_{step}.pt", model, ema, None, None, step, meta, vocab, best)
         if step % cfg.sample_every == 0 or step == cfg.steps or stop:
             bar.set_description("writing samples")
-            _write_samples(ema.model, mel, val_ds, vocab, out / "samples" / f"step_{step:06d}", device)
+            _write_samples(ema.model, mel, val_ds, vocab, out / "samples" / f"step_{step:06d}", device,
+                           fallback=ds)
             bar.set_description("training")
             tqdm.write(f"step {step}: samples -> {out / 'samples' / f'step_{step:06d}'}")
             model.train()
@@ -354,16 +355,22 @@ def train(cfg: TrainConfig, device=None):
 
 
 @torch.no_grad()
-def _write_samples(model, mel, ds, vocab, folder, device, per_label=1, max_labels=8, seconds=3.0):
-    """Resynthesis check: real val sketch -> model -> audio, saved next to the reference."""
+def _write_samples(model, mel, ds, vocab, folder, device, per_label=1, max_labels=None, seconds=3.0,
+                   fallback=None):
+    """Resynthesis check: real val sketch -> model -> audio, saved next to the reference.
+    Every label gets a pair; labels without a val clip fall back to a train clip."""
     folder.mkdir(parents=True, exist_ok=True)
     model.eval()
     seen = Counter()
     n = int(seconds * SR) // model.cfg.h * model.cfg.h
-    todo = min(max_labels, len(set(r["label"] for r in ds.rows))) * per_label
-    bar = tqdm(total=todo, desc="samples", unit="clip", leave=False)
-    for r in ds.rows:
-        if seen[r["label"]] >= per_label or len(seen) >= max_labels and r["label"] not in seen:
+    rows = list(ds.rows)
+    if fallback is not None:
+        have = {r["label"] for r in rows}
+        rows += [r for r in fallback.rows if r["label"] not in have]
+    labels = sorted({r["label"] for r in rows})[: max_labels or None]
+    bar = tqdm(total=len(labels) * per_label, desc="samples", unit="clip", leave=False)
+    for r in rows:
+        if r["label"] not in labels or seen[r["label"]] >= per_label:
             continue
         a = ds.audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], n)].astype(np.float32) / 32768
         a = a[: len(a) // model.cfg.h * model.cfg.h]
