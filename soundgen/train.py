@@ -301,7 +301,7 @@ def train(cfg: TrainConfig, device=None):
         sched.step()
         ema.update(model)
         step += 1
-        running.append(float(loss))
+        running.append(loss.item())
 
         if step % cfg.log_every == 0:
             sps = (time.time() - t0) / cfg.log_every

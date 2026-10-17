@@ -98,7 +98,7 @@ def clean(x, sr=SR, spike_db=12.0):
     if len(x) < 4096:
         return x.astype(np.float32)
     x = sosfiltfilt(butter(2, 25, "highpass", fs=sr, output="sos"), x)
-    t = torch.from_numpy(x)
+    t = torch.from_numpy(np.ascontiguousarray(x))
     win = torch.hann_window(2048, dtype=torch.float64)
     X = torch.stft(t, 2048, 512, window=win, return_complex=True)
     avg = 20 * np.log10(X.abs().mean(dim=1).numpy() + 1e-9)
