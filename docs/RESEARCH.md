@@ -171,6 +171,35 @@ kategori + parametreler
 
 ---
 
+## 6. Kendi WaveFlow'umuzu Stable Audio seviyesine yaklaştırmak
+
+**Ölçek farkı** (Stable Audio Open makalesi, arXiv:2407.14358):
+
+| | Stable Audio Open | base_v1 |
+|---|---|---|
+| Veri | 486.492 kayıt, **7.300 saat** (Freesound + FMA, CC0 / CC BY) | ~8 saat |
+| Model | ~1,32 milyar parametre | ~22 milyon |
+| Compute (yalnız DiT) | 338 saat × 64 A100 ≈ **21.600 A100-saat** | 1,5 A100-saat |
+
+**Sonuç:** Genel amaçlı (her istemi anlayan) Stable seviyesi bu bütçeyle mümkün değil. Ama **dar alanda**, yani
+seçilmiş kategorilerde ve taslak koşulluyken, eğitim setine yakın kalite mümkün. Andreu & Villanueva tek kategoride bunu
+gösterdi.
+
+**Kaldıraçlar (etki sırasıyla):**
+1. **Veri:** Kategori başına saatlerce temiz kayıt. Stable Audio Open'ın kendisi Freesound CC0/CC BY ile eğitildi; aynı kaynağa Freesound API ile erişebiliriz.
+2. **Yapısal düzeltmeler:** PROCESS.md §9 H1–H2 (taslağı açma şekli, tam hassasiyet).
+3. **Uzmanlaşma:** Tek dev model yerine base → kategori uzmanları (transfer learning).
+4. **Daha uzun eğitim:** 100k+ adım; 64 kanal ile tek A100'de birkaç saat.
+5. **Taslak çözünürlüğü 20 → 30 bant:** kalite ↑, çeşitlilik ↓ (makaledeki denge).
+6. **Adversarial ince ayar:** HiFi-GAN ayırt edicileriyle; algısal netliği artırır.
+7. **Stable'dan damıtma** (çıktılarla eğitim): en güçlü kaldıraç. Ama lisansın "çıktılarla model eğitimi" maddesi kontrol edilmeden yapılmamalı.
+
+**Kullanılamayan veri:** Sonniss GDC paketleri (2026 dahil). Lisans açıkça diyor ki: "expressly prohibited from using any
+sound effects … for the purpose of training artificial intelligence technologies" (https://sonniss.com/gdc-bundle-license/).
+Telifsiz (royalty-free) olması açık kaynak olduğu anlamına gelmiyor; oyunlarda kullanılabilir, model eğitiminde kullanılamaz.
+
+---
+
 ## Kaynaklar
 - Ping vd., *WaveFlow*, ICML 2020 — arXiv:1912.01219
 - Andreu & Villanueva Aylagas, *Neural Synthesis of Sound Effects Using Flow-Based Deep Generative Models*, AIIDE 2022
@@ -185,4 +214,5 @@ kategori + parametreler
 - Flores García vd., *Sketch2Sound*, ICASSP 2025
 - Stable Audio lisansları — https://stability.ai/license ; https://stability.ai/explainers/stable-audio-vs-competitors-licensing-export-rights-and-self-hosting-compared
 - AudioLDM lisansı — https://osai-index.eu/model/audioldm
-- Sonniss GDC lisansı (AI eğitimi yasak) — https://gamefromscratch.com/sonniss-27-5gb-sound-effect-giveaway-at-gdc-2024/
+- Sonniss GDC lisansı (AI eğitimi yasak) — https://sonniss.com/gdc-bundle-license/
+- Evans vd., *Stable Audio Open*, 2024 — https://arxiv.org/abs/2407.14358
