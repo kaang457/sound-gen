@@ -18,34 +18,35 @@ kurar ve Drive'ı bağlar. Bu yüzden repoya yapılan her düzeltme, hücre 0 te
 | | |
 |---|---|
 | Girdi | internetten veri setleri; isteğe bağlı `MyDrive/sound-gen/custom/<etiket>/` |
-| Çıktı | `MyDrive/sound-gen/pack/` → `audio.bin` (tüm sesler), `index.csv` (klip, etiket, bölüm, lisans, atıf), `meta.json` |
+| Çıktı | `MyDrive/sound-gen/<PACK_NAME>/` (varsayılan `pack_clean`) → `audio.bin`, `index.csv` (klip, etiket, bölüm, lisans, atıf), `meta.json`, `ATTRIBUTION.csv` |
 | GPU | gerekmez (CPU yeterli) |
-| Süre | DCASE + ESC-50 ≈ 10–15 dk; FSD50K ile ≈ 1 saat |
+| Süre | FSD50K ≈ 1 saat (çoğu ~20 GB indirme, yerel diske) |
 
 | Hücre | Ne yapıyor |
 |---|---|
-| 1 · Kaynakları seç | `USE_DCASE`, `USE_ESC50`, `USE_FSD50K` (~18 GB indirme), `USE_FREESOUND` (API anahtarı gerekir), `MAX_PER_LABEL` |
-| 2 · İndir ve paketle | Kaynakları indirir, `configs/categories.yaml`'a göre kategorilere eşler, her sesi 22,05 kHz mono'ya çevirir, sessizliği kırpar, en fazla 6 saniyelik parçalara böler, sessiz parçaları atar ve hepsini tek bir dosyada paketler. Kayıtlar train/val/test olarak kaynak dosyaya göre bölünür; bir kaydın parçaları farklı bölümlere düşmez. |
-| 3 · Özet ve dinleme | Kategori × bölüm sayım tablosu, kategori başına dakika ve her kategoriden bir örnek |
-| 4 · (Opsiyonel) Referansları gönder | Kategori başına bir gerçek sesi `samples/references`'a yollar; yalnızca paylaşılabilir lisanslı klipler |
+| 1 · Ayarlar | `COMMERCIAL_ONLY` (varsayılan açık), `CATEGORY` (`auto` / `all` / bir etiket), `PACK_NAME`, kaynak seçimi, `MAX_PER_LABEL` |
+| 2 · Sayım | Yalnız FSD50K'nın etiket ve lisans dosyalarını indirir (~10 MB). Kategori başına klip sayısını "CC0 + CC BY" ve "tümü" olarak yazar. `auto` ise en çok ticari-temiz klibi olan kategoriyi seçer. |
+| 3 · İndir ve paketle | Ticari modda ESC-50 ve DCASE'i atlar, FSD50K'dan yalnız CC0 / CC BY klipleri alır. Sesleri 22,05 kHz mono'ya çevirir, sessizliği kırpar, ≤ 6 s parçalara böler, tek dosyada paketler. Kayıtlar kaynak dosyaya göre train/val/test'e bölünür. Atıf listesini yazar. |
+| 4 · Özet ve dinleme | Kategori × bölüm sayım tablosu, dakika, kategori başına 3 örnek ve atıfları |
+| 5 · (Opsiyonel) Referansları gönder | Kategori başına bir gerçek sesi atıf dosyasıyla `samples/references/<PACK_NAME>`'e yollar |
 
-**Dikkat (ticari kullanım):** Varsayılan kaynaklar ticari model eğitimi için temiz değil. ESC-50 NC lisanslı; DCASE
-içinde BBC ve UrbanSound8K kaynaklı klipler var. Ayrıntılar: [RESEARCH.md §7](RESEARCH.md).
+**Ticari mod dışı (eski base_v1 paketi):** `COMMERCIAL_ONLY = False`, `USE_DCASE`/`USE_ESC50` açık, `CATEGORY = "all"`,
+`PACK_NAME = "pack"`. Bu paket ticari model eğitimi için temiz değil: [RESEARCH.md §7](RESEARCH.md).
 
 ---
 
-## 02_train_base: tüm kategorilerden öğrenen base model
+## 02_train_base: paketteki kategorilerden öğrenen model (tek kategori → uzman model)
 
 | | |
 |---|---|
-| Girdi | `pack/` |
+| Girdi | `<PACK>/` |
 | Çıktı | `MyDrive/sound-gen/runs/<RUN>/` → `best.pt`, `last.pt`, `step_*.pt`, `sketch_bank.pt`, `log.csv`, `samples/step_*/` |
 | GPU | A100 önerilir (L4 / T4 da çalışır, preset otomatik seçilir) |
 | Süre | `MAX_HOURS` ile sınırlı (varsayılan 1,5 saat) |
 
 | Hücre | Ne yapıyor |
 |---|---|
-| 1 · Ayarlar | `RUN` (çalışma adı; aynı adla tekrar çalıştırma devam ettirir), `STEPS`, `MAX_HOURS`, `PRESET` (GPU'ya göre model boyutu), `SMOKE_TEST_FIRST` |
+| 1 · Ayarlar | `RUN` (çalışma adı, varsayılan `clean_v1`; aynı adla tekrar çalıştırma devam ettirir), `PACK` (01'in yazdığı paket), `UPSAMPLER` (`interp` = vızıltı düzeltmesi H1, `transposed` = makale / base_v1), `STEPS`, `MAX_HOURS`, `PRESET` (GPU'ya göre model boyutu), `SMOKE_TEST_FIRST` |
 | 2 · Smoke test | Sentetik seslerle 1–2 dakikalık uçtan uca deneme: eğitim → fine-tune → üretim. Sadece kodun çalıştığını gösterir. |
 | 3 · Eğit | Paketi yerel diske kopyalar ve koşullu WaveFlow'u **sıfırdan** eğitir. Her adımda 8 kesit (~0,74 s) alınır, 20 bantlık taslak çıkarılır, NLL hesaplanıp ağırlıklar güncellenir. 1.000 adımda bir doğrulama + checkpoint, 2.500 adımda bir dinleme örnekleri. Süre dolunca düzgünce durur; tekrar çalıştırılınca kaldığı yerden devam eder. |
 | 4 · Kayıp eğrisi | Train ve val NLL grafiği |
@@ -69,7 +70,7 @@ ikna edici değil (1378 Hz katlarında vızıltı, seviye takibi yok); bkz. PROC
 
 | Hücre | Ne yapıyor |
 |---|---|
-| 1 · Ayarlar | `BASE_RUN`, `BASE_CKPT`, `TARGETS` (ör. `footsteps/snow` ya da pakette olan `footsteps`), `STRATEGY`, `STEPS`, `REPLAY` |
+| 1 · Ayarlar | `BASE_RUN`, `PACK` (base'in paketi; replay buradan), `BASE_CKPT`, `TARGETS` (ör. `footsteps/snow` ya da pakette olan `footsteps`), `STRATEGY`, `STEPS`, `REPLAY` |
 | 2 · Hedef veri | Hedef pakette yoksa `custom/<hedef>/`'den (ya da anahtar varsa Freesound'dan) ayrı bir paket kurar. Veri yoksa nereye koyulacağını söyleyip durur. Stratejiyi klip sayısına göre seçer: < 30 → `embedding_only`, < 300 → `last_flows`, daha fazlası → `full`. |
 | 3 · Fine-tune | Base ağırlıkları yükler; yeni etiketin vektörünü **ebeveyninden** başlatır (`footsteps/snow` ← `footsteps`). Stratejiye göre katmanları dondurur, unutmayı azaltmak için ebeveyn kategoriden örnek karıştırır (replay). `full`'da düşük LR ve L2-SP kullanır. |
 | 4 · Karşılaştır | Aynı taslak ve tohumla base ve fine-tune çıktılarını yan yana çalar |

@@ -150,12 +150,27 @@ Commit `2bbbb5d` ile tamamen geri alındı. Enterpolasyon upsampler / 64 kanal /
 
 ---
 
+## 9b. Sonraki koşu: `clean_v1` (planlandı)
+
+Karar: önce **tek kategoride**, **ticari kullanıma uygun** veriyle bir uzman model. Sonra aynısı diğer kategoriler
+için tekrarlanır; ileride bir router istenen kategoriye göre uzman modeli seçer.
+
+| | |
+|---|---|
+| Veri | FSD50K'dan yalnız CC0 + CC BY klipler (ESC-50 ve DCASE ticari modda atlanır). Kategori: 01'deki sayımda en çok klibi olan (`CATEGORY = "auto"`). Atıf listesi `ATTRIBUTION.csv`. |
+| Paket | `MyDrive/sound-gen/pack_clean/` |
+| Model | base_v1 ile aynı boyut; `upsampler = "interp"` (H1 testi) |
+| Test edilen | H1 (ham çıktıda k·1378 Hz ton fazlası < 2 dB) ve H3 (tek kategoride seviye/zarf takibi) |
+| Not | Yalnız upsampler değiştiği için ton fazlası base_v1 ölçümüyle doğrudan kıyaslanabilir; son işlem kullanılmaz. |
+
+---
+
 ## 10. Nerede ne var
 
 | Ne | Yer |
 |---|---|
 | Kod | `soundgen/`, notebook'lar `notebooks/01–04` |
-| Veri paketi | Drive `MyDrive/sound-gen/pack/` (DCASE + ESC-50) |
+| Veri paketi | Drive `MyDrive/sound-gen/pack/` (DCASE + ESC-50, base_v1) · `pack_clean/` (ticari-temiz, tek kategori, clean_v1) |
 | base_v1 checkpoint'leri | Drive `MyDrive/sound-gen/runs/base_v1/` (`best.pt`, `last.pt`, `step_*.pt`, `sketch_bank.pt`, `log.csv`) |
 | Dinleme dosyaları | `samples/references`, `samples/base_v1/{step_011783, showcase, showcase_fixed, showcase_v2post}` |
 | Önemli commit'ler | `da00df1` yeni yapı · `d0dee38` zaman bütçesi + vitrin · `3eede2f` deneme 1 · `c1d7a6a` deneme 2 · `2bbbb5d` geri alma |

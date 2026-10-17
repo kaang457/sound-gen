@@ -44,9 +44,30 @@ SOURCES = {
         base="https://zenodo.org/records/4060432/files/",
         parts=["FSD50K.dev_audio.z01", "FSD50K.dev_audio.z02", "FSD50K.dev_audio.z03",
                "FSD50K.dev_audio.z04", "FSD50K.dev_audio.z05", "FSD50K.dev_audio.zip"],
-        gt="FSD50K.ground_truth.zip", license="per clip CC (see FSD50K metadata)",
+        gt="FSD50K.ground_truth.zip", meta="FSD50K.metadata.zip",
+        license="per clip CC (see FSD50K metadata)",
         attribution="FSD50K, Fonseca et al. (2022)"),
 }
+
+# Commercial-clean mode keeps only licenses that allow commercial use (CC0, CC BY).
+# Excluded: ESC-50 (CC BY-NC) and DCASE 2023 T7 (mixes UrbanSound8K = NC and BBC = non-commercial).
+COMMERCIAL_SOURCES = ("fsd50k", "freesound", "custom")
+
+
+def commercial_ok(license_str):
+    """CC0 or CC BY (any version). CC BY-NC, Sampling+ and anything unknown -> False."""
+    s = (license_str or "").lower()
+    if "publicdomain/zero" in s or s.strip() in ("creative commons 0", "cc0"):
+        return True
+    return bool(re.search(r"licenses/by/\d", s)) or s.strip() == "attribution"
+
+
+def _license_name(url):
+    s = url.lower()
+    if "publicdomain/zero" in s:
+        return "CC0 1.0"
+    m = re.search(r"licenses/([a-z\-+]+)/([\d.]+)", s)
+    return f"CC {m.group(1).upper()} {m.group(2)}" if m else url
 
 
 def load_categories(path=CATEGORIES):
@@ -118,26 +139,75 @@ def fetch_esc50(raw):
     return out
 
 
-def fetch_fsd50k(raw, wanted_labels, exclude):
-    """~18 GB download. Extracts only clips carrying a wanted label."""
+def fsd50k_index(raw):
+    """Small downloads only (labels + per-clip metadata, ~10 MB).
+    -> (rows of dev.csv, {fname: dict(license, uploader, title)})"""
     s = SOURCES["fsd50k"]
     raw = Path(raw) / "fsd50k"
-    out = raw / "audio"
     gt = download(s["base"] + s["gt"] + "?download=1", raw / s["gt"])
     with zipfile.ZipFile(gt) as z:
         dev_csv = [n for n in z.namelist() if n.endswith("dev.csv")][0]
         rows = list(csv.DictReader(z.read(dev_csv).decode().splitlines()))
-    keep = {}
+    meta_zip = download(s["base"] + s["meta"] + "?download=1", raw / s["meta"])
+    with zipfile.ZipFile(meta_zip) as z:
+        name = [n for n in z.namelist() if "dev_clips_info" in n and n.endswith(".json")][0]
+        info = json.loads(z.read(name))
+    clips = {str(k): dict(license=v.get("license", ""), uploader=v.get("uploader", "?"),
+                          title=v.get("title", "")) for k, v in info.items()}
+    return rows, clips
+
+
+def fsd50k_census(raw, cats=None):
+    """Clips per category in FSD50K dev: all licenses vs commercial-clean (CC0 + CC BY).
+    Needs only the small metadata downloads, not the ~20 GB audio."""
+    cats = cats or load_categories()
+    table = cats["categories"]
+    m = {_norm(n): label for label, spec in table.items() for n in spec.get("fsd50k", []) or []}
+    exclude = set(cats.get("fsd50k_exclude", []))
+    rows, clips = fsd50k_index(raw)
+    total, clean, lic = Counter(), Counter(), Counter()
+    for r in rows:
+        labels = r["labels"].split(",")
+        if set(labels) & exclude:
+            continue
+        label = next((m[_norm(n)] for n in labels if _norm(n) in m), None)
+        if not label:
+            continue
+        total[label] += 1
+        c = clips.get(r["fname"], {})
+        lic[_license_name(c.get("license", "?"))] += 1
+        if commercial_ok(c.get("license")):
+            clean[label] += 1
+    out = sorted(((lab, clean[lab], total[lab]) for lab in total), key=lambda t: -t[1])
+    print(f"{'category':16s} {'CC0+CC BY':>10s} {'all':>6s}")
+    for lab, c, t in out:
+        print(f"{lab:16s} {c:10d} {t:6d}")
+    print("licenses over matched clips:", dict(lic.most_common()))
+    return out
+
+
+def fetch_fsd50k(raw, wanted_labels, exclude, commercial=False):
+    """~20 GB download (split zip). Extracts only clips carrying a wanted label
+    (and, with commercial=True, only CC0 / CC BY clips)."""
+    s = SOURCES["fsd50k"]
+    rows, clips = fsd50k_index(raw)
+    raw = Path(raw) / "fsd50k"
+    out = raw / "audio"
+    keep, dropped = {}, 0
     for r in rows:
         labels = set(r["labels"].split(","))
         if labels & set(exclude):
             continue
         hit = labels & set(wanted_labels)
         if hit:
+            if commercial and not commercial_ok(clips.get(r["fname"], {}).get("license")):
+                dropped += 1
+                continue
             keep[r["fname"]] = sorted(hit)
-    print(f"FSD50K: {len(keep)} clips match the wanted labels")
+    print(f"FSD50K: {len(keep)} clips match the wanted labels"
+          + (f" ({dropped} non-commercial clips skipped)" if commercial else ""))
     if out.exists() and len(list(out.glob("*.wav"))) >= len(keep) * 0.99:
-        return out, keep
+        return out, keep, clips
     for p in s["parts"]:
         download(s["base"] + p + "?download=1", raw / p)
     merged = raw / "dev_unsplit.zip"
@@ -154,7 +224,7 @@ def fetch_fsd50k(raw, wanted_labels, exclude):
         for name in tqdm(names, desc="FSD50K extract", unit="clip"):
             (out / f"{Path(name).stem}.wav").write_bytes(z.read(name))
     merged.unlink()
-    return out, keep
+    return out, keep, clips
 
 
 def fetch_freesound(raw, api_key, label, queries, per_query=100,
@@ -188,8 +258,15 @@ def fetch_freesound(raw, api_key, label, queries, per_query=100,
 
 # ------------------------------------------------------------------ collect
 def collect(raw, sources=("dcase", "esc50"), freesound_key=None, custom_dir=None, cats=None,
-            only_labels=None):
-    """-> list of dict(path, label, source, src_id, license, attribution)."""
+            only_labels=None, commercial=False):
+    """-> list of dict(path, label, source, src_id, license, attribution).
+    commercial=True: only sources/clips whose license allows commercial use (CC0, CC BY,
+    your own recordings); ESC-50 and DCASE are dropped."""
+    if commercial:
+        dropped = [s for s in sources if s not in COMMERCIAL_SOURCES]
+        if dropped:
+            print(f"commercial mode: skipping {dropped} (non-commercial licenses inside)")
+        sources = [s for s in sources if s in COMMERCIAL_SOURCES]
     cats = cats or load_categories()
     table = cats["categories"]
     if only_labels:
@@ -228,14 +305,17 @@ def collect(raw, sources=("dcase", "esc50"), freesound_key=None, custom_dir=None
     if "fsd50k" in sources:
         m = lookup("fsd50k")
         wanted = [n for spec in table.values() for n in spec.get("fsd50k", []) or []]
-        root, keep = fetch_fsd50k(raw, wanted, cats.get("fsd50k_exclude", []))
+        root, keep, clips = fetch_fsd50k(raw, wanted, cats.get("fsd50k_exclude", []), commercial)
         for fname, labels in keep.items():
             label = next((m[_norm(n)] for n in labels if _norm(n) in m), None)
             if label:
+                c = clips.get(fname, {})
+                lic = c.get("license", "")
                 items.append(dict(path=str(root / f"{fname}.wav"), label=label, source="fsd50k",
-                                  src_id=fname, license=SOURCES["fsd50k"]["license"],
-                                  attribution=f"FSD50K clip {fname} (freesound.org/s/{fname})",
-                                  public_ok=False))
+                                  src_id=fname, license=_license_name(lic) if lic else SOURCES["fsd50k"]["license"],
+                                  attribution=f"\"{c.get('title', fname)}\" by {c.get('uploader', '?')} "
+                                              f"(https://freesound.org/s/{fname}/), {_license_name(lic)}",
+                                  public_ok=commercial_ok(lic)))
     if "freesound" in sources:
         if not freesound_key:
             print("Freesound skipped: no API key (https://freesound.org/apiv2/apply)")
@@ -244,6 +324,8 @@ def collect(raw, sources=("dcase", "esc50"), freesound_key=None, custom_dir=None
                 if spec.get("freesound"):
                     root, meta = fetch_freesound(raw, freesound_key, label, spec["freesound"])
                     for fid, info in meta.items():
+                        if commercial and not commercial_ok(info["license"]):
+                            continue
                         items.append(dict(path=str(root / f"{fid}.mp3"), label=label, source="freesound",
                                           src_id=fid, license=info["license"],
                                           attribution=f"{info['name']} by {info['user']} ({info['url']})",

@@ -31,13 +31,15 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
 
     # 1. real vs generated (same coarse sketch -> the model invents the detail)
     items = []
+    per_label = max(1, 4 // len(labels))            # a single-category model shows 4 pairs (bank keeps audio for 4)
     for label in tqdm(labels, desc="real vs generated", unit="label"):
-        r = gen.generate(label, Controls(), seed=seed, ref_index=0)
-        name = label.replace("/", "__")
-        row = dict(label=label, generated=_save(out, f"{name}_gen", r["audio"][0]))
-        if r["reference_audio"] is not None:
-            row["real"] = _save(out, f"{name}_real", r["reference_audio"])
-        items.append(row)
+        for k in range(per_label):
+            r = gen.generate(label, Controls(), seed=seed, ref_index=k)
+            name = label.replace("/", "__") + (f"_{k}" if per_label > 1 else "")
+            row = dict(label=label, generated=_save(out, f"{name}_gen", r["audio"][0]))
+            if r["reference_audio"] is not None:
+                row["real"] = _save(out, f"{name}_real", r["reference_audio"])
+            items.append(row)
     sections.append(dict(title="Gerçek ve üretilen", kind="pairs", items=items,
                          text="Model yalnız 20 bantlık kaba taslağı ve kategori adını görür; dalga formunun ayrıntısını kendisi üretir."))
 

@@ -355,10 +355,11 @@ def train(cfg: TrainConfig, device=None):
 
 
 @torch.no_grad()
-def _write_samples(model, mel, ds, vocab, folder, device, per_label=1, max_labels=None, seconds=3.0,
+def _write_samples(model, mel, ds, vocab, folder, device, per_label=None, max_labels=None, seconds=3.0,
                    fallback=None):
     """Resynthesis check: real val sketch -> model -> audio, saved next to the reference.
-    Every label gets a pair; labels without a val clip fall back to a train clip."""
+    Every label gets a pair; labels without a val clip fall back to a train clip.
+    per_label=None: about 6 pairs in total (a single-category model gets 6 of its own)."""
     folder.mkdir(parents=True, exist_ok=True)
     model.eval()
     seen = Counter()
@@ -368,6 +369,7 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=1, max_label
         have = {r["label"] for r in rows}
         rows += [r for r in fallback.rows if r["label"] not in have]
     labels = sorted({r["label"] for r in rows})[: max_labels or None]
+    per_label = per_label or max(1, 6 // max(1, len(labels)))
     bar = tqdm(total=len(labels) * per_label, desc="samples", unit="clip", leave=False)
     for r in rows:
         if r["label"] not in labels or seen[r["label"]] >= per_label:
@@ -379,7 +381,7 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=1, max_label
         x = torch.from_numpy(a)[None].to(device)
         y = torch.tensor([vocab.index(r["label"])], device=device)
         gen = model.sample(mel(x), y, temperature=0.8)[0].float().cpu().numpy()
-        name = r["label"].replace("/", "__")
+        name = r["label"].replace("/", "__") + (f"_{seen[r['label']]}" if per_label > 1 else "")
         save_audio(folder / f"{name}_ref.wav", a)
         save_audio(folder / f"{name}_gen.wav", gen)
         seen[r["label"]] += 1

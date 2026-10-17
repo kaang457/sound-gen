@@ -19,8 +19,14 @@ from .model import FlowConfig, WaveFlow
 
 
 def check_flow(device="cpu"):
+    for up in ("transposed", "interp"):
+        _check_flow(device, up)
+
+
+def _check_flow(device, upsampler):
     torch.manual_seed(0)
-    cfg = FlowConfig(n_flows=4, n_layers=4, h=8, res_channels=16, n_mels=20, label_dim=8, dropout=0.1)
+    cfg = FlowConfig(n_flows=4, n_layers=4, h=8, res_channels=16, n_mels=20, label_dim=8, dropout=0.1,
+                     upsampler=upsampler)
     m = WaveFlow(cfg, 3).to(device).eval()
     for f in m.flows:                                # non-trivial flows (end conv starts at zero)
         torch.nn.init.normal_(f.end.weight, std=0.05)
@@ -42,7 +48,7 @@ def check_flow(device="cpu"):
     ld = m64(xs, s1, y[:1])[1].item()
     assert abs(ld - ld_true) < 1e-6 * max(1, abs(ld_true)) + 1e-6, f"logdet {ld} vs {ld_true}"
     m.float()
-    print(f"flow ok: inverse err {err:.2e}, logdet {ld:.4f} == {ld_true:.4f}")
+    print(f"flow ok ({upsampler} upsampler): inverse err {err:.2e}, logdet {ld:.4f} == {ld_true:.4f}")
 
 
 def synthetic_items(folder, n=40):
@@ -80,7 +86,7 @@ def main(device=None):
         tmp = Path(tmp)
         items = synthetic_items(tmp / "wav")
         build_pack(items, tmp / "pack")
-        small = dict(n_flows=2, n_layers=4, h=8, res_channels=16, label_dim=16)
+        small = dict(n_flows=2, n_layers=4, h=8, res_channels=16, label_dim=16, upsampler="interp")
         base = TrainConfig(packs=[str(tmp / "pack")], out_dir=str(tmp / "base"), model=small, steps=30,
                            batch_size=4, segment=8192, warmup=5, eval_every=15, sample_every=30,
                            num_workers=0, min_clips=5, log_every=10)
