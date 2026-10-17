@@ -200,6 +200,30 @@ Telifsiz (royalty-free) olması açık kaynak olduğu anlamına gelmiyor; oyunla
 
 ---
 
+## 7. Ticari model eğitimi için veri kaynakları
+
+*Lisans metinlerinin aslı, kullanmadan önce okunmalı. Hukuki tavsiye değildir.*
+
+| Durum | Kaynak | Not |
+|---|---|---|
+| ✅ temiz | **Freesound API**, CC0 + CC BY filtresi | Stable Audio Open'ın tüm Freesound verisi (6.330 saat) bu lisanslardan; CC BY için atıf listesi tutulmalı |
+| ✅ temiz | **Kendi kayıtların** | en güvenlisi; ayak sesi, yüzey, zıplama gibi Foley kayıtları için ideal |
+| ✅ temiz | **Kenney ses paketleri** (OpenGameArt) | CC0, oyun tarzı kısa efektler (UI, RPG, darbe), az miktarda |
+| ✅ temiz | **Greatest Hits** (vis-data) | CC BY 4.0; bagetle darbe/sürtünme, çok sayıda malzeme |
+| ⚠️ filtreli | **FSD50K** | klip bazında CC0 / CC BY / CC BY-NC / Sampling+; metadata'dan **yalnız CC0 + CC BY** |
+| ⚠️ filtreli | **DCASE 2023 T7** | klipler UrbanSound8K (NC ❌), FSD50K (klip bazında) ve BBC (❌) kaynaklı; DevMeta.csv'ye göre ayrılmalı |
+| ⚠️ filtreli | **Clotho** | ses dosyaları Freesound lisanslarında (çoğu CC BY); açıklama metinleri NC, ama onlara ihtiyacımız yok |
+| ⚠️ filtreli | **OpenGameArt** (genel) | lisans karışık (CC0, CC BY, CC BY-SA, GPL); CC BY-SA'nın "aynı lisansla paylaş" şartı model ağırlıkları için belirsiz |
+| ❓ belirsiz | Pixabay | Pixabay kendi AI eğitimi için kullanıyor; indiren kullanıcının model eğitimi için açık izin bulunamadı |
+| ❓ belirsiz | Zapsplat | lisans AI eğitimine değinmiyor; tek başına dağıtım yasağı var |
+| ❌ hayır | ESC-50, UrbanSound8K | CC BY-NC |
+| ❌ hayır | AudioSet, VGGSound | YouTube videoları; ses lisansı yok |
+| ❌ hayır | BBC Sound Effects | ticari değil (RemArc) |
+| ❌ hayır | Sonniss GDC | lisans AI eğitimini açıkça yasaklıyor |
+| 💰 ücretli | **Pro Sound Effects** AI eğitim veri seti | 1,27M ses, 5.000+ saat, "rights-cleared"; Sony AI da lisanslı kütüphanelerle (PSE, BOOM) eğitmiş |
+
+---
+
 ## Kaynaklar
 - Ping vd., *WaveFlow*, ICML 2020 — arXiv:1912.01219
 - Andreu & Villanueva Aylagas, *Neural Synthesis of Sound Effects Using Flow-Based Deep Generative Models*, AIIDE 2022
@@ -216,3 +240,5 @@ Telifsiz (royalty-free) olması açık kaynak olduğu anlamına gelmiyor; oyunla
 - AudioLDM lisansı — https://osai-index.eu/model/audioldm
 - Sonniss GDC lisansı (AI eğitimi yasak) — https://sonniss.com/gdc-bundle-license/
 - Evans vd., *Stable Audio Open*, 2024 — https://arxiv.org/abs/2407.14358
+- Clotho lisansı — https://zenodo.org/records/4783391 ; Pixabay SSS — https://pixabay.com/service/faq/ ; Zapsplat — https://licenseorg.com/guide/music-audio/zapsplat
+- Pro Sound Effects / Professional Sound Alliance — https://www.musicbusinessworldwide.com/sound-designers-and-sfx-libraries-launch-professional-sound-alliance-to-fight-ai-scraping-now-sound-will-have-protection-of-our-own/
