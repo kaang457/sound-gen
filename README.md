@@ -12,6 +12,10 @@ kontrol edilir.
 | [03_finetune](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/03_finetune.ipynb) | transfer learning: kategori / alt kategori | A100 / L4 |
 | [04_generate](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/04_generate.ipynb) | parametrik üretim, değerlendirme, diffusion kıyası | herhangi |
 
+> **Durum (2026-10-17):** İlk base model (base_v1, 11,8k adım) ikna edici değil. Tüm çıktılarda 22050/16 Hz
+> katlarında sabit tonlar var ve model koşul taslağını henüz takip etmiyor. Denemeler, ölçümler, geri alınan
+> değişiklik ve açık hipotezler: **[docs/PROCESS.md](docs/PROCESS.md)**.
+
 ---
 
 ## Yaklaşım
