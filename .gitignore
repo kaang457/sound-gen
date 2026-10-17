@@ -1,40 +1,14 @@
-# Python environment and caches
-.venv/
 __pycache__/
-*.py[cod]
+*.pyc
 .ipynb_checkpoints/
-
-# Keep directory placeholders; exclude local audio/data
-/data/raw/*
-!/data/raw/.gitkeep
-/data/processed/*
-!/data/processed/.gitkeep
-/data/generated/*
-!/data/generated/.gitkeep
-/results/audio/*
-!/results/audio/.gitkeep
-*.wav
-*.mp3
-*.flac
-*.ogg
-
-# Model weights
-*.ckpt
-*.pth
+*.egg-info/
+# data, checkpoints and caches never go to git (Drive holds them)
+data/
+raw/
+pack/
+runs/
 *.pt
-*.safetensors
-
-# Local credentials and editor/system files
+*.bin
+*.zip
+*.tar.gz
 .env
-.env.*
-!.env.example
-.DS_Store
-Thumbs.db
-
-# Downloaded third-party code and checkpoints
-/external/
-/models/
-
-
-# Isolated baseline environments
-.venv-*/

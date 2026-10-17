@@ -1,0 +1,110 @@
+# Category taxonomy: one canonical label per sound, mapped from each source's labels.
+#
+# type decides how the duration/speed controls edit the sketch:
+#   event    - one short sound (gunshot, explosion)         -> pad / trim
+#   sequence - repeated events (footsteps, gallop, typing)  -> re-space events
+#   texture  - stationary (rain, wind, engine)              -> loop / crossfade
+#
+# Sub-categories use "parent/child" (e.g. footsteps/snow). In fine-tuning, a
+# child's embedding starts from its parent's (transfer learning).
+#
+# Sources: dcase = DCASE2023 Task 7 dev set, esc50 = ESC-50, fsd50k = FSD50K dev
+# (optional, large download), freesound = Freesound API previews (needs a free
+# API key), custom = your own files in data/custom/<label>/ (nested dirs = subcategory).
+
+categories:
+  footsteps:
+    type: sequence
+    dcase: [Footstep]
+    esc50: [footsteps]
+    fsd50k: [Walk_and_footsteps]
+  gunshot:
+    type: event
+    dcase: [GunShot]
+    fsd50k: [Gunshot_and_gunfire]
+  explosion:
+    type: event
+    fsd50k: [Explosion, Boom]
+    freesound: ["explosion"]
+  rain:
+    type: texture
+    dcase: [Rain]
+    esc50: [rain]
+    fsd50k: [Rain, Raindrop]
+  wind:
+    type: texture
+    esc50: [wind]
+    fsd50k: [Wind]
+  thunder:
+    type: event
+    esc50: [thunderstorm]
+    fsd50k: [Thunder]
+  car:
+    type: texture
+    dcase: [MovingMotorVehicle]
+    esc50: [engine]
+    fsd50k: [Car_passing_by, Motor_vehicle_(road)]
+  birds:
+    type: texture
+    esc50: [chirping_birds]
+    fsd50k: [Bird_vocalization_and_bird_call_and_bird_song, Chirp_and_tweet]
+  dog_bark:
+    type: event
+    dcase: [DogBark]
+    esc50: [dog]
+    fsd50k: [Bark]
+  fire:
+    type: texture
+    esc50: [crackling_fire]
+    fsd50k: [Fire, Crackle]
+  sea_waves:
+    type: texture
+    esc50: [sea_waves]
+    fsd50k: [Waves_and_surf]
+  glass_break:
+    type: event
+    esc50: [glass_breaking]
+    fsd50k: [Shatter]
+  door_knock:
+    type: sequence
+    esc50: [door_wood_knock]
+    fsd50k: [Knock]
+  keyboard:
+    type: sequence
+    dcase: [Keyboard]
+    esc50: [keyboard_typing]
+    fsd50k: [Typing, Computer_keyboard]
+  cough_sneeze:
+    type: event
+    dcase: [Sneeze_Cough]
+    esc50: [coughing, sneezing]
+  helicopter:
+    type: texture
+    esc50: [helicopter]
+  horse_gallop:
+    type: sequence
+    freesound: ["horse gallop", "horse hooves galloping"]
+  jump:
+    type: event
+    freesound: ["jump landing foley", "body jump land"]
+  # sub-categories (fine-tuning targets); data from Freesound or data/custom/
+  footsteps/snow:
+    type: sequence
+    freesound: ["footsteps snow"]
+  footsteps/gravel:
+    type: sequence
+    freesound: ["footsteps gravel"]
+  footsteps/wood:
+    type: sequence
+    freesound: ["footsteps wood floor"]
+  footsteps/concrete:
+    type: sequence
+    freesound: ["footsteps concrete", "footsteps pavement"]
+
+# FSD50K clips that also carry one of these labels are skipped (keeps data clean).
+fsd50k_exclude: [Speech, Music, Singing, Male_speech_and_man_speaking,
+                 Female_speech_and_woman_speaking, Child_speech_and_kid_speaking,
+                 Conversation, Musical_instrument]
+
+# A label needs at least this many clips to enter the base model.
+min_clips: 30
