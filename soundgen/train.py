@@ -19,6 +19,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
+from tqdm.auto import tqdm
 
 from .audio import MelConfig, MelSketch, save_audio, SR
 from .data import PackDataset, load_categories, read_index
@@ -274,6 +275,8 @@ def train(cfg: TrainConfig, device=None):
 
     model.train()
     t0, running, bad = time.time(), [], 0
+    bar = tqdm(total=cfg.steps, initial=step, desc="training", unit="step", dynamic_ncols=True, mininterval=2)
+    last_val = best
     while step < cfg.steps:
         x, y = next(batches)
         x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
@@ -288,7 +291,7 @@ def train(cfg: TrainConfig, device=None):
             total = total + cfg.l2sp * sum(((p - a) ** 2).sum() for p, a in zip(trainable, anchor))
         if not torch.isfinite(total):
             bad += 1
-            print(f"step {step}: non-finite loss, batch skipped ({bad})")
+            tqdm.write(f"step {step}: non-finite loss, batch skipped ({bad})")
             opt.zero_grad(set_to_none=True)
             if bad > 20:
                 raise RuntimeError("loss keeps diverging: lower lr or check the data")
@@ -301,20 +304,24 @@ def train(cfg: TrainConfig, device=None):
         sched.step()
         ema.update(model)
         step += 1
+        bar.update(1)
         running.append(loss.item())
 
         if step % cfg.log_every == 0:
             sps = (time.time() - t0) / cfg.log_every
-            print(f"step {step:6d}  nll {np.mean(running):.4f}  grad {gnorm:.2f}  "
-                  f"lr {sched.get_last_lr()[0]:.2e}  {sps:.2f}s/step", flush=True)
+            bar.set_postfix(nll=f"{np.mean(running):.4f}", val=f"{last_val:.4f}", grad=f"{gnorm:.2f}",
+                            lr=f"{sched.get_last_lr()[0]:.1e}")
             logger.writerow([step, np.mean(running), "", gnorm, sched.get_last_lr()[0], sps])
             log_f.flush()
             running, t0 = [], time.time()
         if step % cfg.eval_every == 0 or step == cfg.steps:
+            bar.set_description("validating")
             v = validate()
+            last_val = v
+            bar.set_description("training")
             logger.writerow([step, "", v, "", "", ""])
             log_f.flush()
-            print(f"--- step {step}: val nll {v:.4f} (best {best:.4f})", flush=True)
+            tqdm.write(f"step {step}: val nll {v:.4f} (best so far {min(best, v):.4f}), checkpoint saved")
             if v < best or (math.isnan(v) and not math.isfinite(best)):
                 best = v if not math.isnan(v) else best
                 save_checkpoint(out / "best.pt", model, ema, None, None, step, meta, vocab, best)
@@ -322,8 +329,12 @@ def train(cfg: TrainConfig, device=None):
             if step in cfg.keep_steps:
                 save_checkpoint(out / f"step_{step}.pt", model, ema, None, None, step, meta, vocab, best)
         if step % cfg.sample_every == 0 or step == cfg.steps:
+            bar.set_description("writing samples")
             _write_samples(ema.model, mel, val_ds, vocab, out / "samples" / f"step_{step:06d}", device)
+            bar.set_description("training")
+            tqdm.write(f"step {step}: samples -> {out / 'samples' / f'step_{step:06d}'}")
             model.train()
+    bar.close()
     log_f.close()
     build_sketch_bank(cfg.packs, vocab, mel_cfg, out / "sketch_bank.pt")
     print("done. checkpoints in", out)
@@ -337,6 +348,8 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=1, max_label
     model.eval()
     seen = Counter()
     n = int(seconds * SR) // model.cfg.h * model.cfg.h
+    todo = min(max_labels, len(set(r["label"] for r in ds.rows))) * per_label
+    bar = tqdm(total=todo, desc="samples", unit="clip", leave=False)
     for r in ds.rows:
         if seen[r["label"]] >= per_label or len(seen) >= max_labels and r["label"] not in seen:
             continue
@@ -351,6 +364,8 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=1, max_label
         save_audio(folder / f"{name}_ref.wav", a)
         save_audio(folder / f"{name}_gen.wav", gen)
         seen[r["label"]] += 1
+        bar.update(1)
+    bar.close()
 
 
 def build_sketch_bank(packs, vocab, mel_cfg, path, per_label=48, ref_audio=4, max_s=6.0):
@@ -361,7 +376,7 @@ def build_sketch_bank(packs, vocab, mel_cfg, path, per_label=48, ref_audio=4, ma
     bank = dict(mel_cfg=mel_cfg.to_dict(), types={}, items={})
     rows = [r for p in packs for r in read_index(p) if r["split"] == "train"]
     audio = {p: np.memmap(Path(p) / "audio.bin", dtype="<i2", mode="r") for p in packs}
-    for label in vocab[1:]:
+    for label in tqdm(vocab[1:], desc="sketch bank", unit="label"):
         group = [r for r in rows if r["label"] == label]
         if not group:
             continue

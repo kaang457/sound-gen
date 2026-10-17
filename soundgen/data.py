@@ -24,6 +24,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+from tqdm.auto import tqdm
 
 from .audio import SR, load_audio, trim_silence, rms_db
 
@@ -74,14 +75,13 @@ def download(url, dest, md5=None, chunk=1 << 22):
         else:
             r.raise_for_status()
             mode = "ab" if r.status_code == 206 else "wb"
-            total = int(r.headers.get("content-length", 0)) + (have if mode == "ab" else 0)
-            done = have if mode == "ab" else 0
-            with open(part, mode) as f:
+            start = have if mode == "ab" else 0
+            total = int(r.headers.get("content-length", 0)) + start
+            with open(part, mode) as f, tqdm(total=total or None, initial=start, unit="B", unit_scale=True,
+                                             unit_divisor=1024, desc=dest.name, mininterval=1) as bar:
                 for block in r.iter_content(chunk):
                     f.write(block)
-                    done += len(block)
-                    if total and done % (chunk * 64) < chunk:
-                        print(f"  {dest.name}: {done / 1e9:.2f}/{total / 1e9:.2f} GB", flush=True)
+                    bar.update(len(block))
     part.rename(dest)
     if md5 and _md5(dest) != md5:
         raise IOError(f"md5 mismatch for {dest.name}; delete it and retry")
@@ -148,11 +148,11 @@ def fetch_fsd50k(raw, wanted_labels, exclude):
         for p in s["parts"]:                       # free ~18 GB
             (raw / p).unlink(missing_ok=True)
     out.mkdir(parents=True, exist_ok=True)
+    print("FSD50K: merging the split archive (a few minutes)...", flush=True)
     with zipfile.ZipFile(merged) as z:
-        for name in z.namelist():
-            stem = Path(name).stem
-            if name.endswith(".wav") and stem in keep:
-                (out / f"{stem}.wav").write_bytes(z.read(name))
+        names = [n for n in z.namelist() if n.endswith(".wav") and Path(n).stem in keep]
+        for name in tqdm(names, desc="FSD50K extract", unit="clip"):
+            (out / f"{Path(name).stem}.wav").write_bytes(z.read(name))
     merged.unlink()
     return out, keep
 
@@ -172,7 +172,7 @@ def fetch_freesound(raw, api_key, label, queries, per_query=100,
                       filter=f"duration:[0.3 TO 30] license:({' OR '.join(licenses)})")
         r = requests.get(url, params=params, timeout=60)
         r.raise_for_status()
-        for s in r.json().get("results", []):
+        for s in tqdm(r.json().get("results", []), desc=f"Freesound {label}: {q}", unit="file"):
             if str(s["id"]) in meta:
                 continue
             f = out / f"{s['id']}.mp3"
@@ -287,17 +287,22 @@ def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label
     for it in items:
         by_label[it["label"]].append(it)
     rows, offset = [], 0
+    bar = tqdm(total=sum(min(len(g), max_per_label) for g in by_label.values()), desc="packing", unit="file")
     with open(pack / "audio.bin", "wb") as bin_f:
         for label, group in sorted(by_label.items()):
             rng.shuffle(group)
             n_label = 0
+            bar.set_postfix_str(label)
+            n_files = 0
             for it in group:
                 if n_label >= max_per_label:
                     break
+                n_files += 1
+                bar.update(1)
                 try:
                     x = load_audio(it["path"], SR)
                 except Exception as e:
-                    print("skip (unreadable):", it["path"], e)
+                    tqdm.write(f"skip (unreadable): {it['path']} {e}")
                     continue
                 peak = np.abs(x).max() if len(x) else 0
                 if peak < 1e-4:
@@ -317,7 +322,9 @@ def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label
                                      public_ok=int(bool(it.get("public_ok")))))
                     offset += len(pcm)
                     n_label += 1
-            print(f"{label}: {n_label} chunks", flush=True)
+            bar.update(max(0, min(len(group), max_per_label) - n_files))
+            tqdm.write(f"{label}: {n_label} chunks")
+    bar.close()
     with open(pack / "index.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()

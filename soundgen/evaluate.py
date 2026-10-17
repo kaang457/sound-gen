@@ -80,8 +80,9 @@ def control_check(gen, label, param, values, seed=0, **kw):
     """Sweep one control; report measured loudness, brightness, length + Spearman rho."""
     from scipy.stats import spearmanr
     from .controls import Controls
+    from tqdm.auto import tqdm
     rows = []
-    for v in values:
+    for v in tqdm(values, desc=f"control check: {param}", leave=False):
         out = gen.generate(label, Controls(**{param: v}), seed=seed, **kw)
         a = out["audio"][0]
         rows.append(dict(value=v, rms_db=rms_db(a), centroid_hz=spectral_centroid(a), seconds=len(a) / SR))
@@ -95,8 +96,10 @@ def diffusion_baseline(labels, seconds=4.0, seed=0, model="stabilityai/stable-au
     from diffusers import StableAudioPipeline
     from scipy.signal import resample_poly
     pipe = StableAudioPipeline.from_pretrained(model, torch_dtype=torch.float16).to("cuda")
+    from tqdm.auto import tqdm
+    pipe.set_progress_bar_config(disable=True)
     out = {}
-    for label in labels:
+    for label in tqdm(labels, desc="Stable Audio Open", unit="label"):
         g = torch.Generator("cuda").manual_seed(seed)
         a = pipe(label_text(label) + ", isolated sound effect, high quality", negative_prompt="music, speech, low quality",
                  num_inference_steps=steps, audio_end_in_s=seconds, generator=g).audios[0]
