@@ -14,7 +14,7 @@ kontrol edilir.
 
 > **Durum (2026-10-17):** İlk base model (base_v1, 11,8k adım) ikna edici değil. Tüm çıktılarda 22050/16 Hz
 > katlarında sabit tonlar var ve model koşul taslağını henüz takip etmiyor. Denemeler, ölçümler, geri alınan
-> değişiklik ve açık hipotezler: **[docs/PROCESS.md](docs/PROCESS.md)**. Literatür ve sonraki mimari önerisi (hazır vokoder + mel üretici): **[docs/RESEARCH.md](docs/RESEARCH.md)**.
+> değişiklik ve açık hipotezler: **[docs/PROCESS.md](docs/PROCESS.md)**. Literatür ve sonraki mimari önerisi (hazır vokoder + mel üretici): **[docs/RESEARCH.md](docs/RESEARCH.md)**. Notebook'ların hücre hücre açıklaması: **[docs/NOTEBOOKS.md](docs/NOTEBOOKS.md)**.
 
 ---
 
