@@ -61,8 +61,8 @@ class Generator:
         return self.mel(x)[0].cpu().numpy()
 
     @torch.no_grad()
-    def generate(self, label, controls=None, seed=0, temperature=0.8, mc_dropout=False,
-                 reference=None, ref_index=None, n=1, postprocess=True):
+    def generate(self, label, controls=None, seed=0, temperature=0.6, mc_dropout=False,
+                 reference=None, ref_index=None, n=1, postprocess=True, match=1.0):
         controls = controls or Controls()
         label_id = self.vocab.index(self._resolve(label))
         if reference is not None:
@@ -81,12 +81,51 @@ class Generator:
         audio = self.model.sample(S, y, temperature=temperature, generator=g).float().cpu().numpy()
         self.model.set_mc_dropout(False)
         if postprocess:
-            audio = np.stack([clean(a) for a in audio])
+            audio = np.stack([clean(match_sketch(notch_tones(a, self.model.cfg.h), sketch, self.mel_cfg, match))
+                              for a in audio])
         ref_audio = ref["audio"].numpy().astype(np.float32) / 32768 if ref.get("audio") is not None else None
         return dict(audio=audio, sketch=sketch, base_sketch=base, label=label, controls=controls.to_dict(),
                     seed=seed, temperature=temperature, mc_dropout=mc_dropout,
                     reference_id=ref.get("id"), reference_audio=ref_audio,
                     reference_public_ok=bool(ref.get("public_ok")), attribution=ref.get("attribution"))
+
+
+def notch_tones(x, h, sr=SR, q=30.0):
+    """Remove the constant tones at sr/h and harmonics (WaveFlow squeeze artefact)."""
+    from scipy.signal import iirnotch, filtfilt
+    x = np.asarray(x, np.float64)
+    if len(x) < 64:
+        return x
+    f0 = sr / h
+    for k in range(1, int((sr / 2) // f0) + 1):
+        if k * f0 < sr / 2 - 1:
+            b, a = iirnotch(k * f0, q, sr)
+            x = filtfilt(b, a, x)
+    return x
+
+
+def match_sketch(x, sketch, mel_cfg, strength=1.0, max_boost_db=12.0, max_cut_db=40.0):
+    """Pull the output's coarse (mel-band) spectrum toward the conditioning sketch.
+    Boost is capped (amplifying a too-quiet output also amplifies its hiss); cuts are not."""
+    if strength <= 0:
+        return np.asarray(x, np.float64)
+    import torchaudio
+    n_fft, hop = mel_cfg["n_fft"], mel_cfg["hop"]
+    fb = torchaudio.functional.melscale_fbanks(n_fft // 2 + 1, mel_cfg["f_min"], mel_cfg["f_max"],
+                                               len(sketch), mel_cfg["sample_rate"],
+                                               norm="slaney", mel_scale="slaney").numpy()
+    t = torch.from_numpy(np.ascontiguousarray(x, dtype=np.float32))
+    win = torch.hann_window(n_fft)
+    X = torch.stft(t, n_fft, hop, window=win, return_complex=True, center=True)
+    cur = fb.T @ (X.abs() ** 2).numpy()
+    tgt = 10 ** ((np.asarray(sketch) * 100 - 100) / 10)
+    n = min(cur.shape[1], tgt.shape[1])
+    g = np.clip(10 * np.log10((tgt[:, :n] + 1e-10) / (cur[:, :n] + 1e-10)), -max_cut_db, max_boost_db) * strength
+    g = np.apply_along_axis(lambda r: np.convolve(r, np.ones(3) / 3, mode="same"), 1, g)
+    w = fb / (fb.sum(1, keepdims=True) + 1e-9)
+    gain = torch.from_numpy((10 ** ((w @ g) / 20)).astype(np.float32))
+    y = torch.istft(X[:, :n] * gain, n_fft, hop, window=win, length=min(len(x), (n - 1) * hop))
+    return y.numpy().astype(np.float64)
 
 
 def clean(x, sr=SR, spike_db=12.0):
