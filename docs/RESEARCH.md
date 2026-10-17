@@ -119,6 +119,58 @@ kategori + parametreler
 
 ---
 
+## 5. Ticari kullanım: lisanslar ve hibrit mimari
+
+*Hukuki tavsiye değildir; ticari kullanımdan önce lisans metinlerinin aslı okunmalı.*
+
+### Bileşenler
+
+| Bileşen | Lisans | Ticari çıktı |
+|---|---|---|
+| BigVGAN-v2 (NVIDIA) | MIT | ✅ |
+| Stable Audio 3 Small (SFX) / Stable Audio Open | Stability AI Community License | ✅ yıllık geliri < 1M USD olanlar için, kayıt ile; çıktılar kullanıcının |
+| AudioLDM / AudioLDM2 | CC BY-NC-SA 4.0 | ❌ ticari kullanım yok |
+| Bizim kod | bizim | ✅ |
+| Bizim eğittiğimiz ağırlıklar (WaveFlow, mel üretici) | eğitim verisinin lisansına bağlı | ancak veri ticari kullanıma uygunsa |
+
+### Eğitim verisi
+
+| Kaynak | Ticari amaçla model eğitimi |
+|---|---|
+| DCASE 2023 T7 | CC BY 4.0 kısmı ✅ (atıf); **BBC kaynaklı klipler ❌** (yalnız araştırma) |
+| ESC-50 | ❌ CC BY-NC |
+| FSD50K | klip bazında: yalnız CC0 / CC BY olanlar ✅ (atıf) |
+| Freesound API | CC0 / CC BY filtresiyle ✅ (atıf) |
+| BBC Sound Effects (RemArc) | ❌ ticari değil |
+| Sonniss GDC paketleri | ❌ **lisans AI eğitimini yasaklıyor** |
+| Kendi kayıtların | ✅ |
+
+`base_v1` ESC-50 ve BBC kaynaklı DCASE klipleriyle eğitildi, yani **ticari kullanıma uygun değil**. Araştırma ve demo için uygun.
+
+### Hibrit mimari: hazır model + bizim katmanlarımız
+
+```
+1 · KAYNAK ("ne?")          Stable Audio 3 Small SFX  │  lisanslı ses kütüphanesi  │  kullanıcının sesi
+                            (kategori → sabit, iç istem; kullanıcı istem yazmaz)
+        │ ses
+        ▼
+2 · KONTROL (bizim)         mel/taslak çıkar → intensity, weight, distance, environment, duration, speed
+        │ düzenlenmiş mel
+        ▼
+3 · SESLENDİRME ("nasıl?")  BigVGAN-v2 (varsayılan, deterministik)  │  bizim WaveFlow (aynı taslaktan farklı varyasyonlar)
+        │
+        ▼
+      çıktı
+```
+
+- **1. katman:** Elimizde verisi olmayan kategorileri (patlama, at, karda adım) de kapsar ve her seferinde yeni içerik üretir.
+- **2. katman:** Tamamen bizim, deterministik; lisans sorunu yok. Parametrik kontrolün tamamı burada.
+- **3. katman:** Varsayılan olarak BigVGAN-v2. Bizim WaveFlow'un özgün rolü **varyasyon**: aynı taslaktan farklı ayrıntılar (Andreu & Villanueva). Ticari kullanım için yalnız temiz veriyle yeniden eğitilmesi gerekir.
+- **İleride:** Öğrenilmiş mel üretici (§4), 1. katmanın yerini kısmen alabilir.
+- **Açık soru:** Stable Audio çıktılarıyla kendi modellerimizi eğitmek. Hem ticari temiz veri sorununu çözer hem de kapsamı genişletir. Ama Community License'ın "çıktılarla başka model eğitme" maddesi kontrol edilmeden yapılmamalı.
+
+---
+
 ## Kaynaklar
 - Ping vd., *WaveFlow*, ICML 2020 — arXiv:1912.01219
 - Andreu & Villanueva Aylagas, *Neural Synthesis of Sound Effects Using Flow-Based Deep Generative Models*, AIIDE 2022
@@ -131,3 +183,6 @@ kategori + parametreler
 - Kong vd., *HiFi-GAN*, NeurIPS 2020; Kong vd., *DiffWave*, ICLR 2021; Prenger vd., *WaveGlow*, ICASSP 2019
 - Comunità, Phan, Reiss, *Neural Synthesis of Footsteps Sound Effects with GANs*, 2021
 - Flores García vd., *Sketch2Sound*, ICASSP 2025
+- Stable Audio lisansları — https://stability.ai/license ; https://stability.ai/explainers/stable-audio-vs-competitors-licensing-export-rights-and-self-hosting-compared
+- AudioLDM lisansı — https://osai-index.eu/model/audioldm
+- Sonniss GDC lisansı (AI eğitimi yasak) — https://gamefromscratch.com/sonniss-27-5gb-sound-effect-giveaway-at-gdc-2024/
