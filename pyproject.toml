@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soundgen"
+version = "0.1.0"
+description = "Parametric multi-category Foley generation with conditional WaveFlow + transfer learning"
+requires-python = ">=3.10"
+# torch / torchaudio are preinstalled on Colab and deliberately not listed (avoids reinstalls)
+dependencies = ["numpy", "scipy", "soundfile", "pyyaml", "requests"]
+
+[project.optional-dependencies]
+eval = ["transformers"]
+baseline = ["diffusers", "transformers", "accelerate"]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["soundgen"]
