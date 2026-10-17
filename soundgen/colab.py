@@ -81,21 +81,32 @@ def push_to_github(files, dest="samples", message="Add samples from Colab", max_
             raise RuntimeError((r.stdout + r.stderr).replace(token, "***"))
         return r.stdout
 
-    if not work.exists():
+    # The push folder is only a staging area: reset it to the remote main every time
+    # (no merge/rebase, so updates pushed to main in the meantime never conflict).
+    if not (work / ".git").exists():
+        shutil.rmtree(work, ignore_errors=True)
         git("clone", "--depth", "1", url, str(work), cwd="/content")
-    else:
-        git("remote", "set-url", "origin", url)
-        git("pull", "--rebase", "--depth", "1")
+    git("remote", "set-url", "origin", url)
     git("config", "user.name", "colab-sound-gen")
     git("config", "user.email", "colab@sound-gen.local")
-    target = work / dest
-    target.mkdir(parents=True, exist_ok=True)
-    for f in files:
-        shutil.copy2(f, target / f.name)
-    git("add", dest)
-    if not git("status", "--porcelain").strip():
-        print("nothing new to push")
-        return
-    git("commit", "-m", message)
-    git("push", "origin", "HEAD")
+    for attempt in range(3):
+        if any((work / ".git" / d).exists() for d in ("rebase-merge", "rebase-apply")):
+            git("rebase", "--abort")
+        git("fetch", "--depth", "1", "origin", "main")
+        git("reset", "--hard", "FETCH_HEAD")
+        target = work / dest
+        target.mkdir(parents=True, exist_ok=True)
+        for f in files:
+            shutil.copy2(f, target / f.name)
+        git("add", dest)
+        if not git("status", "--porcelain").strip():
+            print("nothing new to push")
+            return
+        git("commit", "-m", message)
+        try:
+            git("push", "origin", "HEAD:main")
+            break
+        except RuntimeError:
+            if attempt == 2:
+                raise
     print(f"pushed {len(files)} files ({size:.1f} MB) -> https://github.com/{REPO}/tree/main/{dest}")
