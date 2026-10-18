@@ -213,7 +213,7 @@ def _adam_update_ratio(model, ck):
     return {g: math.sqrt(dsq[g]) / (math.sqrt(wsq[g]) + 1e-12) for g in dsq}
 
 
-def diagnose_checkpoint(ckpt, packs, n_batches=4, batch=8, device=None, importance=True):
+def diagnose_checkpoint(ckpt, packs, n_batches=4, batch=8, device=None, importance=True, segment=16384):
     """Gradient flow, activation health and layer importance of a saved model."""
     from .audio import MelConfig, MelSketch
     from .model import FlowConfig, WaveFlow
@@ -225,7 +225,7 @@ def diagnose_checkpoint(ckpt, packs, n_batches=4, batch=8, device=None, importan
     model.load_state_dict(ck["model"])
     model.to(device)
     mel = MelSketch(MelConfig(**ck["mel_cfg"])).to(device)
-    seg = 16384 // model.cfg.h * model.cfg.h
+    seg = segment // model.cfg.h * model.cfg.h
     data = _batches(packs, vocab, n_batches, batch, seg)
 
     # 1. gradients + activations (train mode, as during training)
@@ -708,7 +708,7 @@ def _text_table(findings):
     return "\n".join(lines)
 
 
-def report(run_dir, packs=None, ckpt="last.pt", n_batches=4, device=None, importance=True):
+def report(run_dir, packs=None, ckpt="last.pt", n_batches=4, device=None, importance=True, batch=8, segment=16384):
     """Build <run>/health/report.html (+ findings.json). Returns (findings, html_path)."""
     run = Path(run_dir)
     ck = run / ckpt if not Path(ckpt).is_absolute() else Path(ckpt)
@@ -719,7 +719,8 @@ def report(run_dir, packs=None, ckpt="last.pt", n_batches=4, device=None, import
     if packs is None:
         cfg = torch.load(ck, map_location="cpu", weights_only=False).get("train_cfg", {})
         packs = cfg.get("packs", [])
-    snap = diagnose_checkpoint(ck, packs, n_batches=n_batches, device=device, importance=importance)
+    snap = diagnose_checkpoint(ck, packs, n_batches=n_batches, batch=batch, device=device, importance=importance,
+                               segment=segment)
     tcfg = torch.load(ck, map_location="cpu", weights_only=False).get("train_cfg") or {}
     findings = analyze(snap, history, train, val, clip=tcfg.get("grad_clip", 1.0),
                        ema_decay=tcfg.get("ema_decay", 0.999))
