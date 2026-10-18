@@ -142,11 +142,45 @@ Commit `2bbbb5d` ile tamamen geri alındı. Enterpolasyon upsampler / 64 kanal /
 | H2 | bf16, flow'un örnek düzeyindeki hassasiyeti için yetersiz | Aynı koşu fp32/TF32 ile | daha düşük val NLL, daha az hışırtı |
 | H3 | Model az eğitildi / kapasite 15 kategoriye bölündü | Tek kategori (rain ya da gunshot), 64 kanal, makaledeki gibi | seviye farkı < 3 dB, zarf korelasyonu > 0,7 (ham) |
 | H4 | Sıcaklık seviye/hışırtı dengesini belirliyor | Ham çıktıda 0,5–1,0 taraması, son işlemsiz | seviye ve ton fazlası eğrileri |
-| H5 | Taslak koşulu fazla zayıf bağlanıyor | Koşul gürültü augmentation'ını kapatma; taslak kanalını artırma (20 → 30, makalede en iyi kalite 30) | zarf korelasyonu |
+| H5 | Taslak koşulu fazla zayıf bağlanıyor (**base_v1 raporu destekliyor, §9a**) | Koşul gürültü augmentation'ını kapatma; taslak kanalını artırma (20 → 30, makalede en iyi kalite 30) | zarf korelasyonu |
 
 **Alternatif yollar:**
 - Hazır diffusion modeliyle zero-shot kıyas (`04_generate`, Stable Audio Open). Kalite tavanını görmek için.
 - Diffusion fine-tune, ancak 0.b'deki hatalar düzeltilerek: gerçek `seconds_total`, CFG için koşul dropout'u, batch ≥ 16, metin embedding'inden başlatılmış sayısal token.
+
+---
+
+## 9a. base_v1 sağlık raporu (`samples/base_v1/health/report.html`)
+
+`last.pt` (adım 11.783) ve `log.csv` ile, CPU'da 30 gerçek klip üzerinde (2 × 8192 örneklik kesit, 3 batch).
+
+| Bulgu | Değer | Yorum |
+|---|---|---|
+| Ölü / sönen gradyan | yok; ilk flow / son flow oranı 1,57 | Gradyan akışı sağlıklı |
+| Güncelleme oranı | medyan 1,6·10⁻⁴ (lr 3,4·10⁻⁵'te) | Ağırlıklar hâlâ hareket ediyor |
+| Ölü kanal / ölü ReLU | %0 / %2,6 | Sorun yok |
+| Gereksiz katman | 0/64 | Her katman katkı veriyor; flow katkısı f2 > f1 > f3 > … > f7 (en az, ΔNLL 0,10) |
+| Overfit | yok | Val 12 ölçümün hepsinde düştü (−0,74 → −4,0006) |
+| Gradyan kırpma | kayıtların %100'ü (clip 1,0; kırpma öncesi medyan 9,4, en büyük 73) | Kırpma her adımda devrede; ani sıçramalı adımlar orantısız küçülüyor |
+| Doymuş tanh | ortalama %8; flow'ların ilk katmanında %18–51, f0.L5–L7'de %32–58 | Gradyanın bir kısmı oradan geçemiyor |
+| Kapalı kapı | f0.L7 %65 | Flow 0'ın son katmanı büyük ölçüde kapalı |
+
+**Asıl bulgu: koşul sinyali çok zayıf.** Flow'ların ilk katmanında tanh girişini ikiye ayırınca (4 klip, ek ölçüm):
+
+| | ses yolundan gelen (rms) | taslak + etiketten gelen (rms) | doymuş (yalnız ses yolu) | doymuş (yalnız koşul) |
+|---|---|---|---|---|
+| flow 0 | 1,81 | 0,20 | %21 | %0 |
+| flow 1 | 9,51 | 0,21 | %48 | %0 |
+| flow 2 | 8,39 | 0,24 | %51 | %0 |
+| flow 3–7 | 2,0–2,9 | 0,20–0,28 | %19–24 | %0 |
+
+- Doygunluk tamamen ses yolundan geliyor. Taslak, ses yolunun **10–45 katı daha zayıf**. Doymuş bir tanh'ta küçük bir ek, çıktıyı neredeyse hiç değiştirmez; yani model taslağı büyük ölçüde duymuyor. Bu, "çıktı taslağın seviyesini ve zarfını takip etmiyor" gözlemiyle (bölüm 5) tutarlı ve **H5'i destekliyor**. Yalnız ilk katmanda ölçüldü; diğer katmanlar için ayrıca bakılmalı.
+- Flow 0 sesi yaklaşık e^3,3 ≈ 26 kat büyütüyor (ortalama |log s| = 3,27; girişin rms'i 0,13 → çıkışın rms'i 3,35). Flow 1–2'ye bu büyütülmüş sinyal giriyor ve en büyük ses yolu değerleri orada.
+
+**Önerilen düzeltmeler** (yeni koşu gerektirir; base_v1'e uygulanamaz):
+1. Flow'ların girişini normalize etmek: Glow'daki **ActNorm**, ya da ses yolunu öğrenilen bir ölçekle sınırlamak.
+2. Koşulu güçlendirmek: taslağı ortalaması 0, varyansı 1 olacak şekilde ölçeklemek ve/veya **FiLM** (koşuldan çarpan + kaydırma) kullanmak.
+3. `grad_clip`'i 1,0'dan ~20–30'a çekmek.
 
 ---
 
