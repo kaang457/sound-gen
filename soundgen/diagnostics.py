@@ -278,21 +278,26 @@ def diagnose_checkpoint(ckpt, packs, n_batches=4, batch=8, device=None, importan
 
 
 # ------------------------------------------------------------------ log.csv
-def read_log(run_dir):
+def read_log(run_dir, with_grad=False):
+    """(train, val[, grad]) as sorted (step, value) lists. A restarted run appends the same steps
+    again; the last row for a step wins."""
     import csv
     p = Path(run_dir) / "log.csv"
-    train, val = [], []
-    if not p.exists():
-        return train, val
-    for r in csv.DictReader(open(p)):
-        try:
-            if r.get("train_nll"):
-                train.append((int(r["step"]), float(r["train_nll"])))
-            if r.get("val_nll"):
-                val.append((int(r["step"]), float(r["val_nll"])))
-        except ValueError:
-            continue
-    return train, val
+    train, val, grad = {}, {}, {}
+    if p.exists():
+        for r in csv.DictReader(open(p)):
+            try:
+                s = int(r["step"])
+                if r.get("train_nll"):
+                    train[s] = float(r["train_nll"])
+                if r.get("val_nll"):
+                    val[s] = float(r["val_nll"])
+                if r.get("grad_norm"):
+                    grad[s] = float(r["grad_norm"])        # total norm BEFORE clipping
+            except ValueError:
+                continue
+    out = [sorted(train.items()), sorted(val.items())]
+    return (*out, sorted(grad.items())) if with_grad else tuple(out)
 
 
 # ------------------------------------------------------------------ rules -> findings
@@ -304,7 +309,7 @@ def _layer_keys(n_flows, n_layers):
     return [f"f{k}.L{i}" for k in range(n_flows) for i in range(n_layers)]
 
 
-def analyze(snap, history, train, val, clip=1.0, ema_decay=0.999):
+def analyze(snap, history, train, val, clip=1.0, ema_decay=0.999, grad_log=None):
     F = []
     nf, nl = snap["n_flows"], snap["n_layers"]
     lk = _layer_keys(nf, nl)
@@ -371,6 +376,17 @@ def analyze(snap, history, train, val, clip=1.0, ema_decay=0.999):
     elif not history:
         F.append(_f(INFO, "Gradyan", "Güncelleme oranı", "ölçülemedi",
                     "Checkpoint'te optimizer durumu yok (best.pt). last.pt ile ya da eğitim kaydıyla ölçülür."))
+    if not history and grad_log:
+        gn = np.array([v for _, v in grad_log])
+        frac = float(np.mean(gn > clip))
+        st = WARN if frac > T["clip_warn"] else OK
+        F.append(_f(st, "Gradyan", "Gradyan kırpma sıklığı (log.csv)",
+                    f"kayıtların %{100 * frac:.0f}'i > {clip}; kırpma öncesi norm medyanı {np.median(gn):.1f}, "
+                    f"en büyük {gn.max():.0f}",
+                    f"Toplam gradyan normu {clip} sınırını aştığında kırpılıyor. Neredeyse her adımda kırpılıyorsa "
+                    "adım boyunu lr değil kırpma belirliyor ve büyük gradyanlı adımlar orantısız küçülüyor.",
+                    "" if st == OK else "grad_clip'i tipik normun biraz üstüne çek (ör. medyanın 2-3 katı) ya da "
+                    "lr'yi düşür; patlama yoksa kırpma yalnız ani sıçramaları kesmeli."))
     if history:
         clip_frac = float(np.mean([h["clip_frac"] for h in history[-10:]]))
         nonfinite = sum(h["nonfinite"] for h in history)
@@ -715,7 +731,7 @@ def report(run_dir, packs=None, ckpt="last.pt", n_batches=4, device=None, import
     if not ck.exists():
         ck = run / "best.pt"
     history = read_history(run)
-    train, val = read_log(run)
+    train, val, grad_log = read_log(run, with_grad=True)
     if packs is None:
         cfg = torch.load(ck, map_location="cpu", weights_only=False).get("train_cfg", {})
         packs = cfg.get("packs", [])
@@ -723,7 +739,7 @@ def report(run_dir, packs=None, ckpt="last.pt", n_batches=4, device=None, import
                                segment=segment)
     tcfg = torch.load(ck, map_location="cpu", weights_only=False).get("train_cfg") or {}
     findings = analyze(snap, history, train, val, clip=tcfg.get("grad_clip", 1.0),
-                       ema_decay=tcfg.get("ema_decay", 0.999))
+                       ema_decay=tcfg.get("ema_decay", 0.999), grad_log=grad_log)
     figs = _figures(snap, history, train, val)
     out = run / "health"
     out.mkdir(exist_ok=True)
