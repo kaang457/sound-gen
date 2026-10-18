@@ -110,3 +110,26 @@ def push_to_github(files, dest="samples", message="Add samples from Colab", max_
             if attempt == 2:
                 raise
     print(f"pushed {len(files)} files ({size:.1f} MB) -> https://github.com/{REPO}/tree/main/{dest}")
+
+
+def health_report(run_dir, packs, push=True):
+    """Training health report right after training: build runs/<RUN>/health/report.html and push it.
+    Never raises: a failing report or push must not hide a finished training run."""
+    from .diagnostics import report
+    run = Path(run_dir)
+    try:
+        findings, path = report(run, packs=[str(p) for p in packs])
+    except Exception as e:                       # noqa: BLE001
+        print(f"health report skipped: {type(e).__name__}: {e}")
+        return None, None
+    try:
+        from IPython.display import HTML, display
+        display(HTML(path.read_text()))
+    except Exception:                            # noqa: BLE001
+        pass
+    if push:
+        try:
+            push_to_github([path], dest=f"samples/{run.name}/health", message=f"{run.name} health report")
+        except Exception as e:                   # noqa: BLE001
+            print(f"report saved to {path}, GitHub push failed: {e}")
+    return findings, path
