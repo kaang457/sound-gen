@@ -100,6 +100,8 @@ class WN2D(nn.Module):
         r, L = cfg.res_channels, cfg.n_layers
         self.r, self.L, self.p = r, L, cfg.dropout
         self.mc_dropout = False
+        self.probe = None        # dict -> record activation statistics (diagnostics)
+        self.ablate = None       # int -> silence that layer; "flow" -> identity flow (layer importance)
         self.start = weight_norm(nn.Conv2d(1, r, 1))
         self.cond = weight_norm(nn.Conv2d(cfg.n_mels, 2 * r * L, 1))
         self.label = nn.Linear(cfg.label_dim, 2 * r * L)
@@ -113,6 +115,9 @@ class WN2D(nn.Module):
         nn.init.zeros_(self.end.bias)
 
     def forward(self, x, c, g):
+        if self.ablate == "flow":
+            return torch.zeros_like(x), torch.zeros_like(x)
+        probe = self.probe
         # Shift down one row: row i only sees rows < i (autoregressive over height).
         x = F.pad(x, (0, 0, 1, 0))[:, :, :-1]
         h = self.start(x)
@@ -131,6 +136,10 @@ class WN2D(nn.Module):
                 # all rows, so the h autoregressive passes see the same sub-network.
                 acts = acts * self._mask(i, acts)
             out = rs(acts)
+            if i == self.ablate:
+                out = torch.zeros_like(out)
+            if probe is not None:
+                _record_layer(probe, i, a, b, acts, h, out, self.r, last=i == self.L - 1)
             if i < self.L - 1:
                 h = (h + out[:, : self.r]) * math.sqrt(0.5)
                 skip = skip + out[:, self.r:]
@@ -139,6 +148,8 @@ class WN2D(nn.Module):
         with torch.autocast(device_type=x.device.type, enabled=False):
             out = self.end(F.relu(skip.to(self.end.weight.dtype)))
         log_s, t = out.chunk(2, dim=1)
+        if probe is not None:
+            _record_end(probe, skip, log_s, t, x)
         return log_s, t
 
     def reset_masks(self):
@@ -152,6 +163,30 @@ class WN2D(nn.Module):
             m = torch.bernoulli(torch.full((B, C, 1, W), keep, device=acts.device)) / keep
             self._masks = {**getattr(self, "_masks", {}), i: m}
         return m.to(acts.dtype)
+
+
+@torch.no_grad()
+def _record_layer(probe, i, a, b, acts, h, out, r, last):
+    """Activation health of one gated layer (diagnostics only; 0-dim tensors, no GPU sync)."""
+    a, b, acts = a.float(), b.float(), acts.float()
+    near_zero = (acts.abs() < 1e-3).float().mean(dim=(0, 2, 3))          # per channel
+    stats = dict(
+        tanh_sat=(a.abs() > 2.5).float().mean(),      # tanh' < 0.03: gradient barely passes
+        gate_closed=(b < -4.0).float().mean(),        # sigmoid < 0.02: unit switched off
+        dead_ch=(near_zero > 0.99).float().mean(),    # channels silent on (almost) every input
+        skip=(out[:, r:] if not last else out).float().norm(),
+    )
+    if not last:
+        stats["res_ratio"] = out[:, :r].float().norm() / (h.float().norm() + 1e-12)
+    probe.setdefault("layers", {})[i] = stats
+
+
+@torch.no_grad()
+def _record_end(probe, skip, log_s, t, x):
+    s = skip.float()
+    probe["end"] = dict(
+        relu_dead=((s <= 0).float().mean(dim=(0, 2, 3)) > 0.99).float().mean(),
+        log_s=log_s.float().abs().mean(), t=t.float().abs().mean(), x=x.float().pow(2).mean().sqrt())
 
 
 def permute(x, k, n_flows):

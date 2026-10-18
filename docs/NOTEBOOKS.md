@@ -53,6 +53,7 @@ kurar ve Drive'ı bağlar. Bu yüzden repoya yapılan her düzeltme, hücre 0 te
 | 5 · Dinle | Son örnek turunda her kategori için `_ref` (gerçek) ve `_gen` (aynı taslaktan üretilen) |
 | 6 · GitHub'a gönder | Son örnekleri `samples/<RUN>/step_*`'e yollar |
 | 7 · Vitrin | `best.pt` ile tek klasörlük demo: her kategori için gerçek ve üretilen, aynı taslakla kategori geçişi, parametre taramaları ve varyasyonlar. `samples/<RUN>/showcase`'e yollar. |
+| 8 · Sağlık raporu | Eğitimin teşhisi: ölü gradyan / sönen gradyan / derinlik boyunca gradyan oranı, gerçek güncelleme oranı (‖Δw‖/‖w‖), gradyan kırpma sıklığı, ölü kanal, doymuş tanh, kapalı kapı, ölü ReLU, katman ve flow kapatma testiyle katman önemi, overfit / underfit. Her bulgu OK / UYARI / KRİTİK, değer, anlamı ve ne yapılacağıyla. `runs/<RUN>/health/report.html`'e yazar ve GitHub'a yollar. Eski koşularda (base_v1) da çalışır. |
 
 Ayrıntılı açıklama ve kavramlar: sohbet geçmişi ve [PROCESS.md §4](PROCESS.md). **base_v1 sonucu:** 11,8k adım, çıktılar
 ikna edici değil (1378 Hz katlarında vızıltı, seviye takibi yok); bkz. PROCESS.md §5.

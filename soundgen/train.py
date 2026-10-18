@@ -65,6 +65,7 @@ class TrainConfig:
     replay_ratio: float = 0.0
     log_every: int = 100
     max_minutes: float = None           # time budget: stop cleanly (eval + save + samples) when reached
+    diag_every: int = 250               # health record (gradients, updates, neurons) -> diag.jsonl; 0 = off
 
 
 # ------------------------------------------------------------------ checkpoints
@@ -276,6 +277,8 @@ def train(cfg: TrainConfig, device=None):
                 total += float(m.nll(x, mel(x), y)) * len(xs)
         return total / len(val_items)
 
+    from .diagnostics import Monitor
+    mon = Monitor(out, cfg.diag_every, cfg.grad_clip)
     model.train()
     t0, running, bad = time.time(), [], 0
     bar = tqdm(total=cfg.steps, initial=step, desc="training", unit="step", dynamic_ncols=True, mininterval=2)
@@ -290,6 +293,8 @@ def train(cfg: TrainConfig, device=None):
         sketch = _augment_sketch(mel(x), cfg.sketch_noise, cfg.sketch_blur_p)
         if cfg.label_dropout > 0:
             y = torch.where(torch.rand_like(y, dtype=torch.float) < cfg.label_dropout, 0, y)
+        if mon.due(step + 1):
+            mon.start(model)
         with _autocast(device, amp):
             loss = model.nll(x, sketch, y)
         total = loss
@@ -299,14 +304,26 @@ def train(cfg: TrainConfig, device=None):
             bad += 1
             tqdm.write(f"step {step}: non-finite loss, batch skipped ({bad})")
             opt.zero_grad(set_to_none=True)
+            mon.count(float("nan"))
+            if mon.active:
+                from .diagnostics import set_probes
+                set_probes(model, False)
+                mon.active = False
             if bad > 20:
                 raise RuntimeError("loss keeps diverging: lower lr or check the data")
             continue
         bad = 0
         opt.zero_grad(set_to_none=True)
         total.backward()
+        if mon.active:
+            mon.grads(model)                                   # before clipping
         gnorm = float(torch.nn.utils.clip_grad_norm_(trainable, cfg.grad_clip))
+        mon.count(gnorm)
+        if mon.active:
+            mon.snapshot(model)
         opt.step()
+        if mon.active:
+            mon.finish(model, step + 1, loss.item(), gnorm, sched.get_last_lr()[0])
         sched.step()
         ema.update(model)
         step += 1

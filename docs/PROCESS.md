@@ -170,6 +170,7 @@ için tekrarlanır; ileride bir router istenen kategoriye göre uzman modeli se�
 | Ne | Yer |
 |---|---|
 | Kod | `soundgen/`, notebook'lar `notebooks/01–04` |
+| Eğitim teşhisi | `soundgen/diagnostics.py`; eğitimde `runs/<RUN>/diag.jsonl`, rapor `runs/<RUN>/health/report.html` (02 hücre 8) |
 | Veri paketi | Drive `MyDrive/sound-gen/pack/` (DCASE + ESC-50, base_v1) · `pack_clean/` (ticari-temiz, tek kategori, clean_v1) |
 | base_v1 checkpoint'leri | Drive `MyDrive/sound-gen/runs/base_v1/` (`best.pt`, `last.pt`, `step_*.pt`, `sketch_bank.pt`, `log.csv`) |
 | Dinleme dosyaları | `samples/references`, `samples/base_v1/{step_011783, showcase, showcase_fixed, showcase_v2post}` |
