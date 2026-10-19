@@ -89,7 +89,7 @@ Yorum: Model taslağı henüz kullanmıyor. Çıktıları büyük ölçüde kate
 
 ---
 
-## 6. Deneme 1: son işlem (`samples/base_v1/showcase_fixed`)
+## 6. Deneme 1: son işlem (`samples/base_v1/rejected/postprocess_v1`)
 
 - **Yapılan:** k × 1378 Hz'e tarak notch filtre + üretilen sesin 20 bantlık spektrumunu referans taslağa zorlama (±30 dB).
 - **Kontrol:** Aynı işlem beyaz gürültüye uygulandı (`*_noise_baseline.wav`).
@@ -106,7 +106,7 @@ Yorum: Model taslağı henüz kullanmıyor. Çıktıları büyük ölçüde kate
 - 1378 Hz notch
 - Aynı commit'te **hiç çalıştırılmamış** bir yeniden eğitim ayarı: enterpolasyon upsampler, 64 kanal, fp32, 7 DCASE kategorisi
 
-**Sonuç** (`samples/base_v1/showcase_v2post`): "Thunder bile bozuldu; ya sadece gürültü ya sessizlik." Ölçüm bunu doğruluyor:
+**Sonuç** (`samples/base_v1/rejected/postprocess_v2`): "Thunder bile bozuldu; ya sadece gürültü ya sessizlik." Ölçüm bunu doğruluyor:
 
 | | gerçek | v1 ham | v2post |
 |---|---|---|---|
@@ -207,6 +207,6 @@ için tekrarlanır; ileride bir router istenen kategoriye göre uzman modeli se�
 | Eğitim teşhisi | `soundgen/diagnostics.py`; eğitimde `runs/<RUN>/diag.jsonl`, rapor `runs/<RUN>/health/report.html` (02 hücre 8) |
 | Veri paketi | Drive `MyDrive/sound-gen/pack/` (DCASE + ESC-50, base_v1) · `pack_clean/` (ticari-temiz, tek kategori, clean_v1) |
 | base_v1 checkpoint'leri | Drive `MyDrive/sound-gen/runs/base_v1/` (`best.pt`, `last.pt`, `step_*.pt`, `sketch_bank.pt`, `log.csv`) |
-| Dinleme dosyaları | `samples/references`, `samples/base_v1/{step_011783, showcase, showcase_fixed, showcase_v2post}` |
+| Dinleme dosyaları | `samples/references`, `samples/base_v1/{showcase, step_011783, health, rejected/postprocess_v1, rejected/postprocess_v2}` (ham çıktı: `showcase`) |
 | Önemli commit'ler | `da00df1` yeni yapı · `d0dee38` zaman bütçesi + vitrin · `3eede2f` deneme 1 · `c1d7a6a` deneme 2 · `2bbbb5d` geri alma |
 | Makaleler | Ping vd. 2020 (WaveFlow, arXiv 1912.01219); Andreu & Villanueva Aylagas 2022 (AIIDE) |
