@@ -62,7 +62,9 @@ class Generator:
 
     @torch.no_grad()
     def generate(self, label, controls=None, seed=0, temperature=0.8, mc_dropout=False,
-                 reference=None, ref_index=None, n=1, postprocess=True):
+                 reference=None, ref_index=None, n=1, postprocess=True, refine=None):
+        """refine="v1": comb notch at k*sr/16 + level/spectrum matched to the (edited) sketch, +-30 dB.
+        Kept after listening tests (samples/base_v1/postprocess_v1); "v2" was rejected and removed."""
         controls = controls or Controls()
         label_id = self.vocab.index(self._resolve(label))
         if reference is not None:
@@ -82,11 +84,49 @@ class Generator:
         self.model.set_mc_dropout(False)
         if postprocess:
             audio = np.stack([clean(a) for a in audio])
+        if refine == "v1":
+            audio = np.stack([refine_v1(a, sketch, self.mel_cfg) for a in audio])
+        elif refine:
+            raise ValueError(f"unknown refine mode {refine!r} (use None or 'v1')")
         ref_audio = ref["audio"].numpy().astype(np.float32) / 32768 if ref.get("audio") is not None else None
         return dict(audio=audio, sketch=sketch, base_sketch=base, label=label, controls=controls.to_dict(),
                     seed=seed, temperature=temperature, mc_dropout=mc_dropout,
                     reference_id=ref.get("id"), reference_audio=ref_audio,
                     reference_public_ok=bool(ref.get("public_ok")), attribution=ref.get("attribution"))
+
+
+def refine_v1(x, sketch, mel_cfg, sr=SR, max_db=30.0, q=30.0):
+    """Post-processing v1 (listening test: kept). 1) notch the tones at k * sr/16 that the 16-row squeeze
+    leaves; 2) push the output's coarse spectrum toward the conditioning sketch (+-max_db per band/frame).
+    Note: step 2 imposes the sketch with DSP; compare with the same shaping on white noise to judge the model."""
+    import torchaudio
+    from scipy.signal import filtfilt, iirnotch
+    x = np.asarray(x, np.float64)
+    f0 = sr / 16
+    for k in range(1, int((sr / 2) // f0) + 1):
+        if k * f0 >= sr / 2 - 1:
+            break
+        b, a = iirnotch(k * f0, q, sr)
+        x = filtfilt(b, a, x)
+    c = mel_cfg if isinstance(mel_cfg, dict) else mel_cfg.to_dict()
+    n_fft, hop = c["n_fft"], c["hop"]
+    fb = torchaudio.functional.melscale_fbanks(n_fft // 2 + 1, c["f_min"], c["f_max"], c["n_mels"], sr,
+                                               norm="slaney", mel_scale="slaney").numpy()      # [bins, bands]
+    t = torch.from_numpy(np.ascontiguousarray(x, dtype=np.float32))
+    win = torch.hann_window(n_fft)
+    X = torch.stft(t, n_fft, hop, window=win, return_complex=True, center=True)
+    cur = fb.T @ (X.abs() ** 2).numpy()
+    tgt = 10 ** ((np.asarray(sketch) * 100 - 100) / 10)                  # sketch -> mel power
+    F = min(cur.shape[1], tgt.shape[1])
+    g = np.clip(10 * np.log10((tgt[:, :F] + 1e-10) / (cur[:, :F] + 1e-10)), -max_db, max_db)
+    g = np.apply_along_axis(lambda r: np.convolve(r, np.ones(3) / 3, mode="same"), 1, g)
+    w = fb / (fb.sum(1, keepdims=True) + 1e-9)
+    gain = torch.from_numpy((10 ** ((w @ g) / 20)).astype(np.float32))
+    y = torch.istft(X[:, :F] * gain, n_fft, hop, window=win, length=min(len(x), (F - 1) * hop)).numpy()
+    peak = np.abs(y).max()
+    if peak > 0.95:
+        y = y / peak * 0.95
+    return y.astype(np.float32)
 
 
 def clean(x, sr=SR, spike_db=12.0):

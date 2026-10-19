@@ -23,7 +23,7 @@ def _save(folder, name, audio):
     return f"{name}.wav"
 
 
-def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=None):
+def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=None, refine=None):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     labels = labels or gen.labels
@@ -34,7 +34,7 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
     per_label = max(1, 4 // len(labels))            # a single-category model shows 4 pairs (bank keeps audio for 4)
     for label in tqdm(labels, desc="real vs generated", unit="label"):
         for k in range(per_label):
-            r = gen.generate(label, Controls(), seed=seed, ref_index=k)
+            r = gen.generate(label, Controls(), refine=refine, seed=seed, ref_index=k)
             name = label.replace("/", "__") + (f"_{k}" if per_label > 1 else "")
             row = dict(label=label, generated=_save(out, f"{name}_gen", r["audio"][0]))
             if r["reference_audio"] is not None:
@@ -50,8 +50,8 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
         base = ref["audio"].numpy() / 32768 if ref.get("audio") is not None else None
         items = []
         for label in tqdm(swap, desc="category switch", unit="label"):
-            r = gen.generate(label, Controls(), seed=seed, reference=base) if base is not None else \
-                gen.generate(label, Controls(), seed=seed)
+            r = gen.generate(label, Controls(), refine=refine, seed=seed, reference=base) if base is not None else \
+                gen.generate(label, Controls(), refine=refine, seed=seed)
             items.append(dict(label=label, generated=_save(out, f"switch_{label.replace('/', '__')}", r["audio"][0])))
         sections.append(dict(title=f"Kategori geçişi: aynı taslak ({swap[0]}), farklı kategori", kind="list",
                              items=items, text="Aynı zaman/enerji taslağı, kategori etiketi değişince farklı bir sese dönüşür."))
@@ -64,7 +64,7 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
     for param, values in tqdm(sweeps, desc=f"parameter sweeps ({probe})", unit="param"):
         items = []
         for v in values:
-            r = gen.generate(probe, Controls(**{param: v}), seed=seed, ref_index=0)
+            r = gen.generate(probe, Controls(**{param: v}), refine=refine, seed=seed, ref_index=0)
             items.append(dict(label=f"{param} = {v}",
                               generated=_save(out, f"sweep_{param}_{str(v).replace('.', 'p').replace('-', 'm')}", r["audio"][0])))
         sections.append(dict(title=f"Parametre: {param} ({probe})", kind="list", items=items, text=""))
@@ -72,7 +72,7 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
     # 4. variations of one request
     items = []
     for i, (s, mc) in enumerate([(seed, False), (seed + 1, False), (seed + 2, False), (seed, True)]):
-        r = gen.generate(probe, Controls(), seed=s, mc_dropout=mc, ref_index=0)
+        r = gen.generate(probe, Controls(), refine=refine, seed=s, mc_dropout=mc, ref_index=0)
         items.append(dict(label=f"seed {s}" + (" + MC dropout" if mc else ""),
                           generated=_save(out, f"variation_{i}", r["audio"][0])))
     sections.append(dict(title=f"Varyasyonlar: aynı istek ({probe})", kind="list", items=items,

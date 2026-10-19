@@ -89,12 +89,14 @@ Yorum: Model taslağı henüz kullanmıyor. Çıktıları büyük ölçüde kate
 
 ---
 
-## 6. Deneme 1: son işlem (`samples/base_v1/rejected/postprocess_v1`)
+## 6. Deneme 1: son işlem (`samples/base_v1/postprocess_v1`), kabul edildi
 
 - **Yapılan:** k × 1378 Hz'e tarak notch filtre + üretilen sesin 20 bantlık spektrumunu referans taslağa zorlama (±30 dB).
 - **Kontrol:** Aynı işlem beyaz gürültüye uygulandı (`*_noise_baseline.wav`).
 - **Ölçüm:** Tonlar −25…−33 dB'ye indi, seviye referansa 0–5 dB yaklaştı, mel korelasyonu ~0,8'den ~0,96'ya çıktı.
 - **Dinleme:** "Benzerlik daha fazla ama farklı tonda bir cızırtı var."
+- **Karar (19 Ekim):** v1 beğenildi ve tutuldu; v2 reddedildi. v1 artık `Generator.generate(refine="v1")` (kod: `generate.refine_v1`); 02 hücre 7 ve 04'te varsayılan. Not: taslağa eşleme sesi DSP ile taslağa zorluyor; modelin kendi katkısını görmek için `refine="none"` ya da `*_noise_baseline.wav` kontrolüyle kıyasla.
+- **Dinleme geri bildirimi (19 Ekim):** v1'de door_knock, dog_bark, cough_sneeze, birds ve thunder "bu eğitim seviyesine göre çok umut verici". Bir sonraki karşılaştırmada aynı beş kategori `*_noise_baseline.wav` ile kıyaslanmalı: fark ne kadar büyükse o kadarı modelin katkısı.
 
 ---
 
@@ -207,6 +209,6 @@ için tekrarlanır; ileride bir router istenen kategoriye göre uzman modeli se�
 | Eğitim teşhisi | `soundgen/diagnostics.py`; eğitimde `runs/<RUN>/diag.jsonl`, rapor `runs/<RUN>/health/report.html` (02 hücre 8) |
 | Veri paketi | Drive `MyDrive/sound-gen/pack/` (DCASE + ESC-50, base_v1) · `pack_clean/` (ticari-temiz, tek kategori, clean_v1) |
 | base_v1 checkpoint'leri | Drive `MyDrive/sound-gen/runs/base_v1/` (`best.pt`, `last.pt`, `step_*.pt`, `sketch_bank.pt`, `log.csv`) |
-| Dinleme dosyaları | `samples/references`, `samples/base_v1/{showcase, step_011783, health, rejected/postprocess_v1, rejected/postprocess_v2}` (ham çıktı: `showcase`) |
+| Dinleme dosyaları | `samples/references`, `samples/base_v1/{showcase, step_011783, health, postprocess_v1, rejected/postprocess_v2}` (ham çıktı: `showcase`) |
 | Önemli commit'ler | `da00df1` yeni yapı · `d0dee38` zaman bütçesi + vitrin · `3eede2f` deneme 1 · `c1d7a6a` deneme 2 · `2bbbb5d` geri alma |
 | Makaleler | Ping vd. 2020 (WaveFlow, arXiv 1912.01219); Andreu & Villanueva Aylagas 2022 (AIIDE) |
