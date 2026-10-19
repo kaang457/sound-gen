@@ -4,10 +4,10 @@
 
 | Klasör | Ne | Durum |
 |---|---|---|
-| `showcase/` | Modelin ham çıktısı (`best.pt`): gerçek ve üretilen, kategori geçişi, parametre taramaları | **Değerlendirilecek olan bu** |
+| `showcase/` | Modelin çıktısı (`best.pt`) + standart hafif temizlik (alçak frekans süzgeci, sabit ton bastırma, kenar yumuşatma, limiter): gerçek ve üretilen, kategori geçişi, parametre taramaları | **Değerlendirilecek olan bu** |
 | `step_011783/` | Eğitimin son adımında yazılan gerçek/üretilen çiftleri | Ham çıktı, eğitim sırasında |
 | `health/report.html` | Eğitim sağlık raporu | Bkz. `docs/PROCESS.md` §9a |
 | `rejected/postprocess_v1/` | Ham çıktıya uygulanan 1. son işlem denemesi (notch filtre + zarf eşleme) | ❌ Reddedildi: cızırtı farklı tonda sürdü |
-| `rejected/postprocess_v2/` | 2. son işlem denemesi ("v2") | ❌ Reddedildi ve kodu geri alındı: ya gürültü ya sessizlik |
+| `rejected/postprocess_v2/` | 2. son işlem denemesi ("v2"): gürültüsü agresif bastırılmış vitrin, parametre taramaları dahil | ❌ Reddedildi ve kodu geri alındı: ya gürültü ya sessizlik |
 
 `rejected/` altındakiler aynı modelin çıktısına sonradan uygulanmış işlemler; ayrı modeller değil. Ayrıntılar: `docs/PROCESS.md` §6–7.
