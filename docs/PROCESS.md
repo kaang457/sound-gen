@@ -186,6 +186,16 @@ Commit `2bbbb5d` ile tamamen geri alındı. Enterpolasyon upsampler / 64 kanal /
 
 ---
 
+## 9c. Mimari kararı: tür başına uzman değil, tek ortak model (19 Ekim)
+
+Her ses türü için ayrı bir uzman model, her tür için yeterli veri bulmayı gerektiriyor; bu gerçekçi değil. Karar:
+- **Tek ortak WaveFlow:** tüm türler bir modelde, ses türü girdi olarak (etiket embedding'i) veriliyor.
+- **Az verili tür:** model donuk, yalnız türün etiket vektörü öğreniliyor (`freeze="embedding_only"`, 03'te < 30 klip için zaten seçiliyor).
+- **Alt tür:** etiket vektörü ebeveynden başlıyor (`footsteps/snow` ← `footsteps`), kodda var.
+- **Uzman (tam ince ayar):** yalnız verisi bol ve kalitesi kritik türler için isteğe bağlı.
+
+---
+
 ## 9b. Sonraki koşu: `clean_v1` (planlandı)
 
 Karar: önce **tek kategoride**, **ticari kullanıma uygun** veriyle bir uzman model. Sonra aynısı diğer kategoriler
