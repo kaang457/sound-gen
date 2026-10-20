@@ -48,7 +48,7 @@ kurar ve Drive'ı bağlar. Bu yüzden repoya yapılan her düzeltme, hücre 0 te
 |---|---|
 | 1 · Ayarlar | `RUN` (çalışma adı, varsayılan `clean_v1`; aynı adla tekrar çalıştırma devam ettirir), `PACK` (01'in yazdığı paket), `UPSAMPLER` (`interp` = vızıltı düzeltmesi H1, `transposed` = makale / base_v1), `STEPS`, `MAX_HOURS`, `PRESET` (GPU'ya göre model boyutu), `SMOKE_TEST_FIRST` |
 | 2 · Smoke test | Sentetik seslerle 1–2 dakikalık uçtan uca deneme: eğitim → fine-tune → üretim. Sadece kodun çalıştığını gösterir. |
-| 3 · Eğit | Paketi yerel diske kopyalar ve koşullu WaveFlow'u **sıfırdan** eğitir. Her adımda 8 kesit (~0,74 s) alınır, 20 bantlık taslak çıkarılır, NLL hesaplanıp ağırlıklar güncellenir. 1.000 adımda bir doğrulama + checkpoint, 2.500 adımda bir dinleme örnekleri. Süre dolunca düzgünce durur; tekrar çalıştırılınca kaldığı yerden devam eder. |
+| 3 · Eğit | Bitince son örnekleri ve sağlık raporunu otomatik GitHub'a gönderir. Paketi yerel diske kopyalar ve koşullu WaveFlow'u **sıfırdan** eğitir. Her adımda 8 kesit (~0,74 s) alınır, 20 bantlık taslak çıkarılır, NLL hesaplanıp ağırlıklar güncellenir. 1.000 adımda bir doğrulama + checkpoint, 2.500 adımda bir dinleme örnekleri. Süre dolunca düzgünce durur; tekrar çalıştırılınca kaldığı yerden devam eder. |
 | 4 · Kayıp eğrisi | Train ve val NLL grafiği |
 | 5 · Dinle | Son örnek turunda her kategori için `_ref` (gerçek) ve `_gen` (aynı taslaktan üretilen) |
 | 6 · GitHub'a gönder | Son örnekleri `samples/<RUN>/step_*`'e yollar |
