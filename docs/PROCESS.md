@@ -210,7 +210,7 @@ gradyan kırpma sıklığı ayrıca izlenecek. Sentetik ve kısa bir test; gerç
 ## 9e. poc_v1: kavram kanıtı için lisans filtresiz en büyük veri (20 Ekim)
 
 Karar: büyük eğitim kavram kanıtı içindir; ticari olmayan veri de dahil. 01 `DATASET="poc_max"`: DCASE 2023 T7 +
-ESC-50 + FSD50K'nın tamamı (konuşma/müzik hariç), kategorisizler "other" (`MAX_OTHER=12000` parça) → `pack_poc`.
+ESC-50 + FSD50K'nın tamamı: dev **ve eval** bölümü (+10.231 klip, +27,9 saat; konuşma/müzik hariç), kategorisizler "other" (`MAX_OTHER=16000` parça) → `pack_poc`. Eval indirmesi Zenodo dosya listesine göre yazıldı ve gerçek parçalı zip'lerle (sahte içerik) uçtan uca test edildi.
 02 `RUN="poc_v1"`, düzeltmeler açık. **Bu modelin çıktıları ticari kullanılamaz**; ticari yol için `pack_full` duruyor.
 
 ## 9c. Mimari kararı: tür başına uzman değil, tek ortak model (19 Ekim)

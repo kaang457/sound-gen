@@ -44,6 +44,7 @@ SOURCES = {
         base="https://zenodo.org/records/4060432/files/",
         parts=["FSD50K.dev_audio.z01", "FSD50K.dev_audio.z02", "FSD50K.dev_audio.z03",
                "FSD50K.dev_audio.z04", "FSD50K.dev_audio.z05", "FSD50K.dev_audio.zip"],
+        eval_parts=["FSD50K.eval_audio.z01", "FSD50K.eval_audio.zip"],   # +10,231 clips, 27.9 h, 6.2 GB
         gt="FSD50K.ground_truth.zip", meta="FSD50K.metadata.zip",
         license="per clip CC (see FSD50K metadata)",
         attribution="FSD50K, Fonseca et al. (2022)"),
@@ -139,18 +140,18 @@ def fetch_esc50(raw):
     return out
 
 
-def fsd50k_index(raw):
+def fsd50k_index(raw, split="dev"):
     """Small downloads only (labels + per-clip metadata, ~10 MB).
-    -> (rows of dev.csv, {fname: dict(license, uploader, title)})"""
+    -> (rows of <split>.csv, {fname: dict(license, uploader, title)}); split = "dev" | "eval"""
     s = SOURCES["fsd50k"]
     raw = Path(raw) / "fsd50k"
     gt = download(s["base"] + s["gt"] + "?download=1", raw / s["gt"])
     with zipfile.ZipFile(gt) as z:
-        dev_csv = [n for n in z.namelist() if n.endswith("dev.csv")][0]
-        rows = list(csv.DictReader(z.read(dev_csv).decode().splitlines()))
+        split_csv = [n for n in z.namelist() if n.endswith(f"/{split}.csv") or n == f"{split}.csv"][0]
+        rows = list(csv.DictReader(z.read(split_csv).decode().splitlines()))
     meta_zip = download(s["base"] + s["meta"] + "?download=1", raw / s["meta"])
     with zipfile.ZipFile(meta_zip) as z:
-        name = [n for n in z.namelist() if "dev_clips_info" in n and n.endswith(".json")][0]
+        name = [n for n in z.namelist() if f"{split}_clips_info" in n and n.endswith(".json")][0]
         info = json.loads(z.read(name))
     clips = {str(k): dict(license=v.get("license", ""), uploader=v.get("uploader", "?"),
                           title=v.get("title", "")) for k, v in info.items()}
@@ -186,13 +187,14 @@ def fsd50k_census(raw, cats=None):
     return out
 
 
-def fetch_fsd50k(raw, wanted_labels, exclude, commercial=False, keep_all=False):
+def fetch_fsd50k(raw, wanted_labels, exclude, commercial=False, keep_all=False, split="dev"):
     """~20 GB download (split zip). Extracts only clips carrying a wanted label (keep_all: every clip
     not excluded) and, with commercial=True, only CC0 / CC BY clips."""
     s = SOURCES["fsd50k"]
-    rows, clips = fsd50k_index(raw)
+    rows, clips = fsd50k_index(raw, split)
     raw = Path(raw) / "fsd50k"
-    out = raw / "audio"
+    out = raw / ("audio" if split == "dev" else f"audio_{split}")
+    parts = s["parts"] if split == "dev" else s[f"{split}_parts"]
     keep, dropped = {}, 0
     for r in rows:
         labels = set(r["labels"].split(","))
@@ -204,19 +206,20 @@ def fetch_fsd50k(raw, wanted_labels, exclude, commercial=False, keep_all=False):
                 dropped += 1
                 continue
             keep[r["fname"]] = sorted(hit)
-    print(f"FSD50K: {len(keep)} clips match the wanted labels"
+    print(f"FSD50K {split}: {len(keep)} clips match the wanted labels"
           + (f" ({dropped} non-commercial clips skipped)" if commercial else ""))
-    if out.exists() and len(list(out.glob("*.wav"))) >= len(keep) * 0.99:
+    have = sum((out / f"{k}.wav").exists() for k in keep) if out.exists() else 0
+    if have >= len(keep) * 0.99:
         return out, keep, clips
-    for p in s["parts"]:
+    for p in parts:
         download(s["base"] + p + "?download=1", raw / p)
-    merged = raw / "dev_unsplit.zip"
+    merged = raw / f"{split}_unsplit.zip"
     if not merged.exists():
         if not shutil.which("zip"):
             subprocess.run(["apt-get", "install", "-y", "-qq", "zip"], check=True)
-        subprocess.run(["zip", "-q", "-s", "0", str(raw / "FSD50K.dev_audio.zip"), "--out", str(merged)], check=True)
-        for p in s["parts"]:                       # free ~18 GB
-            (raw / p).unlink(missing_ok=True)
+        subprocess.run(["zip", "-q", "-s", "0", str(raw / f"FSD50K.{split}_audio.zip"), "--out", str(merged)], check=True)
+        for p in raw.glob(f"FSD50K.{split}_audio.z*"):   # free every part (dev ~18 GB, eval ~6 GB)
+            p.unlink(missing_ok=True)
     out.mkdir(parents=True, exist_ok=True)
     print("FSD50K: merging the split archive (a few minutes)...", flush=True)
     with zipfile.ZipFile(merged) as z:
@@ -258,7 +261,7 @@ def fetch_freesound(raw, api_key, label, queries, per_query=100,
 
 # ------------------------------------------------------------------ collect
 def collect(raw, sources=("dcase", "esc50"), freesound_key=None, custom_dir=None, cats=None,
-            only_labels=None, commercial=False, include_other=False):
+            only_labels=None, commercial=False, include_other=False, fsd50k_eval=False):
     """-> list of dict(path, label, source, src_id, license, attribution).
     commercial=True: only sources/clips whose license allows commercial use (CC0, CC BY,
     your own recordings); ESC-50 and DCASE are dropped.
@@ -307,11 +310,13 @@ def collect(raw, sources=("dcase", "esc50"), freesound_key=None, custom_dir=None
     if "fsd50k" in sources:
         m = lookup("fsd50k")
         wanted = [n for spec in table.values() for n in spec.get("fsd50k", []) or []]
-        root, keep, clips = fetch_fsd50k(raw, wanted, cats.get("fsd50k_exclude", []), commercial,
-                                         keep_all=include_other)
-        for fname, labels in keep.items():
-            label = next((m[_norm(n)] for n in labels if _norm(n) in m), "other" if include_other else None)
-            if label:
+        for split in (("dev", "eval") if fsd50k_eval else ("dev",)):
+            root, keep, clips = fetch_fsd50k(raw, wanted, cats.get("fsd50k_exclude", []), commercial,
+                                             keep_all=include_other, split=split)
+            for fname, labels in keep.items():
+                label = next((m[_norm(n)] for n in labels if _norm(n) in m), "other" if include_other else None)
+                if not label:
+                    continue
                 c = clips.get(fname, {})
                 lic = c.get("license", "")
                 items.append(dict(path=str(root / f"{fname}.wav"), label=label, source="fsd50k",
