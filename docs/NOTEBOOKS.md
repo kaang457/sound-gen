@@ -24,7 +24,7 @@ kurar ve Drive'ı bağlar. Bu yüzden repoya yapılan her düzeltme, hücre 0 te
 
 | Hücre | Ne yapıyor |
 |---|---|
-| 1 · Ayarlar | `COMMERCIAL_ONLY` (varsayılan açık), `CATEGORY` (`auto` / `all` / bir etiket), `PACK_NAME`, kaynak seçimi, `MAX_PER_LABEL` |
+| 1 · Ayarlar | `DATASET`: `poc_max` (varsayılan; lisans filtresiz en büyük veri: DCASE + ESC-50 + FSD50K'nın tümü + "other" → `pack_poc`; çıktılar ticari kullanılamaz) · `commercial` (yalnız CC0 / CC BY → `pack_full`) · `manual`. Ayrıca `CATEGORY`, `INCLUDE_OTHER`, `MAX_OTHER`, `PACK_NAME`, `MAX_PER_LABEL` |
 | 2 · Sayım | Yalnız FSD50K'nın etiket ve lisans dosyalarını indirir (~10 MB). Kategori başına klip sayısını "CC0 + CC BY" ve "tümü" olarak yazar. `auto` ise en çok ticari-temiz klibi olan kategoriyi seçer. |
 | 3 · İndir ve paketle | Ticari modda ESC-50 ve DCASE'i atlar, FSD50K'dan yalnız CC0 / CC BY klipleri alır. Sesleri 22,05 kHz mono'ya çevirir, sessizliği kırpar, ≤ 6 s parçalara böler, tek dosyada paketler. Kayıtlar kaynak dosyaya göre train/val/test'e bölünür. Atıf listesini yazar. |
 | 4 · Özet ve dinleme | Kategori × bölüm sayım tablosu, dakika, kategori başına 3 örnek ve atıfları |

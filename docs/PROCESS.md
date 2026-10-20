@@ -207,6 +207,12 @@ Düzeltmeler koşulu ~4 kat güçlendiriyor ve öğrenmeyi belirgin hızlandır�
 yani yalnız taslak ölçeğinden gelmiyor. Varsayılan 0,25 kaldı (en iyi val); full_v1'in sağlık raporunda doygunluk ve
 gradyan kırpma sıklığı ayrıca izlenecek. Sentetik ve kısa bir test; gerçek veride doğrulanması gerekiyor.
 
+## 9e. poc_v1: kavram kanıtı için lisans filtresiz en büyük veri (20 Ekim)
+
+Karar: büyük eğitim kavram kanıtı içindir; ticari olmayan veri de dahil. 01 `DATASET="poc_max"`: DCASE 2023 T7 +
+ESC-50 + FSD50K'nın tamamı (konuşma/müzik hariç), kategorisizler "other" (`MAX_OTHER=12000` parça) → `pack_poc`.
+02 `RUN="poc_v1"`, düzeltmeler açık. **Bu modelin çıktıları ticari kullanılamaz**; ticari yol için `pack_full` duruyor.
+
 ## 9c. Mimari kararı: tür başına uzman değil, tek ortak model (19 Ekim)
 
 Her ses türü için ayrı bir uzman model, her tür için yeterli veri bulmayı gerektiriyor; bu gerçekçi değil. Karar:
