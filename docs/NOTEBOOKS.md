@@ -47,7 +47,7 @@ kurar ve Drive'ı bağlar. Bu yüzden repoya yapılan her düzeltme, hücre 0 te
 | Hücre | Ne yapıyor |
 |---|---|
 | 1 · Ayarlar | `RUN` (varsayılan `poc_v1`; aynı adla tekrar çalıştırma devam ettirir), `PACK`, `UPSAMPLER`, `STEPS` (0 = süreden hesapla), `MAX_HOURS`, `FIXES` (taslak normalizasyonu, ActNorm, dropout 0, grad_clip 25), `PRESET` |
-| 2 · Smoke test | Sentetik seslerle 1–2 dakikalık uçtan uca deneme |
+| 2 · Kuru deneme | Büyük eğitimden önce bir kez: Drive boş alanı, gerçek veriyle ~10 dk eğitim (kayıp düşüyor mu, NaN var mı), sonra yayın ve GitHub gönderimi (`results/<RUN>_dry/`). Hepsi ✅ ise hücre 3 |
 | 3 · Eğit ve yayınla | Paketi yerel diske kopyalar, modeli **sıfırdan** eğitir (1.000 adımda bir doğrulama + checkpoint, 5.000 adımda bir ara örnek, 250 adımda bir sağlık ölçümü). Süre dolunca durur, sonra `colab.publish`: vitrin (v1 son işlemiyle), sağlık raporu, küçültülmüş model ve README'yi `results/<RUN>/`'a gönderir |
 | 4 · Kayıp eğrisi | Train ve val NLL grafiği |
 | 5 · Sonuçları aç | README'yi ve vitrini notebook'ta gösterir |
