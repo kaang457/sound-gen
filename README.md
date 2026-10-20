@@ -129,17 +129,18 @@ Benim repoya yaptığım her güncelleme, bir sonraki çalıştırmada bu hücre
 Eğitim hücresini tekrar çalıştırman yeterli: Drive'daki `runs/<RUN>/last.pt`'den devam eder.
 
 ### 5. Çıktıların GitHub'a gelmesi
-Son hücreler `colab.push_to_github(...)` ile referans + üretim WAV'larını (≤6 s, 22 kHz/16-bit, dosya başına
-~260 KB) ve `metrics.json`'u `samples/<RUN>/...` altına gönderir. Model ağırlıkları ve veri git'e girmez,
-Drive'da kalır. Repo **public** olduğu için yalnız paylaşılabilir lisanslı referanslar gönderilir. ESC-50
-(CC BY-NC) ve DCASE'in BBC kaynaklı klipleri gönderilmez.
+Eğitim hücresi (02, hücre 3) bitince her koşu için tek, sade bir klasör gönderir: `results/<RUN>/` →
+`README.md`, `showcase.html` (bütün sesler tek sayfada), `health.html` (sağlık raporu), `model.pt` (üretim
+ağırlıkları, fp16) ve `sketch_bank.pt`. Checkpoint'ler, ara örnekler ve veri Drive'da kalır. Repo **public**
+olduğu için paylaşılamaz lisanslı gerçek kayıtlar (ESC-50, DCASE'in BBC klipleri, FSD50K NC) vitrine ve bankaya
+konmaz. Eski çıktılar `archive` dalında.
 
 ### Drive düzeni
 ```
 MyDrive/sound-gen/
   pack/          audio.bin + index.csv (işlenmiş veri, lisans/atıf dahil)
   custom/        senin seslerin: custom/<etiket>/*.wav
-  runs/<RUN>/    best.pt, last.pt, step_*.pt, sketch_bank.pt, log.csv, samples/
+  runs/<RUN>/    best.pt, last.pt, step_*.pt, sketch_bank.pt, log.csv, diag.jsonl, samples/, publish/
 ```
 
 ---
@@ -155,10 +156,12 @@ soundgen/
   generate.py   üretim + post-processing + dışa aktarma
   evaluate.py   CLAP metrikleri, kontrol testleri, diffusion kıyası
   colab.py      Drive + GitHub'a gönderme
+  publish.py    koşu sonucunu sade klasöre çevirme (vitrin, model, rapor)
+  diagnostics.py eğitim sağlık raporu
   smoke.py      sentetik verilerle uçtan uca test (python -m soundgen.smoke)
 configs/categories.yaml   kategori taksonomisi ve kaynak eşlemeleri
 notebooks/                01-04
-samples/                  Colab'den gelen referans + üretim sesleri
+results/                  koşu başına sade sonuç klasörü (eski çıktılar: archive dalı)
 ```
 
 ## Bilinen sınırlar

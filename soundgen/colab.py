@@ -63,7 +63,7 @@ def local_copy(src, dst):
     return dst
 
 
-def push_to_github(files, dest="samples", message="Add samples from Colab", max_mb=20):
+def push_to_github(files, dest="results", message="Add results from Colab", max_mb=20):
     """Copy files into the repo under `dest` and push. Uses the GITHUB_TOKEN secret."""
     token = secret("GITHUB_TOKEN")
     if not token:
@@ -129,7 +129,25 @@ def health_report(run_dir, packs, push=True):
         pass
     if push:
         try:
-            push_to_github([path], dest=f"samples/{run.name}/health", message=f"{run.name} health report")
+            push_to_github([path], dest=f"results/{run.name}", message=f"{run.name} health report")
         except Exception as e:                   # noqa: BLE001
             print(f"report saved to {path}, GitHub push failed: {e}")
     return findings, path
+
+
+def publish(run_dir, packs, refine="v1", push=True):
+    """Tidy results of a run -> <run>/publish/ (Drive) and GitHub results/<RUN>/ (README, model, bank,
+    showcase.html, health.html). Never raises: a failure here must not hide a finished training run."""
+    from .publish import publish_run
+    run = Path(run_dir)
+    try:
+        files = publish_run(run, packs, refine=refine)
+    except Exception as e:                       # noqa: BLE001
+        print(f"publish skipped: {type(e).__name__}: {e}")
+        return []
+    if push:
+        try:
+            push_to_github(files, dest=f"results/{run.name}", message=f"{run.name} results", max_mb=190)
+        except Exception as e:                   # noqa: BLE001
+            print(f"results saved on Drive ({run / 'publish'}), GitHub push failed: {e}")
+    return files

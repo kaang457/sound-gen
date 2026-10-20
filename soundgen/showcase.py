@@ -23,7 +23,9 @@ def _save(folder, name, audio):
     return f"{name}.wav"
 
 
-def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=None, refine=None):
+def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=None, refine=None,
+             public_only=False):
+    """public_only: real reference clips only when their license allows sharing (public repos)."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     labels = labels or gen.labels
@@ -37,8 +39,11 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
             r = gen.generate(label, Controls(), refine=refine, seed=seed, ref_index=k)
             name = label.replace("/", "__") + (f"_{k}" if per_label > 1 else "")
             row = dict(label=label, generated=_save(out, f"{name}_gen", r["audio"][0]))
-            if r["reference_audio"] is not None:
+            if r["reference_audio"] is not None and (r["reference_public_ok"] or not public_only):
                 row["real"] = _save(out, f"{name}_real", r["reference_audio"])
+                row["attribution"] = r.get("attribution") or ""
+            elif r["reference_audio"] is not None:
+                row["note"] = "gerçek kayıt paylaşılamaz lisanslı, gösterilmiyor"
             items.append(row)
     sections.append(dict(title="Gerçek ve üretilen", kind="pairs", items=items,
                          text="Model yalnız 20 bantlık kaba taslağı ve kategori adını görür; dalga formunun ayrıntısını kendisi üretir."))
