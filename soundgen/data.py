@@ -186,9 +186,9 @@ def fsd50k_census(raw, cats=None):
     return out
 
 
-def fetch_fsd50k(raw, wanted_labels, exclude, commercial=False):
-    """~20 GB download (split zip). Extracts only clips carrying a wanted label
-    (and, with commercial=True, only CC0 / CC BY clips)."""
+def fetch_fsd50k(raw, wanted_labels, exclude, commercial=False, keep_all=False):
+    """~20 GB download (split zip). Extracts only clips carrying a wanted label (keep_all: every clip
+    not excluded) and, with commercial=True, only CC0 / CC BY clips."""
     s = SOURCES["fsd50k"]
     rows, clips = fsd50k_index(raw)
     raw = Path(raw) / "fsd50k"
@@ -198,7 +198,7 @@ def fetch_fsd50k(raw, wanted_labels, exclude, commercial=False):
         labels = set(r["labels"].split(","))
         if labels & set(exclude):
             continue
-        hit = labels & set(wanted_labels)
+        hit = labels & set(wanted_labels) or (labels if keep_all else set())
         if hit:
             if commercial and not commercial_ok(clips.get(r["fname"], {}).get("license")):
                 dropped += 1
@@ -258,10 +258,12 @@ def fetch_freesound(raw, api_key, label, queries, per_query=100,
 
 # ------------------------------------------------------------------ collect
 def collect(raw, sources=("dcase", "esc50"), freesound_key=None, custom_dir=None, cats=None,
-            only_labels=None, commercial=False):
+            only_labels=None, commercial=False, include_other=False):
     """-> list of dict(path, label, source, src_id, license, attribution).
     commercial=True: only sources/clips whose license allows commercial use (CC0, CC BY,
-    your own recordings); ESC-50 and DCASE are dropped."""
+    your own recordings); ESC-50 and DCASE are dropped.
+    include_other=True: FSD50K clips that match no category join as label "other" (general sound
+    for the shared model to learn from; references can be given later)."""
     if commercial:
         dropped = [s for s in sources if s not in COMMERCIAL_SOURCES]
         if dropped:
@@ -305,9 +307,10 @@ def collect(raw, sources=("dcase", "esc50"), freesound_key=None, custom_dir=None
     if "fsd50k" in sources:
         m = lookup("fsd50k")
         wanted = [n for spec in table.values() for n in spec.get("fsd50k", []) or []]
-        root, keep, clips = fetch_fsd50k(raw, wanted, cats.get("fsd50k_exclude", []), commercial)
+        root, keep, clips = fetch_fsd50k(raw, wanted, cats.get("fsd50k_exclude", []), commercial,
+                                         keep_all=include_other)
         for fname, labels in keep.items():
-            label = next((m[_norm(n)] for n in labels if _norm(n) in m), None)
+            label = next((m[_norm(n)] for n in labels if _norm(n) in m), "other" if include_other else None)
             if label:
                 c = clips.get(fname, {})
                 lic = c.get("license", "")
@@ -360,7 +363,7 @@ def split_of(src_id, val=0.05, test=0.05):
     return "test" if u < test else "val" if u < test + val else "train"
 
 
-def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label=2000, seed=0):
+def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label=2000, seed=0, caps=None):
     """Load, resample, trim, chunk and append everything into one int16 file."""
     if not items:
         raise ValueError("no audio files found for the requested labels: put files in "
@@ -373,7 +376,8 @@ def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label
     for it in items:
         by_label[it["label"]].append(it)
     rows, offset = [], 0
-    bar = tqdm(total=sum(min(len(g), max_per_label) for g in by_label.values()), desc="packing", unit="file")
+    cap = lambda lab: (caps or {}).get(lab, max_per_label)
+    bar = tqdm(total=sum(min(len(g), cap(lab)) for lab, g in by_label.items()), desc="packing", unit="file")
     with open(pack / "audio.bin", "wb") as bin_f:
         for label, group in sorted(by_label.items()):
             rng.shuffle(group)
@@ -381,7 +385,7 @@ def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label
             bar.set_postfix_str(label)
             n_files = 0
             for it in group:
-                if n_label >= max_per_label:
+                if n_label >= (caps or {}).get(label, max_per_label):
                     break
                 n_files += 1
                 bar.update(1)
@@ -396,6 +400,8 @@ def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label
                 x = trim_silence(x / peak * 0.9)
                 L = int(max_chunk_s * SR)
                 for k, start in enumerate(range(0, max(1, len(x)), L)):
+                    if n_label >= cap(label):
+                        break
                     chunk = x[start: start + L]
                     if len(chunk) < int(0.25 * SR) or rms_db(chunk) < min_rms_db:
                         continue
@@ -408,7 +414,7 @@ def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label
                                      public_ok=int(bool(it.get("public_ok")))))
                     offset += len(pcm)
                     n_label += 1
-            bar.update(max(0, min(len(group), max_per_label) - n_files))
+            bar.update(max(0, min(len(group), cap(label)) - n_files))
             tqdm.write(f"{label}: {n_label} chunks")
     bar.close()
     with open(pack / "index.csv", "w", newline="") as f:

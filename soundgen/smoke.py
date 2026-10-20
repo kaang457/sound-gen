@@ -21,13 +21,19 @@ from .model import FlowConfig, WaveFlow
 def check_flow(device="cpu"):
     for up in ("transposed", "interp"):
         _check_flow(device, up)
+    _check_flow(device, "interp", fixes=True)
 
 
-def _check_flow(device, upsampler):
+def _check_flow(device, upsampler, fixes=False):
     torch.manual_seed(0)
     cfg = FlowConfig(n_flows=4, n_layers=4, h=8, res_channels=16, n_mels=20, label_dim=8, dropout=0.1,
-                     upsampler=upsampler)
-    m = WaveFlow(cfg, 3).to(device).eval()
+                     upsampler=upsampler, cond_norm=fixes, actnorm=fixes)
+    m = WaveFlow(cfg, 3).to(device)
+    if fixes:                                        # ActNorm's data-dependent init needs one train forward
+        with torch.no_grad():
+            m.train()(0.3 * torch.randn(2, 512, device=device), torch.rand(2, 20, 4, device=device),
+                      torch.tensor([1, 2], device=device))
+    m.eval()
     for f in m.flows:                                # non-trivial flows (end conv starts at zero)
         torch.nn.init.normal_(f.end.weight, std=0.05)
     T = 8 * 64
@@ -48,7 +54,7 @@ def _check_flow(device, upsampler):
     ld = m64(xs, s1, y[:1])[1].item()
     assert abs(ld - ld_true) < 1e-6 * max(1, abs(ld_true)) + 1e-6, f"logdet {ld} vs {ld_true}"
     m.float()
-    print(f"flow ok ({upsampler} upsampler): inverse err {err:.2e}, logdet {ld:.4f} == {ld_true:.4f}")
+    print(f"flow ok ({upsampler} upsampler{', cond_norm + actnorm' if fixes else ''}): inverse err {err:.2e}, logdet {ld:.4f} == {ld_true:.4f}")
 
 
 def synthetic_items(folder, n=40):

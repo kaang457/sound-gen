@@ -425,6 +425,15 @@ def analyze(snap, history, train, val, clip=1.0, ema_decay=0.999, grad_log=None)
         F.append(_f(WARN if bad else OK, "Nöron", "Kapalı sigmoid kapısı (σ < 0,02)",
                     f"ortalama %{100 * mean:.1f}" + (f"; {', '.join(bad[:6])}" if bad else ""),
                     "Kapı kapalıyken birim çıktı vermez; çoğu zaman kapalıysa birim fiilen ölüdür."))
+        cr = [v["cond_ratio"] for v in layers.values() if "cond_ratio" in v]
+        if cr:
+            med = float(np.median(cr))
+            st = CRIT if med < 0.05 else WARN if med < 0.15 else OK
+            F.append(_f(st, "Koşul", "Taslak + etiket sinyalinin gücü (ses yoluna oranı)",
+                        f"medyan {med:.2f} (en düşük {min(cr):.2f}, en yüksek {max(cr):.2f})",
+                        "Kapı girişinde koşuldan gelen sinyalin ses yolundan gelene oranı. Çok küçükse model taslağı "
+                        "ve dolayısıyla parametreleri neredeyse duymaz (base_v1'in ilk katmanlarında ~0,02–0,1 idi).",
+                        "" if st == OK else "cond_norm / actnorm açık mı kontrol et; koşulu FiLM ile güçlendirmeyi dene."))
     fl = snap["flows"]
     if history and history[-1].get("flows"):
         fl = history[-1]["flows"]

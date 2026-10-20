@@ -240,6 +240,13 @@ def train(cfg: TrainConfig, device=None):
     opt = torch.optim.AdamW(groups, lr=cfg.lr, betas=(0.9, 0.999), weight_decay=cfg.weight_decay)
     sched = torch.optim.lr_scheduler.LambdaLR(
         opt, lambda s: _cosine(s, cfg.warmup, cfg.steps, cfg.lr, cfg.min_lr))
+    if getattr(model.cfg, "actnorm", False) and not base_ck:
+        # ActNorm's data-dependent init on a real batch, before the EMA copy is taken
+        x0, y0 = next(batches)
+        with torch.no_grad():
+            model.train()
+            x0 = x0.to(device)
+            model.nll(x0, mel(x0), y0.to(device))
     ema = EMA(model, cfg.ema_decay)
     meta = dict(mel_cfg=mel_cfg.to_dict(), train_cfg=asdict(cfg))
     if not (out / "sketch_bank.pt").exists():      # data-only: build first so an early stop can still generate

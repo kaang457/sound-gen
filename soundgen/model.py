@@ -39,6 +39,10 @@ class FlowConfig:
     # hypothesis H1 (the stride-16 transposed convs cause the tones at k*22050/16 Hz). Default stays
     # "transposed" so checkpoints saved without this field load unchanged.
     upsampler: str = "transposed"
+    # Fixes from the base_v1 health report (conditioning 10-45x weaker than the audio path). Off by default
+    # so older checkpoints load unchanged.
+    cond_norm: bool = False     # sketch (0..1.2, mean ~0.7) -> ~zero mean, unit scale before the conditioner
+    actnorm: bool = False       # per-channel affine (data-initialised) on each flow's audio path
 
     def __post_init__(self):
         if not self.height_dilations:
@@ -92,6 +96,26 @@ class InterpUpsampler(nn.Module):
         return F.pad(y, (0, self.hop - 1), mode="replicate")   # frame k centred on sample k*hop
 
 
+class ActNorm(nn.Module):
+    """Glow's ActNorm on the coupling network's input features: a per-channel affine whose initial values
+    make the first batch zero-mean / unit-variance. Purely affine afterwards, so causality is kept."""
+
+    def __init__(self, channels):
+        super().__init__()
+        self.bias = nn.Parameter(torch.zeros(1, channels, 1, 1))
+        self.logs = nn.Parameter(torch.zeros(1, channels, 1, 1))
+        self.register_buffer("initialized", torch.tensor(0, dtype=torch.uint8))
+
+    def forward(self, h):
+        if self.training and not bool(self.initialized):
+            with torch.no_grad():
+                hf = h.float()
+                self.bias.copy_(-hf.mean(dim=(0, 2, 3), keepdim=True))
+                self.logs.copy_(-torch.log(hf.std(dim=(0, 2, 3), keepdim=True) + 1e-6))
+                self.initialized.fill_(1)
+        return (h + self.bias.to(h.dtype)) * torch.exp(self.logs).to(h.dtype)
+
+
 class WN2D(nn.Module):
     """One flow's network: predicts (log_s, t) for each squeezed sample from rows above it."""
 
@@ -103,6 +127,7 @@ class WN2D(nn.Module):
         self.probe = None        # dict -> record activation statistics (diagnostics)
         self.ablate = None       # int -> silence that layer; "flow" -> identity flow (layer importance)
         self.start = weight_norm(nn.Conv2d(1, r, 1))
+        self.an = ActNorm(r) if cfg.actnorm else None
         self.cond = weight_norm(nn.Conv2d(cfg.n_mels, 2 * r * L, 1))
         self.label = nn.Linear(cfg.label_dim, 2 * r * L)
         self.dil = list(zip(cfg.height_dilations, cfg.width_dilations))
@@ -121,12 +146,16 @@ class WN2D(nn.Module):
         # Shift down one row: row i only sees rows < i (autoregressive over height).
         x = F.pad(x, (0, 0, 1, 0))[:, :, :-1]
         h = self.start(x)
+        if self.an is not None:
+            h = self.an(h)
         cond = self.cond(c) + self.label(g)[:, :, None, None]
         skip = 0
         drop = self.training or self.mc_dropout
         for i, ((dh, dw), conv, rs) in enumerate(zip(self.dil, self.convs, self.res_skip)):
             # causal over height (pad top only), non-causal over width
-            y = conv(F.pad(h, (dw, dw, 2 * dh, 0))) + cond[:, 2 * self.r * i: 2 * self.r * (i + 1)]
+            y_audio = conv(F.pad(h, (dw, dw, 2 * dh, 0)))
+            y_cond = cond[:, 2 * self.r * i: 2 * self.r * (i + 1)]
+            y = y_audio + y_cond
             a, b = y.chunk(2, dim=1)
             acts = torch.tanh(a) * torch.sigmoid(b)
             if self.p > 0 and self.training:
@@ -139,7 +168,8 @@ class WN2D(nn.Module):
             if i == self.ablate:
                 out = torch.zeros_like(out)
             if probe is not None:
-                _record_layer(probe, i, a, b, acts, h, out, self.r, last=i == self.L - 1)
+                _record_layer(probe, i, a, b, acts, h, out, self.r, last=i == self.L - 1,
+                              y_audio=y_audio, y_cond=y_cond)
             if i < self.L - 1:
                 h = (h + out[:, : self.r]) * math.sqrt(0.5)
                 skip = skip + out[:, self.r:]
@@ -166,7 +196,7 @@ class WN2D(nn.Module):
 
 
 @torch.no_grad()
-def _record_layer(probe, i, a, b, acts, h, out, r, last):
+def _record_layer(probe, i, a, b, acts, h, out, r, last, y_audio=None, y_cond=None):
     """Activation health of one gated layer (diagnostics only; 0-dim tensors, no GPU sync)."""
     a, b, acts = a.float(), b.float(), acts.float()
     near_zero = (acts.abs() < 1e-3).float().mean(dim=(0, 2, 3))          # per channel
@@ -176,6 +206,8 @@ def _record_layer(probe, i, a, b, acts, h, out, r, last):
         dead_ch=(near_zero > 0.99).float().mean(),    # channels silent on (almost) every input
         skip=(out[:, r:] if not last else out).float().norm(),
     )
+    if y_audio is not None:   # how loud the sketch/label is next to the audio path at the gate input
+        stats["cond_ratio"] = y_cond.float().pow(2).mean().sqrt() / (y_audio.float().pow(2).mean().sqrt() + 1e-12)
     if not last:
         stats["res_ratio"] = out[:, :r].float().norm() / (h.float().norm() + 1e-12)
     probe.setdefault("layers", {})[i] = stats
@@ -221,6 +253,8 @@ class WaveFlow(nn.Module):
         return a.transpose(2, 3).reshape(B, C, h * w)
 
     def _conds(self, sketch, T):
+        if self.cfg.cond_norm:
+            sketch = (sketch - 0.6) / 0.25
         c = self.upsample(sketch)
         if c.shape[-1] < T:
             raise ValueError(f"sketch too short: {c.shape[-1]} < {T} samples")

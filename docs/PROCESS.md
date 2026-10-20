@@ -186,6 +186,15 @@ Commit `2bbbb5d` ile tamamen geri alındı. Enterpolasyon upsampler / 64 kanal /
 
 ---
 
+## 9d. full_v1: bütün ticari-temiz veri + sağlık raporu düzeltmeleri (20 Ekim)
+
+clean_v1 (`pack_clean`) yalnız `car` ile eğitildi: 01'in o zamanki varsayılanı `CATEGORY="auto"` (en çok klibi olan
+tek kategori) idi; ayrıca `STEPS=15000` varsayılanı 5 saatlik bütçeyi ~2 saatte bitirmiş olabilir. Yeni varsayılanlar:
+- 01: `CATEGORY="all"`, `INCLUDE_OTHER=True` (kategorisiz CC0/CC BY klipler "other" olarak, `MAX_OTHER=8000` parça), paket `pack_full`
+- 02: `RUN="full_v1"`, `STEPS=0` (süreden hesaplanır), `MAX_HOURS=5`, `FIXES=True`:
+  `cond_norm` (taslak ölçekleme), `actnorm` (flow girişinde ActNorm), dropout 0, `grad_clip` 25
+- Sağlık raporu artık "koşul gücü"nü (taslak sinyali / ses yolu) her katmanda ölçüyor.
+
 ## 9c. Mimari kararı: tür başına uzman değil, tek ortak model (19 Ekim)
 
 Her ses türü için ayrı bir uzman model, her tür için yeterli veri bulmayı gerektiriyor; bu gerçekçi değil. Karar:
