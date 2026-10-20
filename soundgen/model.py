@@ -41,7 +41,8 @@ class FlowConfig:
     upsampler: str = "transposed"
     # Fixes from the base_v1 health report (conditioning 10-45x weaker than the audio path). Off by default
     # so older checkpoints load unchanged.
-    cond_norm: bool = False     # sketch (0..1.2, mean ~0.7) -> ~zero mean, unit scale before the conditioner
+    cond_norm: bool = False     # sketch (0..1.2, mean ~0.7) -> ~zero mean before the conditioner
+    cond_scale: float = 0.25    # divisor after centring (0.25 -> about +-2.4; larger = gentler)
     actnorm: bool = False       # per-channel affine (data-initialised) on each flow's audio path
 
     def __post_init__(self):
@@ -254,7 +255,7 @@ class WaveFlow(nn.Module):
 
     def _conds(self, sketch, T):
         if self.cfg.cond_norm:
-            sketch = (sketch - 0.6) / 0.25
+            sketch = (sketch - 0.6) / self.cfg.cond_scale
         c = self.upsample(sketch)
         if c.shape[-1] < T:
             raise ValueError(f"sketch too short: {c.shape[-1]} < {T} samples")
