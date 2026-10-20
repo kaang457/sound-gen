@@ -195,6 +195,18 @@ tek kategori) idi; ayrıca `STEPS=15000` varsayılanı 5 saatlik bütçeyi ~2 sa
   `cond_norm` (taslak ölçekleme), `actnorm` (flow girişinde ActNorm), dropout 0, `grad_clip` 25
 - Sağlık raporu artık "koşul gücü"nü (taslak sinyali / ses yolu) her katmanda ölçüyor.
 
+**Ön test** (sentetik veri, küçük model: 4 flow × 6 katman, 32 kanal; 400 adım, CPU):
+
+| | train NLL | val NLL (EMA) | koşul gücü (medyan) | doymuş tanh |
+|---|---|---|---|---|
+| düzeltmesiz | −1,61 | 0,800 | 0,16 | %1,8 |
+| düzeltmeli, `cond_scale` 0,25 | **−3,28** | **0,676** | **0,70** | %32 |
+| düzeltmeli, `cond_scale` 0,5 | −3,20 | 0,729 | 0,38 | %22,5 |
+
+Düzeltmeler koşulu ~4 kat güçlendiriyor ve öğrenmeyi belirgin hızlandırıyor. Doygunluk arttı (ölçek 0,5'te de %22),
+yani yalnız taslak ölçeğinden gelmiyor. Varsayılan 0,25 kaldı (en iyi val); full_v1'in sağlık raporunda doygunluk ve
+gradyan kırpma sıklığı ayrıca izlenecek. Sentetik ve kısa bir test; gerçek veride doğrulanması gerekiyor.
+
 ## 9c. Mimari kararı: tür başına uzman değil, tek ortak model (19 Ekim)
 
 Her ses türü için ayrı bir uzman model, her tür için yeterli veri bulmayı gerektiriyor; bu gerçekçi değil. Karar:
