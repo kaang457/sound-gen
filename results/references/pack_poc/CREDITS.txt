@@ -1,0 +1,16 @@
+birds_ref.wav: "bobbiepeaches07.wav" by ReadeOnly (https://freesound.org/s/85413/), CC0 1.0
+car_ref.wav: "Lenznbua Motorbike multi 3.mp3" by lenznbua (https://freesound.org/s/412432/), CC0 1.0
+cough_sneeze_ref.wav: DCASE 2023 Task 7 Foley Sound Synthesis dataset (Choi et al.)
+dog_bark_ref.wav: DCASE 2023 Task 7 Foley Sound Synthesis dataset (Choi et al.)
+door_knock_ref.wav: "Door Knock.mp3" by SomeoneCool14 (https://freesound.org/s/419089/), CC0 1.0
+explosion_ref.wav: "fireworks impact5.wav" by schafferdavid (https://freesound.org/s/198344/), CC0 1.0
+fire_ref.wav: "Gas Stove 170427_1445.wav" by megashroom (https://freesound.org/s/390159/), CC0 1.0
+footsteps_ref.wav: DCASE 2023 Task 7 Foley Sound Synthesis dataset (Choi et al.)
+glass_break_ref.wav: "sos16.aif" by lsprice (https://freesound.org/s/89902/), CC BY 3.0
+gunshot_ref.wav: DCASE 2023 Task 7 Foley Sound Synthesis dataset (Choi et al.)
+keyboard_ref.wav: "typewriter_electric_typing_02.wav" by magedu (https://freesound.org/s/319943/), CC BY 3.0
+other_ref.wav: "Knife Sharpen.wav" by MTJohnson (https://freesound.org/s/426317/), CC0 1.0
+rain_ref.wav: "small water drops" by arseniiv (https://freesound.org/s/257349/), CC0 1.0
+sea_waves_ref.wav: "greenkey-beach.mp3" by JoneagleX (https://freesound.org/s/118999/), CC0 1.0
+thunder_ref.wav: "Mennyd2004052.wav" by csengeri (https://freesound.org/s/48521/), CC BY 3.0
+wind_ref.wav: "wind_howling_03.wav" by Fasolt (https://freesound.org/s/113175/), CC0 1.0
