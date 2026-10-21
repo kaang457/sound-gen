@@ -404,7 +404,7 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=None, max_la
             continue
         x = torch.from_numpy(a)[None].to(device)
         y = torch.tensor([vocab.index(r["label"])], device=device)
-        gen = model.sample(mel(x), y, temperature=0.8)[0].float().cpu().numpy()
+        gen = model.sample(mel(x), y, temperature=1.0)[0].float().cpu().numpy()
         name = r["label"].replace("/", "__") + (f"_{seen[r['label']]}" if per_label > 1 else "")
         save_audio(folder / f"{name}_ref.wav", a)
         save_audio(folder / f"{name}_gen.wav", gen)

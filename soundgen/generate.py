@@ -61,7 +61,7 @@ class Generator:
         return self.mel(x)[0].cpu().numpy()
 
     @torch.no_grad()
-    def generate(self, label, controls=None, seed=0, temperature=0.8, mc_dropout=False,
+    def generate(self, label, controls=None, seed=0, temperature=1.0, mc_dropout=False,
                  reference=None, ref_index=None, n=1, postprocess=True, refine=None):
         """refine="v1": comb notch at k*sr/16 + level/spectrum matched to the (edited) sketch, +-30 dB.
         Kept after listening tests (samples/base_v1/postprocess_v1); "v2" was rejected and removed."""

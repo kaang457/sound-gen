@@ -310,7 +310,8 @@ class WaveFlow(nn.Module):
         return self.unsqueeze(x).squeeze(1)
 
     @torch.no_grad()
-    def sample(self, sketch, labels, temperature=0.8, generator=None):
+    def sample(self, sketch, labels, temperature=1.0, generator=None):
+        # temperature 1.0 = the level the model learned; 0.8 made poc_v1 outputs 7-9 dB too quiet
         B, _, n_frames = sketch.shape
         T = ((n_frames - 1) * self.cfg.hop) // self.cfg.h * self.cfg.h
         z = torch.randn(B, 1, self.cfg.h, T // self.cfg.h, device=sketch.device,
