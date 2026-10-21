@@ -303,7 +303,8 @@ class WaveFlow(nn.Module):
             zk, xp = x, torch.zeros_like(x)
             self.flows[k].reset_masks()
             for i in range(self.cfg.h):
-                log_s, t = self.flows[k](xp, conds[k], g)
+                # row i depends only on rows < i (causal over height): feed rows 0..i only (~2x faster)
+                log_s, t = self.flows[k](xp[:, :, : i + 1], conds[k][:, :, : i + 1], g)
                 xp[:, :, i] = (zk[:, :, i] - t[:, :, i]) * torch.exp(-log_s[:, :, i])
             x = xp
         return self.unsqueeze(x).squeeze(1)
