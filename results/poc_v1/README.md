@@ -4,9 +4,10 @@
 > Sıcaklık 1,0 ile seviye gerçeğe oturuyor. Güncel dinleme sayfaları: **`compare_ref_gen.html`** (gerçek ve üretilen) ve
 > **`noise_test.html`** (model ne katıyor). Eski vitrin `showcase_eski_sicaklik08.html` olarak duruyor.
 >
-> Sıcaklık 1,0'da, gerçeği paylaşılabilir 16 kategoride: ortalama seviye farkı +1.6 dB;
-> bant içi ince ayrıntıda model 16 kategorinin 16'inde aynı taslağa uydurulmuş gürültüden gerçeğe daha yakın;
-> 1378 Hz vızıltı yok (ton fazlası ~0 dB). Bu yüzden v1 son işlemi artık varsayılan değil.
+> Sıcaklık 1,0'da, dinlemede gerçek kaydı yeterince iyi bulunan 8 kategoride (cough_sneeze, dog_bark, door_knock,
+> glass_break, gunshot, keyboard, sea_waves, thunder): ortalama seviye farkı +2.1 dB; bant içi ince ayrıntıda model
+> 8 kategorinin 8'inde aynı taslağa uydurulmuş gürültüden gerçeğe daha yakın; 1378 Hz vızıltı yok.
+> birds, car, explosion, fire, footsteps, helicopter, other, rain ve wind değerlendirmeden çıkarıldı: gerçek kayıtları kötü.
 
 - Adım: **81782** · en iyi doğrulama NLL: **-4.2725** (düşük = iyi)
 - Veri: 47.8 saat, 40516 parça, 17 etiket
