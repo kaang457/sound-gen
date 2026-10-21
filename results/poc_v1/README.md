@@ -1,7 +1,7 @@
 # poc_v1
 
 > **21 Ekim güncellemesi.** İlk vitrin sıcaklık 0,8 ile üretildi; bu modelde sesi 7–9 dB kısıyordu ("boş" ses izlenimi).
-> Sıcaklık 1,0 ile seviye gerçeğe oturuyor. Güncel dinleme sayfaları: **`compare_ref_gen.html`** (gerçek ve üretilen) ve
+> Sıcaklık 1,0 ile seviye gerçeğe oturuyor. Güncel dinleme sayfaları: **`showcase.html`** (vitrin: gerçek ve üretilen) ve
 > **`noise_test.html`** (model ne katıyor). Eski vitrin `showcase_eski_sicaklik08.html` olarak duruyor.
 >
 > Sıcaklık 1,0'da, dinlemede gerçek kaydı yeterince iyi bulunan 8 kategoride (cough_sneeze, dog_bark, door_knock,
@@ -16,7 +16,7 @@
 
 | Dosya | Ne |
 |---|---|
-| `compare_ref_gen.html` | Her kategori için gerçek ve üretilen (sıcaklık 1,0) |
+| `showcase.html` | Vitrin: her kategori için gerçek ve üretilen (sıcaklık 1,0) |
 | `noise_test.html` | Model ne katıyor: model, v1 ve aynı taslağa uydurulmuş gürültü; ölçümler (`noise_test.json`) |
 | `showcase_eski_sicaklik08.html` | İlk vitrin (sıcaklık 0,8, kısık); parametre taramaları ve kategori geçişi burada |
 | `health.html` | Eğitim sağlık raporu |
