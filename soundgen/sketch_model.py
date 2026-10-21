@@ -9,6 +9,7 @@ Design: DDPM (1000 steps, cosine schedule, epsilon prediction) over sketches of 
 over time with the 20 bands as channels, FiLM conditioning on (diffusion step + vector), classifier-free
 guidance (the vector is dropped 10 % of the time). Sampling: DDIM, 50 steps.
 """
+import json
 import math
 from dataclasses import dataclass, asdict
 
@@ -206,3 +207,127 @@ def train_on_bank(bank, steps=4000, batch=32, lr=2e-4, cfg=None, device="cpu", s
         if (step + 1) % log_every == 0:
             bar.set_postfix(loss=f"{np.mean(hist[-log_every:]):.4f}")
     return ema.eval(), hist
+
+
+# -------------------------------------------------------------------- training on packs (Colab, mel contract v2)
+def train_on_packs(packs, out_dir, steps=100_000, batch=64, lr=2e-4, cfg=None, mel_cfg=None, device=None,
+                   seed=0, labels=None, balance_alpha=0.5, p_uncond=0.1, max_minutes=None, save_every=5000,
+                   log_every=200, num_workers=2):
+    """Train the mel generator on the same packs WaveFlow uses: crops -> mel (on the GPU) -> diffusion loss.
+    Writes <out_dir>/mel_gen.pt (EMA weights, cfg, vocab, mel_cfg) and loss.csv; resumes from last.pt."""
+    import csv
+    import time
+    from pathlib import Path
+    from collections import Counter
+    from tqdm.auto import tqdm
+    from .audio import MelConfig, MelSketch
+    from .data import PackDataset, read_index
+
+    device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    mel_cfg = mel_cfg or MelConfig()
+    cfg = cfg or SketchConfig(n_mels=mel_cfg.n_mels)
+    if cfg.n_mels != mel_cfg.n_mels:
+        raise ValueError(f"SketchConfig.n_mels {cfg.n_mels} != mel contract {mel_cfg.n_mels}")
+    for p in packs:
+        meta = json.loads((Path(p) / "meta.json").read_text())
+        if int(meta.get("sample_rate", 22050)) != mel_cfg.sample_rate:
+            raise ValueError(f"{p} is {meta.get('sample_rate')} Hz, mel contract is {mel_cfg.sample_rate} Hz")
+    counts = Counter(r["label"] for p in packs for r in read_index(p) if r["split"] == "train")
+    vocab = ["<null>"] + sorted(labels or counts)
+    seg = (cfg.frames - 1) * mel_cfg.hop                      # -> exactly cfg.frames mel frames (center=True)
+    ds = PackDataset(packs, vocab, "train", seg, vocab[1:], augment=True)
+    w = ds.sample_weights(balance_alpha)
+    sampler = torch.utils.data.WeightedRandomSampler(w, num_samples=2_000_000, replacement=True)
+    loader = torch.utils.data.DataLoader(ds, batch, sampler=sampler, num_workers=num_workers, drop_last=True,
+                                         pin_memory=device.type == "cuda", persistent_workers=num_workers > 0)
+    mel = MelSketch(mel_cfg).to(device)
+    m = SketchDiffusion(cfg, vocab).to(device)
+    ema = SketchDiffusion(cfg, vocab).to(device)
+    ema.load_state_dict(m.state_dict())
+    ema.requires_grad_(False)
+    opt = torch.optim.AdamW(m.parameters(), lr=lr, weight_decay=0.0)
+    step = 0
+    if (out / "last.pt").exists():
+        ck = torch.load(out / "last.pt", map_location="cpu", weights_only=False)
+        m.load_state_dict(ck["model"])
+        ema.load_state_dict(ck["ema"])
+        opt.load_state_dict(ck["opt"])
+        step = ck["step"]
+        print(f"resumed at step {step}")
+    print(f"mel generator: {sum(p.numel() for p in m.parameters()) / 1e6:.2f} M params, "
+          f"{len(vocab) - 1} labels, {len(ds)} clips, crop {seg / mel_cfg.sample_rate:.2f} s")
+
+    def save(final=False):
+        torch.save(dict(model=m.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step), out / "last.pt")
+        ema.save(out / "mel_gen.pt", extra=dict(mel_cfg=mel_cfg.to_dict(), step=step,
+                                                 trained_on=[str(p) for p in packs]))
+        if final:
+            print(f"saved {out / 'mel_gen.pt'} (step {step})")
+
+    log = open(out / "loss.csv", "a", newline="")
+    wr = csv.writer(log)
+    if step == 0:
+        wr.writerow(["step", "loss", "lr", "sec_per_step"])
+    t0, hist, it = time.time(), [], iter(loader)
+    bar = tqdm(total=steps, initial=step, desc="mel generator", mininterval=10)
+    m.train()
+    while step < steps:
+        try:
+            x, y = next(it)
+        except StopIteration:              # the sampler is finite (2M draws): start a new pass
+            it = iter(loader)
+            x, y = next(it)
+        with torch.no_grad():
+            s = mel(x.to(device, non_blocking=True))[:, :, : cfg.frames]
+            x0 = (s - MEAN) / SCALE
+        loss = m.loss(x0, y.to(device), p_uncond)
+        opt.zero_grad(set_to_none=True)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(m.parameters(), 1.0)
+        cur = lr * min(1.0, (step + 1) / 1000)
+        for g in opt.param_groups:
+            g["lr"] = cur
+        opt.step()
+        with torch.no_grad():
+            for e, p in zip(ema.parameters(), m.parameters()):
+                e.lerp_(p, 1 - 0.9995 if step > 2000 else 0.5)
+        step += 1
+        hist.append(float(loss))
+        bar.update(1)
+        if step % log_every == 0:
+            sps = (time.time() - t0) / log_every
+            t0 = time.time()
+            wr.writerow([step, f"{np.mean(hist[-log_every:]):.5f}", f"{cur:.2e}", f"{sps:.3f}"])
+            log.flush()
+            bar.set_postfix(loss=f"{np.mean(hist[-log_every:]):.4f}")
+        if step % save_every == 0:
+            save()
+        if max_minutes and (time.time() - bar.start_t) / 60 > max_minutes:
+            print(f"time budget reached at step {step}")
+            break
+    bar.close()
+    save(final=True)
+    log.close()
+    return ema.eval()
+
+
+def novelty(gen_sketch, bank_sketches, hop=4, floor_db=-60.0):
+    """Nearest-neighbour distance (mean |dB| over loud cells, any time offset) of a generated sketch to a set of
+    real ones. Compare with the same distance between real sketches: similar values = new, not copied."""
+    a = gen_sketch * 100 - 100
+    best = 1e9
+    T = a.shape[1]
+    for b in bank_sketches:
+        b = b * 100 - 100
+        if b.shape[1] < T:
+            b = np.pad(b, ((0, 0), (0, T - b.shape[1])), constant_values=-100)
+        for off in range(0, b.shape[1] - T + 1, hop):
+            w = b[:, off: off + T]
+            mk = (a > floor_db) | (w > floor_db)
+            if mk.any():
+                best = min(best, float(np.abs(a - w)[mk].mean()))
+    return best

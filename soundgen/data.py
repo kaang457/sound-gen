@@ -448,8 +448,8 @@ class PackDataset:
     """Random crops from one or more packs, with event-aware cropping and augmentation."""
 
     def __init__(self, packs, vocab, split="train", segment=16384, labels=None,
-                 augment=True, min_clips=1):
-        self.segment, self.augment = segment, augment
+                 augment=True, min_clips=1, label_free=False):
+        self.segment, self.augment, self.label_free = segment, augment, label_free
         self.vocab = {lab: i for i, lab in enumerate(vocab)}
         self.audio = {str(p): np.memmap(Path(p) / "audio.bin", dtype="<i2", mode="r") for p in packs}
         rows = [r for p in packs for r in read_index(p) if r["split"] == split]
@@ -489,4 +489,4 @@ class PackDataset:
             if np.random.rand() < 0.5:
                 x = -x
             x = np.clip(x, -1.0, 1.0)
-        return x.astype(np.float32), self.vocab[r["label"]]
+        return x.astype(np.float32), 0 if self.label_free else self.vocab[r["label"]]

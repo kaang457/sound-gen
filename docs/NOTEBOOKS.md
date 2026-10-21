@@ -100,11 +100,24 @@ Henüz çalıştırılmadı. Benzer çıktıyı 02'nin 7. hücresi (vitrin) üre
 
 ---
 
+## 05_mel_generator: vektör → yeni ses, referanssız (rota v2)
+
+| Hücre | Ne yapar |
+|---|---|
+| 1 · Ayarlar | `RUN`, `PACK` (48 kHz), `VOCODER_RUN` (02'nin `MODE="vocoder"` koşusu), `MAX_HOURS`, GPU'ya göre model genişliği (A100: 256 kanal, ~21 M parametre) |
+| 2 · Kuru deneme | ~5 dk eğitim: kayıp düşüyor mu, NaN var mı, mel üretici → vocoder zinciri çalışıyor mu |
+| 3 · Eğit | kaldığı yerden devam eder (`last.pt`), `MAX_HOURS` dolunca durur; kayıp eğrisi |
+| 4 · Sıfırdan üret | kategori vektörleri (her biri 2 tohum), karışımlar (ör. gunshot+thunder), elle vektörler (hiçbir kategoriye ait olmayan rastgele nokta). Her ses için mel resmi, oynatıcı ve "en yakın gerçek kayda uzaklık" |
+| 5 · GitHub | `results/<RUN>/`: `index.html`, sesler zip, `scratch.json`, `mel_gen.pt` (fp16), `loss.csv` |
+
+Hiçbir aşamada referans ses kullanılmaz: zamanlama, olay sayısı ve spektrum mel üreticiden, ses ayrıntısı vocoder'dan gelir.
+
 ## Hangi sırayla, ne zaman
 
 | Amaç | Çalıştır |
 |---|---|
-| İlk kurulum | 01 → 02 (hücre 2 smoke test dahil) |
+| Rota v2: sıfırdan üretim | 01 (48 kHz paket) → 02 (`MODE="vocoder"`) → 05 |
+| İlk kurulum (poc yolu) | 01 → 02 (`MODE="category"`) |
 | Base modeli dinlemek | 02 hücre 5 ya da 7 |
 | Alt kategori / uzman model | 03 |
 | Parametrelerle oynamak, ölçmek, Stable ile kıyaslamak | 04 |

@@ -102,6 +102,28 @@ def main(device=None):
                          init_from=str(tmp / "base" / "best.pt"), freeze="last_flows", trainable_flows=1,
                          l2sp=1e-3, replay_labels=["clicks"], replay_ratio=0.3, min_clips=1, log_every=10)
         train(ft, device)
+        # ---- route v2: universal vocoder (mel only) + mel generator (vector -> new mel), no reference sound
+        from .sketch_model import SketchConfig, train_on_packs
+        voc = TrainConfig(packs=[str(tmp / "pack")], out_dir=str(tmp / "voc"), model=small, steps=12, vocoder=True,
+                          batch_size=4, segment=8192, warmup=2, eval_every=6, sample_every=12, num_workers=0,
+                          log_every=6)
+        train(voc, device)
+        mg = train_on_packs([str(tmp / "pack")], tmp / "melgen", steps=6, batch=4, device=device, num_workers=0,
+                            cfg=SketchConfig(channels=16, frames=48), log_every=3, save_every=6)
+        new = mg.sample(mg.vector(mix={"burst": 0.5, "hum": 0.5}), n=1, steps=4)[0].cpu().numpy()
+        vg = Generator(tmp / "voc" / "best.pt", device=device)
+        assert vg.vocoder
+        out = vg.generate("scifi_blade", Controls(intensity=0.7), seed=1, mel=new)   # label unknown to WaveFlow
+        assert np.isfinite(out["audio"]).all() and out["audio"].shape[1] > 0
+        print(f"route v2 ok: vector -> new mel {new.shape} -> vocoder -> {out['audio'].shape[1] / vg.sr:.2f}s")
+        from .scratch import from_scratch, page, default_jobs
+        rows = from_scratch(tmp / "melgen" / "mel_gen.pt", tmp / "voc" / "best.pt",
+                            default_jobs(["burst", "hum"], mixes=[("burst", "hum")], seeds=(1,))
+                            + [dict(name="hand_vector", vec=torch.randn(64), seed=1)], tmp / "scratch",
+                            packs=[str(tmp / "pack")], steps=4, device=device, per_label_ref=3)
+        page(rows, tmp / "scratch" / "index.html", "smoke", zip_path=tmp / "scratch" / "sounds.zip")
+        assert len(rows) == 4 and all(r["nearest_db"] is not None for r in rows)
+
         gen = Generator(tmp / "ft" / "best.pt", device=device)
         assert "clicks/soft" in gen.labels and "hum" in gen.labels, gen.labels
         for label, c in [("clicks/soft", Controls(speed=1.5, duration=2.0, environment="room")),

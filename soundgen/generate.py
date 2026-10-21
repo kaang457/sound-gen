@@ -29,6 +29,8 @@ class Generator:
         bank = bank or Path(ckpt).parent / "sketch_bank.pt"
         self.bank = torch.load(bank, map_location="cpu", weights_only=False) if Path(bank).exists() else None
         self.step = ck.get("step")
+        # universal vocoder: renders any mel; the label only picks reference sketches from the bank
+        self.vocoder = bool((ck.get("train_cfg") or {}).get("vocoder"))
 
     @property
     def labels(self):
@@ -63,12 +65,16 @@ class Generator:
 
     @torch.no_grad()
     def generate(self, label, controls=None, seed=0, temperature=1.0, mc_dropout=False,
-                 reference=None, ref_index=None, n=1, postprocess=True, refine=None):
+                 reference=None, ref_index=None, n=1, postprocess=True, refine=None, mel=None):
         """refine="v1": comb notch at k*sr/16 + level/spectrum matched to the (edited) sketch, +-30 dB.
-        Kept after listening tests (samples/base_v1/postprocess_v1); "v2" was rejected and removed."""
+        Kept after listening tests (samples/base_v1/postprocess_v1); "v2" was rejected and removed.
+        mel=[n_mels, F] (sketch units 0..1.2, this checkpoint's mel contract): render that instead of a
+        reference; controls still apply on top."""
         controls = controls or Controls()
-        label_id = self.vocab.index(self._resolve(label))
-        if reference is not None:
+        label_id = 0 if (self.vocoder and mel is not None) else self.vocab.index(self._resolve(label))
+        if mel is not None:            # a mel from the mel generator (stage 1): no reference sound at all
+            base, ref = np.asarray(mel, np.float32), dict(id="generated", audio=None)
+        elif reference is not None:
             if isinstance(reference, (str, Path)):
                 reference = load_audio(reference, self.sr)
             base, ref = self.sketch_of(reference), dict(id="user", audio=None)
@@ -80,7 +86,7 @@ class Generator:
         g = torch.Generator(device=self.device).manual_seed(seed)
         self.model.set_mc_dropout(mc_dropout)
         S = torch.from_numpy(sketch)[None].repeat(n, 1, 1).to(self.device)
-        y = torch.full((n,), label_id, device=self.device, dtype=torch.long)
+        y = torch.full((n,), 0 if self.vocoder else label_id, device=self.device, dtype=torch.long)
         audio = self.model.sample(S, y, temperature=temperature, generator=g).float().cpu().numpy()
         self.model.set_mc_dropout(False)
         if postprocess:

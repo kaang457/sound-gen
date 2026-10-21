@@ -118,6 +118,8 @@ def _readme(run, gen, packs, refine, removed, sizes):
         f"- Model: {ck['flow_cfg'].get('n_flows')} flow × {ck['flow_cfg'].get('n_layers')} katman, "
         f"{ck['flow_cfg'].get('res_channels')} kanal, upsampler `{ck['flow_cfg'].get('upsampler', 'transposed')}`, "
         f"cond_norm {ck['flow_cfg'].get('cond_norm', False)}, actnorm {ck['flow_cfg'].get('actnorm', False)}",
+        f"- Mod: {'evrensel vocoder (yalnız mel, kategori yok)' if tc.get('vocoder') else 'kategori koşullu'} · "
+        f"mel: {ck['mel_cfg'].get('sample_rate')} Hz, {ck['mel_cfg'].get('n_mels')} bant, hop {ck['mel_cfg'].get('hop')}",
         f"- Vitrin son işlemi: `refine={refine!r}`", "",
         "| Dosya | Ne |", "|---|---|",
         "| `showcase.html` | Bütün sesler tek sayfada (indirip tarayıcıda aç) |",

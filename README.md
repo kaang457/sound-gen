@@ -8,9 +8,14 @@ kontrol edilir.
 | Notebook | Ne yapar | GPU |
 |---|---|---|
 | [01_data](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/01_data.ipynb) | veri setlerini indirir, işler, tek paket yapar | gerekmez |
-| [02_train_base](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/02_train_base.ipynb) | tüm kategorilerden base model | A100 önerilir |
+| [02_train_base](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/02_train_base.ipynb) | WaveFlow: evrensel vocoder (rota v2) ya da kategori modeli (poc) | A100 önerilir |
 | [03_finetune](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/03_finetune.ipynb) | transfer learning: kategori / alt kategori | A100 / L4 |
 | [04_generate](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/04_generate.ipynb) | parametrik üretim, değerlendirme, diffusion kıyası | herhangi |
+| [05_mel_generator](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/05_mel_generator.ipynb) | mel üretici: vektör → yeni ses, referanssız (rota v2) | A100 / L4 |
+
+> **Rota v2 (21 Ekim):** sıfırdan üretim. `vektör → mel üretici (diffusion) → kontroller → WaveFlow (evrensel vocoder) → ses`.
+> Mel sözleşmesi sabitlendi: **48 kHz, 128 bant, hop 480 (100 kare/s), 20 Hz–24 kHz**. Sıra: 01 → 02 (`MODE="vocoder"`) → 05.
+> Kararlar ve gerekçeler: [docs/PROCESS.md §11](docs/PROCESS.md).
 
 > **Durum (2026-10-17):** İlk base model (base_v1, 11,8k adım) ikna edici değil. Tüm çıktılarda 22050/16 Hz
 > katlarında sabit tonlar var ve model koşul taslağını henüz takip etmiyor. Denemeler, ölçümler, geri alınan

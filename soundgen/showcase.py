@@ -62,11 +62,14 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
                 row["note"] = "gerçek kayıt paylaşılamaz lisanslı, gösterilmiyor"
             items.append(row)
     sections.append(dict(title="Gerçek ve üretilen", kind="pairs", items=items,
-                         text="Model yalnız 20 bantlık kaba taslağı ve kategori adını görür; dalga formunun ayrıntısını kendisi üretir."))
+                         text=(f"Vocoder yalnız {gen.mel_cfg['n_mels']} bantlık mel spektrogramı görür (kategori yok); "
+                               "dalga formunu ve fazı kendisi üretir." if gen.vocoder else
+                               f"Model yalnız {gen.mel_cfg['n_mels']} bantlık kaba taslağı ve kategori adını görür; "
+                               "dalga formunun ayrıntısını kendisi üretir.")))
 
     # 2. category switching: one sketch, different labels
     swap = swap_labels or [l for l in ("footsteps", "gunshot", "rain", "dog_bark", "car") if l in labels][:4]
-    if len(swap) >= 2:
+    if len(swap) >= 2 and not gen.vocoder:          # a vocoder has no category input
         ref = gen.reference(swap[0], seed=seed, index=_ref_order(gen, swap[0], False)[0])
         base = ref["audio"].numpy() / 32768 if ref.get("audio") is not None else None
         items = []

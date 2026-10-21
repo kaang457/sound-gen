@@ -270,3 +270,49 @@ Eski çıktılar (samples/) 20 Ekim'de `archive` dalına taşındı; bu belgedek
 | Dinleme dosyaları | `archive` dalı: `samples/references`, `samples/base_v1/{showcase, step_011783, health, postprocess_v1, rejected/postprocess_v2}` · yeni koşular: `results/<RUN>/` (main) |
 | Önemli commit'ler | `da00df1` yeni yapı · `d0dee38` zaman bütçesi + vitrin · `3eede2f` deneme 1 · `c1d7a6a` deneme 2 · `2bbbb5d` geri alma |
 | Makaleler | Ping vd. 2020 (WaveFlow, arXiv 1912.01219); Andreu & Villanueva Aylagas 2022 (AIIDE) |
+
+---
+
+## 11. Rota v2: sıfırdan üretim (21 Ekim)
+
+**Hedef:** oyunlarda kullanılabilecek, referans ses olmadan üretilmiş gerçekçi sesler; endüstriyel ölçeğe büyüyebilecek
+bir mimari. Girdi metin olmak zorunda değil: şimdilik bir vektör (kategori vektörü, karışım ya da elle), ileride bir
+metin kodlayıcının (CLAP / T5, dondurulmuş) vektörü.
+
+```
+ vektör (etiket / karışım / elle; ileride metin kodlayıcı)
+   │
+ [C] mel üretici: diffusion (1-D U-Net, FiLM, classifier-free guidance, DDIM 50 adım)   soundgen/sketch_model.py
+   │      → yeni 128 × 200 mel (2 s)
+ [D] kontroller: kural tabanlı (şiddet, uzaklık, ortam, süre, hız, çoklu olay)          soundgen/controls.py
+   │
+ [E] WaveFlow, evrensel vocoder: yalnız mel'i görür, kategori almaz                     train(vocoder=True)
+   │
+  ses (48 kHz)                                                                          soundgen/scratch.py zinciri
+```
+
+**Kararlar**
+
+| Karar | Neden |
+|---|---|
+| Mel sözleşmesi: 48 kHz, n_fft 2048, hop 480, 128 bant, 20 Hz–24 kHz, slaney, (dB+100)/100 | Oyun sesi 48 kHz; 128 bant vocoder'ın uydurması gereken ayrıntıyı azaltır (20 bantta model gürültüden yalnız biraz iyiydi: 2,51 / 2,70 dB). Her modül bunu konuşur, değişirse hepsi yeniden eğitilir. `soundgen/audio.py` |
+| WaveFlow evrensel vocoder | Sesin ne olduğuna mel üretici karar verir; vocoder yalnız çalar. Etiket gerekmediği için bütün temiz ses (etiketsiz dahil) eğitimde kullanılabilir ve eğitim etiketleri dışındaki mel'leri (ör. sentetik sci-fi) de çalabilir. |
+| Modüller ayrı eğitilir, arayüz mel | Vocoder ileride daha hızlısıyla (HiFi-GAN / BigVGAN / Vocos) değiştirilebilir; üst modüller etkilenmez. WaveFlow 16 satırı sırayla ürettiği için endüstriyel ölçekte darboğaz olabilir. |
+| Yaratıcılık birinci aşamada | DCASE 2023 Task 7'nin en iyi sistemleri ve AudioLDM / Stable Audio da böyle: mel'i diffusion üretir, vocoder çalar. |
+| poc_v1 korunur | Her checkpoint kendi `mel_cfg`'sini taşır; poc_v1 22 kHz / 20 bantla çalışmaya devam eder. 22 kHz pakete 48 kHz eğitim başlatılırsa hata verir. |
+
+**Kopya mı, yeni mi?** `scratch.from_scratch` her üretilen mel'i paketteki gerçek mel'lerin en yakınıyla kıyaslar
+(zaman kaydırmalı, yüksek hücrelerde ortalama |dB|). Ölçüt: iki farklı gerçek kaydın birbirine uzaklığı.
+
+**Veri ihtiyacı (kabaca)**
+
+| Modül | Ne ister | Ne kadar |
+|---|---|---|
+| Vocoder | etiketsiz temiz ses, her türden (synth tonları dahil) | yüzlerce saat |
+| Mel üretici | etiketli / açıklamalı ses | etiket sözlüğü için yüzlerce, serbest metin için binlerce saat |
+| Tasarlanmış sesler (sci-fi vb.) | prosedürel sentez (FM, filtreli gürültü, perde kaydırma…) + az sayıda gerçek tasarım | sentez sınırsız, gerçek birkaç yüz–birkaç bin |
+
+**Sonraki adımlar:** (1) 01 → 48 kHz paket, (2) 02 `MODE="vocoder"`, (3) 05 mel üretici + sıfırdan üretim sayfası,
+(4) prosedürel sci-fi veri üreteci, (5) dondurulmuş metin kodlayıcı (CLAP) ile vektör yerine kelime.
+
+CPU'da 20 bantlık bir ön deneme (poc_v1 taslak bankasıyla, 6000 adım) yapıldı; render edilmedi, rota 128 banda geçti.

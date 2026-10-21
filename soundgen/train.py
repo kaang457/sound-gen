@@ -38,7 +38,7 @@ class TrainConfig:
     mel: dict = field(default_factory=dict)     # MelConfig overrides
     steps: int = 60000
     batch_size: int = 8
-    segment: int = 0                    # samples per crop; 0 = ~0.7 s at the mel contract's rate (16384 at 22.05 kHz, 33600 at 48 kHz)
+    segment: int = 0                    # samples per crop; 0 = auto: 0.35 s (vocoder) / 0.7 s at the contract's rate
     lr: float = 2e-4
     min_lr: float = 1e-5
     warmup: int = 1000
@@ -46,6 +46,10 @@ class TrainConfig:
     grad_clip: float = 1.0
     ema_decay: float = 0.999
     label_dropout: float = 0.1          # -> null label; enables style transfer
+    vocoder: bool = False               # universal vocoder: condition on the mel only (every clip gets the null
+                                        # label), all labels in the packs are used. The mel generator decides
+                                        # WHAT the sound is; WaveFlow only renders it, so it also renders mels
+                                        # of sounds outside its training labels (e.g. synthetic sci-fi).
     balance_alpha: float = 0.5          # 0 natural, 1 fully class-balanced
     sketch_noise: float = 0.02          # conditioner augmentation (robust to edited sketches)
     sketch_blur_p: float = 0.2
@@ -164,7 +168,10 @@ def train(cfg: TrainConfig, device=None):
     all_rows = [r for p in cfg.packs for r in read_index(p) if r["split"] == "train"]
     counts = Counter(r["label"] for r in all_rows)
     # sub-categories (parent/child) are fine-tuning targets, not base labels, unless listed
-    targets = cfg.labels or sorted(l for l, n in counts.items() if n >= cfg.min_clips and "/" not in l)
+    if cfg.vocoder:
+        targets = cfg.labels or sorted(counts)
+    else:
+        targets = cfg.labels or sorted(l for l, n in counts.items() if n >= cfg.min_clips and "/" not in l)
     missing = [l for l in targets if counts[l] == 0]
     if missing:
         raise ValueError(f"no training clips for {missing}; check the packs")
@@ -215,9 +222,10 @@ def train(cfg: TrainConfig, device=None):
             raise ValueError(f"{p}: pack is {pack_sr} Hz but the mel contract is {mel_cfg.sample_rate} Hz. "
                              f"Rebuild the pack with notebook 01 (build_pack(..., sr={mel_cfg.sample_rate})) "
                              f"or train with mel=MEL_POC settings.")
-    seg = (cfg.segment or int(0.7 * mel_cfg.sample_rate)) // model.cfg.h * model.cfg.h
+    # vocoder: short crops are enough (it only renders local detail), category model: ~0.7 s of context
+    seg = (cfg.segment or int((0.35 if cfg.vocoder else 0.7) * mel_cfg.sample_rate)) // model.cfg.h * model.cfg.h
     labels_used = list(targets) + list(cfg.replay_labels or [])
-    ds = PackDataset(cfg.packs, vocab, "train", seg, labels_used, augment=True)
+    ds = PackDataset(cfg.packs, vocab, "train", seg, labels_used, augment=True, label_free=cfg.vocoder)
     w = ds.sample_weights(cfg.balance_alpha)
     if cfg.replay_labels and cfg.replay_ratio > 0:
         is_replay = np.array([r["label"] not in targets for r in ds.rows])
@@ -229,10 +237,10 @@ def train(cfg: TrainConfig, device=None):
                                          pin_memory=device.type == "cuda", drop_last=True,
                                          persistent_workers=cfg.num_workers > 0)
     batches = _infinite(loader)
-    val_ds = PackDataset(cfg.packs, vocab, "val", seg, targets, augment=False)
+    val_ds = PackDataset(cfg.packs, vocab, "val", seg, targets, augment=False, label_free=cfg.vocoder)
     if len(val_ds) == 0:
         print("WARNING: no validation clips for these labels; validating on train clips")
-        val_ds = PackDataset(cfg.packs, vocab, "train", seg, targets, augment=False)
+        val_ds = PackDataset(cfg.packs, vocab, "train", seg, targets, augment=False, label_free=cfg.vocoder)
     rng_state = np.random.get_state()
     np.random.seed(1234)
     val_items = [val_ds[i % len(val_ds)] for i in range(min(64, max(len(val_ds), 1) * 2))] if len(val_ds) else []
@@ -305,7 +313,7 @@ def train(cfg: TrainConfig, device=None):
         x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
         x = x + (torch.rand_like(x) - 0.5) / 32768.0          # dequantisation noise
         sketch = _augment_sketch(mel(x), cfg.sketch_noise, cfg.sketch_blur_p)
-        if cfg.label_dropout > 0:
+        if cfg.label_dropout > 0 and not cfg.vocoder:
             y = torch.where(torch.rand_like(y, dtype=torch.float) < cfg.label_dropout, 0, y)
         if mon.due(step + 1):
             mon.start(model)
@@ -411,7 +419,7 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=None, max_la
         if len(a) < sr // 2:
             continue
         x = torch.from_numpy(a)[None].to(device)
-        y = torch.tensor([vocab.index(r["label"])], device=device)
+        y = torch.tensor([0 if getattr(ds, "label_free", False) else vocab.index(r["label"])], device=device)
         gen = model.sample(mel(x), y, temperature=1.0)[0].float().cpu().numpy()
         name = r["label"].replace("/", "__") + (f"_{seen[r['label']]}" if per_label > 1 else "")
         save_audio(folder / f"{name}_ref.wav", a, sr)
