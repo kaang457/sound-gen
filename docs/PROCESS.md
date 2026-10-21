@@ -213,6 +213,19 @@ Karar: büyük eğitim kavram kanıtı içindir; ticari olmayan veri de dahil. 0
 ESC-50 + FSD50K'nın tamamı: dev **ve eval** bölümü (+10.231 klip, +27,9 saat; konuşma/müzik hariç), kategorisizler "other" (`MAX_OTHER=16000` parça) → `pack_poc`. Eval indirmesi Zenodo dosya listesine göre yazıldı ve gerçek parçalı zip'lerle (sahte içerik) uçtan uca test edildi.
 02 `RUN="poc_v1"`, düzeltmeler açık. **Bu modelin çıktıları ticari kullanılamaz**; ticari yol için `pack_full` duruyor.
 
+## 9f. poc_v1 sonucu (21 Ekim)
+
+81.782 adım, 47,8 saat veri (17 etiket, "other" 16.000 parça), 8×8 flow, 128 kanal, düzeltmeler açık.
+- **En iyi val NLL −4,27** (base_v1: −4,00). Val 10.000. adımdan sonra neredeyse düz; 7 kat adım ve ~6 kat veri
+  NLL'i yalnız 0,27 iyileştirdi. Bu kurulumla daha fazla compute verimsiz.
+- **Sağlık:** ölü/sönen gradyan yok; **koşul gücü 0,51** (base_v1 ~0,02–0,1); kırpma %22; doymuş tanh %12; ölü ReLU %31 (uyarı).
+- **Parametreler sese yansıyor** (v1 son işlemi açık): mesafe 0→1 seviye −26→−43 dB, parlaklık 3,3→1,4 kHz;
+  ağırlık −1→+1 parlaklık 4,7→1,8 kHz.
+- **Dinleme:** beğenilmedi; thunder "bomboş".
+- **Hatalar (benim):** `.gitignore` `*.pt`'yi dışladığı için `model.pt` / `sketch_bank.pt` GitHub'a gitmedi;
+  vitrin referansı rastgele (ilk) klipti, thunder için seçilen gerçek kayıt zaten çok kısıktı (−38,6 dB);
+  dropout 0 iken vitrinde MC dropout varyasyonu anlamsızdı. Üçü düzeltildi.
+
 ## 9c. Mimari kararı: tür başına uzman değil, tek ortak model (19 Ekim)
 
 Her ses türü için ayrı bir uzman model, her tür için yeterli veri bulmayı gerektiriyor; bu gerçekçi değil. Karar:

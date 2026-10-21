@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import torch
 from tqdm.auto import tqdm
 
 from .audio import SR, save_audio
@@ -21,6 +22,20 @@ MAX_S = 4.0
 def _save(folder, name, audio):
     save_audio(folder / f"{name}.wav", np.asarray(audio)[: int(MAX_S * SR)])
     return f"{name}.wav"
+
+
+def _ref_order(gen, label, public_only):
+    """Bank indices, most representative first: clips we may show (audio kept, shareable when public_only)
+    before others, then by loudness of their louder frames (a quiet distant clip makes a poor demo)."""
+    if not gen.bank:
+        return [0]
+    items = gen.bank["items"].get(label) or gen.bank["items"].get(label.split("/")[0]) or []
+    def score(i):
+        it = items[i]
+        showable = it.get("audio") is not None and (it.get("public_ok") or not public_only)
+        loud = float(torch.quantile(it["sketch"].float().mean(0), 0.9))
+        return (showable, loud)
+    return sorted(range(len(items)), key=score, reverse=True) or [0]
 
 
 def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=None, refine=None,
@@ -35,8 +50,9 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
     items = []
     per_label = max(1, 4 // len(labels))            # a single-category model shows 4 pairs (bank keeps audio for 4)
     for label in tqdm(labels, desc="real vs generated", unit="label"):
+        order = _ref_order(gen, label, public_only)
         for k in range(per_label):
-            r = gen.generate(label, Controls(), refine=refine, seed=seed, ref_index=k)
+            r = gen.generate(label, Controls(), refine=refine, seed=seed, ref_index=order[k % len(order)])
             name = label.replace("/", "__") + (f"_{k}" if per_label > 1 else "")
             row = dict(label=label, generated=_save(out, f"{name}_gen", r["audio"][0]))
             if r["reference_audio"] is not None and (r["reference_public_ok"] or not public_only):
@@ -51,7 +67,7 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
     # 2. category switching: one sketch, different labels
     swap = swap_labels or [l for l in ("footsteps", "gunshot", "rain", "dog_bark", "car") if l in labels][:4]
     if len(swap) >= 2:
-        ref = gen.reference(swap[0], seed=seed, index=0)
+        ref = gen.reference(swap[0], seed=seed, index=_ref_order(gen, swap[0], False)[0])
         base = ref["audio"].numpy() / 32768 if ref.get("audio") is not None else None
         items = []
         for label in tqdm(swap, desc="category switch", unit="label"):
@@ -63,21 +79,24 @@ def showcase(gen, out_dir, seed=1, sweep_label=None, swap_labels=None, labels=No
 
     # 3. parameter sweeps
     probe = sweep_label or next((l for l in ("footsteps", "gunshot", "rain") if l in labels), labels[0])
+    probe_ref = _ref_order(gen, probe, public_only)[0]
     sweeps = [("intensity", [-1.0, 0.0, 1.0]), ("distance", [0.0, 0.5, 1.0]),
               ("environment", ["dry", "room", "hall", "cave"]), ("speed", [0.7, 1.0, 1.5]),
               ("weight", [-1.0, 0.0, 1.0]), ("duration", [1.5, 4.0])]
     for param, values in tqdm(sweeps, desc=f"parameter sweeps ({probe})", unit="param"):
         items = []
         for v in values:
-            r = gen.generate(probe, Controls(**{param: v}), refine=refine, seed=seed, ref_index=0)
+            r = gen.generate(probe, Controls(**{param: v}), refine=refine, seed=seed, ref_index=probe_ref)
             items.append(dict(label=f"{param} = {v}",
                               generated=_save(out, f"sweep_{param}_{str(v).replace('.', 'p').replace('-', 'm')}", r["audio"][0])))
         sections.append(dict(title=f"Parametre: {param} ({probe})", kind="list", items=items, text=""))
 
     # 4. variations of one request
     items = []
-    for i, (s, mc) in enumerate([(seed, False), (seed + 1, False), (seed + 2, False), (seed, True)]):
-        r = gen.generate(probe, Controls(), refine=refine, seed=s, mc_dropout=mc, ref_index=0)
+    has_dropout = getattr(gen.model.cfg, "dropout", 0) > 0          # MC dropout does nothing without dropout
+    runs = [(seed, False), (seed + 1, False), (seed + 2, False), (seed, True) if has_dropout else (seed + 3, False)]
+    for i, (s, mc) in enumerate(runs):
+        r = gen.generate(probe, Controls(), refine=refine, seed=s, mc_dropout=mc, ref_index=probe_ref)
         items.append(dict(label=f"seed {s}" + (" + MC dropout" if mc else ""),
                           generated=_save(out, f"variation_{i}", r["audio"][0])))
     sections.append(dict(title=f"Varyasyonlar: aynı istek ({probe})", kind="list", items=items,

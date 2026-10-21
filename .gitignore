@@ -12,3 +12,6 @@ runs/
 *.zip
 *.tar.gz
 .env
+
+# published results are small (fp16 model, public sketch bank) and belong in git
+!results/**/*.pt
