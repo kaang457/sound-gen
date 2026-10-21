@@ -128,7 +128,7 @@ def _readme(run, gen, packs, refine, removed, sizes):
         "from soundgen.generate import Generator",
         "from soundgen.controls import Controls",
         f"gen = Generator('results/{run.name}/model.pt')   # sketch_bank.pt aynı klasörden okunur",
-        "out = gen.generate('gunshot', Controls(distance=0.5, environment='hall'), refine='v1')",
+        "out = gen.generate('gunshot', Controls(distance=0.5, environment='hall'))   # sıcaklık 1.0, son işlemsiz",
         "```", "",
         "## Etiketler (parça sayısı)", "",
         ", ".join(f"{k} ({v})" for k, v in rows.most_common()), "",
@@ -141,7 +141,7 @@ def _readme(run, gen, packs, refine, removed, sizes):
     return "\n".join(lines)
 
 
-def publish_run(run_dir, packs, refine="v1", ckpt="best.pt", health=True):
+def publish_run(run_dir, packs, refine=None, ckpt="best.pt", health=True):
     """Build <run_dir>/publish/ and return its files (push them with colab.push_to_github)."""
     from .generate import Generator
     from .showcase import showcase

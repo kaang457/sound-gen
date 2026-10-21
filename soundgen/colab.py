@@ -135,7 +135,7 @@ def health_report(run_dir, packs, push=True):
     return findings, path
 
 
-def publish(run_dir, packs, refine="v1", push=True):
+def publish(run_dir, packs, refine=None, push=True):
     """Tidy results of a run -> <run>/publish/ (Drive) and GitHub results/<RUN>/ (README, model, bank,
     showcase.html, health.html). Never raises: a failure here must not hide a finished training run."""
     from .publish import publish_run

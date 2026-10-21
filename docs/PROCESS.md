@@ -222,6 +222,11 @@ ESC-50 + FSD50K'nın tamamı: dev **ve eval** bölümü (+10.231 klip, +27,9 saa
 - **Parametreler sese yansıyor** (v1 son işlemi açık): mesafe 0→1 seviye −26→−43 dB, parlaklık 3,3→1,4 kHz;
   ağırlık −1→+1 parlaklık 4,7→1,8 kHz.
 - **Dinleme:** beğenilmedi; thunder "bomboş".
+- **Sıcaklık hatası (benim, en büyüğü):** üretim sıcaklığı 0,8 (WaveGlow alışkanlığı) bu modelde sesi 7–9 dB kısıyordu;
+  1,0'da seviye gerçeğe ~1 dB yakın. Sıcaklık 1,0 ile CPU'da yeniden ölçüldü (`results/poc_v1/noise_test.html`):
+  seviye farkı ort. +1,6 dB, spektrum şekli 0,2–1,1 dB, zaman zarfı korelasyonu 0,69–1,00, bant içi ince ayrıntıda model
+  16/16 kategoride şekillendirilmiş gürültüden gerçeğe yakın (2,57 / 2,77 dB), 1378 Hz vızıltı yok (ton fazlası ~0 dB → **H1 doğrulandı**).
+  v1 son işlemi ince ayrıntıyı hafif bozuyor (2,71); varsayılan artık son işlemsiz, varsayılan sıcaklık 1,0.
 - **Hatalar (benim):** `.gitignore` `*.pt`'yi dışladığı için `model.pt` / `sketch_bank.pt` GitHub'a gitmedi;
   vitrin referansı rastgele (ilk) klipti, thunder için seçilen gerçek kayıt zaten çok kısıktı (−38,6 dB);
   dropout 0 iken vitrinde MC dropout varyasyonu anlamsızdı. Üçü düzeltildi.

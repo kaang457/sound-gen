@@ -1,13 +1,23 @@
 # poc_v1
 
+> **21 Ekim güncellemesi.** İlk vitrin sıcaklık 0,8 ile üretildi; bu modelde sesi 7–9 dB kısıyordu ("boş" ses izlenimi).
+> Sıcaklık 1,0 ile seviye gerçeğe oturuyor. Güncel dinleme sayfaları: **`compare_ref_gen.html`** (gerçek ve üretilen) ve
+> **`noise_test.html`** (model ne katıyor). Eski vitrin `showcase_eski_sicaklik08.html` olarak duruyor.
+>
+> Sıcaklık 1,0'da, gerçeği paylaşılabilir 16 kategoride: ortalama seviye farkı +1.6 dB;
+> bant içi ince ayrıntıda model 16 kategorinin 16'inde aynı taslağa uydurulmuş gürültüden gerçeğe daha yakın;
+> 1378 Hz vızıltı yok (ton fazlası ~0 dB). Bu yüzden v1 son işlemi artık varsayılan değil.
+
 - Adım: **81782** · en iyi doğrulama NLL: **-4.2725** (düşük = iyi)
 - Veri: 47.8 saat, 40516 parça, 17 etiket
 - Model: 8 flow × 8 katman, 128 kanal, upsampler `interp`, cond_norm True, actnorm True
-- Vitrin son işlemi: `refine='v1'`
+- Eski vitrin: sıcaklık 0,8, `refine='v1'`
 
 | Dosya | Ne |
 |---|---|
-| `showcase.html` | Bütün sesler tek sayfada (indirip tarayıcıda aç) |
+| `compare_ref_gen.html` | Her kategori için gerçek ve üretilen (sıcaklık 1,0) |
+| `noise_test.html` | Model ne katıyor: model, v1 ve aynı taslağa uydurulmuş gürültü; ölçümler (`noise_test.json`) |
+| `showcase_eski_sicaklik08.html` | İlk vitrin (sıcaklık 0,8, kısık); parametre taramaları ve kategori geçişi burada |
 | `health.html` | Eğitim sağlık raporu |
 | `model.pt` | Üretim ağırlıkları (EMA, fp16), 45 MB |
 | `sketch_bank.pt` | Referans taslaklar; paylaşılamaz lisanslı 20 gerçek kayıt çıkarıldı |
@@ -18,7 +28,7 @@
 from soundgen.generate import Generator
 from soundgen.controls import Controls
 gen = Generator('results/poc_v1/model.pt')   # sketch_bank.pt aynı klasörden okunur
-out = gen.generate('gunshot', Controls(distance=0.5, environment='hall'), refine='v1')
+out = gen.generate('gunshot', Controls(distance=0.5, environment='hall'))   # sıcaklık 1.0, son işlemsiz
 ```
 
 ## Etiketler (parça sayısı)
