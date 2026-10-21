@@ -17,6 +17,7 @@
 | Dosya | Ne |
 |---|---|
 | `showcase.html` | Vitrin: her kategori için gerçek ve üretilen (sıcaklık 1,0) |
+| `controls_test.html` | Parametre deneyi (silah sesi, son işlemsiz): taslağın istediği ve modelin ürettiği değişim |
 | `noise_test.html` | Model ne katıyor: model, v1 ve aynı taslağa uydurulmuş gürültü; ölçümler (`noise_test.json`) |
 | `showcase_eski_sicaklik08.html` | İlk vitrin (sıcaklık 0,8, kısık); parametre taramaları ve kategori geçişi burada |
 | `health.html` | Eğitim sağlık raporu |
