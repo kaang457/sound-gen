@@ -6,6 +6,15 @@ shape, and leaves the fine detail to the generative model. Because it is
 low-dimensional and interpretable, it is also the surface our parametric
 controls edit (see controls.py).
 
+MEL CONTRACT (v2, fixed 21 Oct 2026). Every module speaks this representation: the mel generator
+produces it, the controls edit it, WaveFlow turns it into audio. Changing it means retraining all of them.
+
+    48 kHz mono · n_fft 2048 (window 2048) · hop 480 (10 ms, 100 frames/s) · 128 mel bands, 20 Hz - 24 kHz
+    slaney mel scale and norm · power -> dB -> (dB + 100) / 100, clipped to 0..1.2
+
+`MEL_POC` is the old proof-of-concept setting (22.05 kHz, 20 bands); poc_v1 checkpoints carry it and
+keep working because every checkpoint stores its own mel_cfg.
+
 Normalisation is ABSOLUTE (not per clip): sketch = (dB + 100) / 100.
 Loudness information therefore survives, which the intensity and distance
 controls depend on.
@@ -16,21 +25,29 @@ import numpy as np
 import torch
 from torch import nn
 
-SR = 22050
+SR = 48000                     # contract v2 (poc_v1 used 22050, see MEL_POC)
 DB_FLOOR = -100.0
 
 
 @dataclass
 class MelConfig:
     sample_rate: int = SR
-    n_fft: int = 1024
-    hop: int = 256
-    n_mels: int = 20
-    f_min: float = 30.0
-    f_max: float = 11025.0
+    n_fft: int = 2048
+    hop: int = 480
+    n_mels: int = 128
+    f_min: float = 20.0
+    f_max: float = 24000.0
 
     def to_dict(self):
         return asdict(self)
+
+    @property
+    def fps(self):
+        return self.sample_rate / self.hop
+
+
+MEL_V2 = MelConfig()
+MEL_POC = MelConfig(sample_rate=22050, n_fft=1024, hop=256, n_mels=20, f_min=30.0, f_max=11025.0)
 
 
 class MelSketch(nn.Module):

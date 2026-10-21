@@ -368,8 +368,9 @@ def split_of(src_id, val=0.05, test=0.05):
     return "test" if u < test else "val" if u < test + val else "train"
 
 
-def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label=2000, seed=0, caps=None):
-    """Load, resample, trim, chunk and append everything into one int16 file."""
+def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label=2000, seed=0, caps=None, sr=SR):
+    """Load, resample (to `sr`, default: the mel contract's 48 kHz), trim, chunk and append into one int16 file."""
+    SR = sr                                     # noqa: N806 (local override of the module constant)
     if not items:
         raise ValueError("no audio files found for the requested labels: put files in "
                          "MyDrive/sound-gen/custom/<label>/ (e.g. custom/footsteps/snow/*.wav) "
@@ -402,7 +403,7 @@ def build_pack(items, pack_dir, max_chunk_s=6.0, min_rms_db=-55.0, max_per_label
                 peak = np.abs(x).max() if len(x) else 0
                 if peak < 1e-4:
                     continue
-                x = trim_silence(x / peak * 0.9)
+                x = trim_silence(x / peak * 0.9, SR)
                 L = int(max_chunk_s * SR)
                 for k, start in enumerate(range(0, max(1, len(x)), L)):
                     if n_label >= cap(label):

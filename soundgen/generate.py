@@ -24,6 +24,7 @@ class Generator:
         self.model, ck = load_model(ckpt, self.device, use_ema)
         self.vocab = ck["vocab"]
         self.mel_cfg = ck["mel_cfg"]
+        self.sr = int(self.mel_cfg["sample_rate"])     # 22050 for poc_v1, 48000 for contract v2
         self.mel = MelSketch(MelConfig(**self.mel_cfg)).to(self.device)
         bank = bank or Path(ckpt).parent / "sketch_bank.pt"
         self.bank = torch.load(bank, map_location="cpu", weights_only=False) if Path(bank).exists() else None
@@ -69,7 +70,7 @@ class Generator:
         label_id = self.vocab.index(self._resolve(label))
         if reference is not None:
             if isinstance(reference, (str, Path)):
-                reference = load_audio(reference, SR)
+                reference = load_audio(reference, self.sr)
             base, ref = self.sketch_of(reference), dict(id="user", audio=None)
         else:
             ref = self.reference(label, seed, ref_index)
@@ -83,16 +84,16 @@ class Generator:
         audio = self.model.sample(S, y, temperature=temperature, generator=g).float().cpu().numpy()
         self.model.set_mc_dropout(False)
         if postprocess:
-            audio = np.stack([clean(a) for a in audio])
+            audio = np.stack([clean(a, self.sr) for a in audio])
         if refine == "v1":
-            audio = np.stack([refine_v1(a, sketch, self.mel_cfg) for a in audio])
+            audio = np.stack([refine_v1(a, sketch, self.mel_cfg, sr=self.sr) for a in audio])
         elif refine:
             raise ValueError(f"unknown refine mode {refine!r} (use None or 'v1')")
         ref_audio = ref["audio"].numpy().astype(np.float32) / 32768 if ref.get("audio") is not None else None
         return dict(audio=audio, sketch=sketch, base_sketch=base, label=label, controls=controls.to_dict(),
                     seed=seed, temperature=temperature, mc_dropout=mc_dropout,
                     reference_id=ref.get("id"), reference_audio=ref_audio,
-                    reference_public_ok=bool(ref.get("public_ok")), attribution=ref.get("attribution"))
+                    sr=self.sr, reference_public_ok=bool(ref.get("public_ok")), attribution=ref.get("attribution"))
 
 
 def refine_v1(x, sketch, mel_cfg, sr=SR, max_db=30.0, q=30.0):
@@ -155,9 +156,10 @@ def clean(x, sr=SR, spike_db=12.0):
     return x.astype(np.float32)
 
 
-def export(result, folder, name=None, sr=SR, max_s=6.0):
+def export(result, folder, name=None, sr=None, max_s=6.0):
     """Write reference + outputs (+ json) - small enough for GitHub."""
     import json
+    sr = sr or result.get("sr", SR)
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     name = name or result["label"].replace("/", "__")

@@ -292,10 +292,11 @@ class WaveFlow(nn.Module):
 
     # ------------------------------------------------------------ sampling
     @torch.no_grad()
-    def reverse(self, z, sketch, labels):
-        """z [B,1,h,w] -> audio [B, T]; h sequential steps per flow."""
+    def reverse(self, z, sketch, labels, label_vec=None):
+        """z [B,1,h,w] -> audio [B, T]; h sequential steps per flow. label_vec [label_dim]: use this
+        category vector (e.g. a blend of two categories) instead of looking labels up."""
         T = z.shape[2] * z.shape[3]
-        g = self.embed(labels)
+        g = self.embed(labels) if label_vec is None else label_vec.to(z.device)[None].expand(z.shape[0], -1)
         conds = self._conds(sketch, T)
         x = z.to(self.embed.weight.dtype)
         for k in reversed(range(self.cfg.n_flows)):
@@ -310,13 +311,13 @@ class WaveFlow(nn.Module):
         return self.unsqueeze(x).squeeze(1)
 
     @torch.no_grad()
-    def sample(self, sketch, labels, temperature=1.0, generator=None):
+    def sample(self, sketch, labels, temperature=1.0, generator=None, label_vec=None):
         # temperature 1.0 = the level the model learned; 0.8 made poc_v1 outputs 7-9 dB too quiet
         B, _, n_frames = sketch.shape
         T = ((n_frames - 1) * self.cfg.hop) // self.cfg.h * self.cfg.h
         z = torch.randn(B, 1, self.cfg.h, T // self.cfg.h, device=sketch.device,
                         generator=generator) * temperature
-        return self.reverse(z, sketch, labels)
+        return self.reverse(z, sketch, labels, label_vec)
 
     # ------------------------------------------------------------ transfer
     def grow_labels(self, n_new: int, init_from=None):

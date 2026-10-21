@@ -38,7 +38,7 @@ class TrainConfig:
     mel: dict = field(default_factory=dict)     # MelConfig overrides
     steps: int = 60000
     batch_size: int = 8
-    segment: int = 16384                # ~0.74 s at 22.05 kHz, multiple of h
+    segment: int = 0                    # samples per crop; 0 = ~0.7 s at the mel contract's rate (16384 at 22.05 kHz, 33600 at 48 kHz)
     lr: float = 2e-4
     min_lr: float = 1e-5
     warmup: int = 1000
@@ -208,7 +208,14 @@ def train(cfg: TrainConfig, device=None):
     print(f"trainable: {sum(p.numel() for p in trainable) / 1e6:.2f} M ({cfg.freeze})")
 
     # -------- data
-    seg = cfg.segment // model.cfg.h * model.cfg.h
+    for p in cfg.packs:            # a pack is resampled once, at build time: it must match the mel contract
+        meta_f = Path(p) / "meta.json"
+        pack_sr = json.loads(meta_f.read_text()).get("sample_rate", 22050) if meta_f.exists() else None
+        if pack_sr and int(pack_sr) != mel_cfg.sample_rate:
+            raise ValueError(f"{p}: pack is {pack_sr} Hz but the mel contract is {mel_cfg.sample_rate} Hz. "
+                             f"Rebuild the pack with notebook 01 (build_pack(..., sr={mel_cfg.sample_rate})) "
+                             f"or train with mel=MEL_POC settings.")
+    seg = (cfg.segment or int(0.7 * mel_cfg.sample_rate)) // model.cfg.h * model.cfg.h
     labels_used = list(targets) + list(cfg.replay_labels or [])
     ds = PackDataset(cfg.packs, vocab, "train", seg, labels_used, augment=True)
     w = ds.sample_weights(cfg.balance_alpha)
@@ -387,7 +394,8 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=None, max_la
     folder.mkdir(parents=True, exist_ok=True)
     model.eval()
     seen = Counter()
-    n = int(seconds * SR) // model.cfg.h * model.cfg.h
+    sr = mel.cfg.sample_rate
+    n = int(seconds * sr) // model.cfg.h * model.cfg.h
     rows = list(ds.rows)
     if fallback is not None:
         have = {r["label"] for r in rows}
@@ -400,14 +408,14 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=None, max_la
             continue
         a = ds.audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], n)].astype(np.float32) / 32768
         a = a[: len(a) // model.cfg.h * model.cfg.h]
-        if len(a) < SR // 2:
+        if len(a) < sr // 2:
             continue
         x = torch.from_numpy(a)[None].to(device)
         y = torch.tensor([vocab.index(r["label"])], device=device)
         gen = model.sample(mel(x), y, temperature=1.0)[0].float().cpu().numpy()
         name = r["label"].replace("/", "__") + (f"_{seen[r['label']]}" if per_label > 1 else "")
-        save_audio(folder / f"{name}_ref.wav", a)
-        save_audio(folder / f"{name}_gen.wav", gen)
+        save_audio(folder / f"{name}_ref.wav", a, sr)
+        save_audio(folder / f"{name}_gen.wav", gen, sr)
         seen[r["label"]] += 1
         bar.update(1)
     bar.close()
@@ -428,7 +436,7 @@ def build_sketch_bank(packs, vocab, mel_cfg, path, per_label=48, ref_audio=4, ma
         rng.shuffle(group)
         items = []
         for k, r in enumerate(group[:per_label]):
-            a = np.asarray(audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], int(max_s * SR))])
+            a = np.asarray(audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], int(max_s * mel_cfg.sample_rate))])
             s = mel(torch.from_numpy(a.astype(np.float32) / 32768)[None])[0].half()
             items.append(dict(sketch=s, id=r["id"], attribution=r["attribution"],
                               public_ok=r.get("public_ok") == "1",
