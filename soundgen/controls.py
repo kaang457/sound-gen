@@ -34,6 +34,8 @@ class Controls:
     environment: str = "dry"
     duration: float = None
     speed: float = 1.0
+    count: int = 1              # >1: several sources of the same sound scattered in time (a firefight, a flock)
+    spread: float = 1.0         # 0..1 how different the copies are (distance, level, timbre)
 
     def to_dict(self):
         return asdict(self)
@@ -61,7 +63,10 @@ def apply_controls(sketch, controls: Controls, kind="event", mel_cfg=None, seed=
     # ---- time: speed, then duration
     if abs(c.speed - 1.0) > 1e-3:
         db = respace_events(db, c.speed, fps) if kind == "sequence" else time_stretch(db, c.speed)
-    if c.duration:
+    if c.count and c.count > 1:
+        length = int(round((c.duration or max(2.5, 0.45 * c.count)) * fps)) + 1
+        db = scatter_events(db, int(c.count), length, pos, rng, c.spread)
+    elif c.duration:
         db = fit_duration(db, int(round(c.duration * fps)) + 1, kind, fps, rng)
 
     # ---- level and spectrum
@@ -84,6 +89,46 @@ def apply_controls(sketch, controls: Controls, kind="event", mel_cfg=None, seed=
 
 
 # ------------------------------------------------------------------ primitives
+def _main_event(db, drop_db=30.0, max_frames=70):
+    """The single strongest event: from just before its peak until it decays `drop_db` below the peak,
+    or the next attack (a 6 dB rise), whichever comes first (at most ~0.8 s)."""
+    e = 10 * np.log10((10 ** (db / 10.0)).sum(0) + 1e-30)
+    p = int(np.argmax(e))
+    st = p
+    while st > 0 and e[st - 1] > e[p] - drop_db and p - st < 6:
+        st -= 1
+    end = p + 1
+    while end < len(e) and end - p < max_frames and e[end] > e[p] - drop_db:
+        if e[end] - e[end - 1] > 6 and end - p > 3:      # next attack
+            break
+        end += 1
+    return db[:, st:end]
+
+
+def scatter_events(db, count, length, pos, rng, spread=1.0):
+    """`count` copies of the sketch's main event at random times within `length` frames, summed as power.
+    Each copy gets its own distance (quieter + duller), small timbre shift and level jitter, so the result
+    reads as several sources (e.g. a firefight) rather than one sound repeated."""
+    ev = _main_event(db)
+    L = ev.shape[1]
+    out = np.zeros((db.shape[0], max(length, L)), dtype=np.float64)
+    starts = np.sort(rng.uniform(0, max(1, out.shape[1] - L), size=count)).astype(int)
+    starts[0] = int(rng.uniform(0, min(4, out.shape[1] - L + 1)))     # something happens right away
+    for k, st in enumerate(starts):
+        far = 0.0 if k == 0 else rng.uniform(0, 0.8 * spread)          # first copy close, others scattered
+        gain = -20 * np.log10(1 + 9 * far) + rng.uniform(-3, 3) * spread
+        dull = -18.0 * far * np.clip((pos - 0.3) / 0.7, 0, 1)
+        shift = int(rng.integers(-1, 2)) if spread > 0 else 0          # +-1 band: a different gun / size
+        cp = np.roll(ev, shift, axis=0) + gain + dull
+        if shift > 0:
+            cp[:shift] = DB_FLOOR
+        elif shift < 0:
+            cp[shift:] = DB_FLOOR
+        out[:, st: st + L] += 10 ** (cp / 10.0)
+    return np.maximum(10 * np.log10(out + 1e-30), DB_FLOOR)
+
+
+
 def time_stretch(db, speed):
     F = db.shape[1]
     n = max(2, int(round(F / speed)))
