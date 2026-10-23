@@ -301,8 +301,13 @@ metin kodlayıcının (CLAP / T5, dondurulmuş) vektörü.
 | Yaratıcılık birinci aşamada | DCASE 2023 Task 7'nin en iyi sistemleri ve AudioLDM / Stable Audio da böyle: mel'i diffusion üretir, vocoder çalar. |
 | poc_v1 korunur | Her checkpoint kendi `mel_cfg`'sini taşır; poc_v1 22 kHz / 20 bantla çalışmaya devam eder. 22 kHz pakete 48 kHz eğitim başlatılırsa hata verir. |
 
-**Kopya mı, yeni mi?** `scratch.from_scratch` her üretilen mel'i paketteki gerçek mel'lerin en yakınıyla kıyaslar
-(zaman kaydırmalı, yüksek hücrelerde ortalama |dB|). Ölçüt: iki farklı gerçek kaydın birbirine uzaklığı.
+**Sıfırdan üretimin testi (05, hücre 4)**
+1. *Ezber mi?* `scratch.NoveltyIndex`: üretilen her mel, eğitim kayıtlarının (etiket başına 150'ye kadar, bütün
+   etiketler) her kare kaydırmasıyla kıyaslanır (−60 dB üstü hücrelerde ortalama |dB|). Ölçüt: modelin görmediği gerçek
+   kayıtların (val) en yakın eğitim kaydına uzaklığı. Birebir kopya 0,0 dB verir (test edildi).
+2. *Tanınıyor mu?* CLAP sıfır atış sınıflandırma; üretilen seslerin doğruluğu gerçek val kayıtlarınınkiyle yan yana.
+3. *Dinleme:* sayfa (mel resmi + ses + iki ölçü) ve zip.
+Uzaklık tek başına kalite göstermez (kötü bir ses de "uzak" çıkar); bu yüzden 1 ve 2 birlikte okunur.
 
 **Veri ihtiyacı (kabaca)**
 

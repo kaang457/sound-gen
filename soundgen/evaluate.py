@@ -43,8 +43,8 @@ class Clap:
         return torch.nn.functional.normalize(e, dim=-1).cpu().numpy()
 
 
-def category_match(clap, wavs, labels, all_labels):
-    a = clap.audio(wavs)
+def category_match(clap, wavs, labels, all_labels, sr=SR):
+    a = clap.audio(wavs, sr)
     t = clap.text([label_text(l) for l in all_labels])
     sims = a @ t.T
     idx = [all_labels.index(l) for l in labels]
