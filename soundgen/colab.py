@@ -56,10 +56,25 @@ def local_copy(src, dst):
     """Copy a pack from Drive to the local disk (much faster random reads)."""
     src, dst = Path(src), Path(dst)
     dst.mkdir(parents=True, exist_ok=True)
+    from tqdm.auto import tqdm
     for f in ["audio.bin", "index.csv", "meta.json"] + [p.name for p in src.glob("clap_*.npy")]:
         s, d = src / f, dst / f
         if s.exists() and (not d.exists() or d.stat().st_size != s.stat().st_size):
-            shutil.copy2(s, d)
+            size = s.stat().st_size
+            if size < 200e6:
+                shutil.copy2(s, d)
+                continue
+            # big file (the 16 GB audio.bin): copy in chunks with a progress bar; Drive reads ~30-150 MB/s
+            tmp = d.with_suffix(d.suffix + ".part")
+            with open(s, "rb") as fi, open(tmp, "wb") as fo, tqdm(total=size, unit="B", unit_scale=True,
+                                                                   unit_divisor=1024, desc=f"Drive -> {d}") as bar:
+                while True:
+                    b = fi.read(64 << 20)
+                    if not b:
+                        break
+                    fo.write(b)
+                    bar.update(len(b))
+            tmp.replace(d)
     return dst
 
 
