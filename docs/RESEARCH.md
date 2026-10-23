@@ -1,3 +1,6 @@
+> **23 Ekim notu:** Bu belge araştırma notlarıdır; bazı bölümler (base model + transfer learning planı) rota v2 ile aşıldı.
+> Güncel mimari: [README](../README.md) ve [PROCESS.md §11](PROCESS.md).
+
 # Araştırma: mel spektrogramdan ses üretimi ve bizim için anlamı
 
 *2026-10-17. Pazartesi'deki büyük eğitimden önce. Bağlam için: [PROCESS.md](PROCESS.md).*

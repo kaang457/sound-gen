@@ -275,6 +275,8 @@ Eski çıktılar (samples/) 20 Ekim'de `archive` dalına taşındı; bu belgedek
 
 ## 11. Rota v2: sıfırdan üretim (21 Ekim)
 
+**23 Ekim:** notebook'lar rota v2'ye göre yeniden adlandırıldı: `01_data`, `02_vocoder`, `03_mel_generator`; poc yolu (base model + transfer learning) `notebooks/legacy/`'ye taşındı ve rota v2'de kullanılmıyor.
+
 **Hedef:** oyunlarda kullanılabilecek, referans ses olmadan üretilmiş gerçekçi sesler; endüstriyel ölçeğe büyüyebilecek
 bir mimari. Girdi metin olmak zorunda değil: şimdilik bir vektör (kategori vektörü, karışım ya da elle), ileride bir
 metin kodlayıcının (CLAP / T5, dondurulmuş) vektörü.
@@ -301,7 +303,7 @@ metin kodlayıcının (CLAP / T5, dondurulmuş) vektörü.
 | Yaratıcılık birinci aşamada | DCASE 2023 Task 7'nin en iyi sistemleri ve AudioLDM / Stable Audio da böyle: mel'i diffusion üretir, vocoder çalar. |
 | poc_v1 korunur | Her checkpoint kendi `mel_cfg`'sini taşır; poc_v1 22 kHz / 20 bantla çalışmaya devam eder. 22 kHz pakete 48 kHz eğitim başlatılırsa hata verir. |
 
-**Sıfırdan üretimin testi (05, hücre 4)**
+**Sıfırdan üretimin testi (03_mel_generator, hücre 4)**
 1. *Ezber mi?* `scratch.NoveltyIndex`: üretilen her mel, eğitim kayıtlarının (etiket başına 150'ye kadar, bütün
    etiketler) her kare kaydırmasıyla kıyaslanır (−60 dB üstü hücrelerde ortalama |dB|). Ölçüt: modelin görmediği gerçek
    kayıtların (val) en yakın eğitim kaydına uzaklığı. Birebir kopya 0,0 dB verir (test edildi).
@@ -317,7 +319,7 @@ Uzaklık tek başına kalite göstermez (kötü bir ses de "uzak" çıkar); bu y
 | Mel üretici | etiketli / açıklamalı ses | etiket sözlüğü için yüzlerce, serbest metin için binlerce saat |
 | Tasarlanmış sesler (sci-fi vb.) | prosedürel sentez (FM, filtreli gürültü, perde kaydırma…) + az sayıda gerçek tasarım | sentez sınırsız, gerçek birkaç yüz–birkaç bin |
 
-**Sonraki adımlar:** (1) 01 → 48 kHz paket, (2) 02 `MODE="vocoder"`, (3) 05 mel üretici + sıfırdan üretim sayfası,
+**Sonraki adımlar:** (1) 01_data → 48 kHz paket, (2) 02_vocoder, (3) 03_mel_generator + sıfırdan üretim sayfası,
 (4) prosedürel sci-fi veri üreteci, (5) dondurulmuş metin kodlayıcı (CLAP) ile vektör yerine kelime.
 
 CPU'da 20 bantlık bir ön deneme (poc_v1 taslak bankasıyla, 6000 adım) yapıldı; render edilmedi, rota 128 banda geçti.
