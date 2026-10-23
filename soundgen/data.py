@@ -80,8 +80,11 @@ def _norm(s):
 
 
 # ------------------------------------------------------------------ download
-def download(url, dest, md5=None, chunk=1 << 22):
-    """Resumable HTTP download with optional md5 check."""
+def download(url, dest, md5=None, chunk=1 << 22, attempts=12):
+    """Resumable HTTP download with retries (Zenodo often answers 502/503/504 or drops the connection under load):
+    each retry continues from the bytes already on disk (HTTP Range), waiting 15 s, 30 s, ... up to 5 min.
+    Optional md5 check; a short file (connection dropped silently) counts as a failure and is resumed."""
+    import time
     import requests
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -89,21 +92,35 @@ def download(url, dest, md5=None, chunk=1 << 22):
         print("already downloaded:", dest.name)
         return dest
     part = dest.with_suffix(dest.suffix + ".part")
-    have = part.stat().st_size if part.exists() else 0
-    headers = {"Range": f"bytes={have}-"} if have else {}
-    with requests.get(url, stream=True, headers=headers, timeout=60) as r:
-        if r.status_code == 416:      # already complete
-            pass
-        else:
-            r.raise_for_status()
-            mode = "ab" if r.status_code == 206 else "wb"
-            start = have if mode == "ab" else 0
-            total = int(r.headers.get("content-length", 0)) + start
-            with open(part, mode) as f, tqdm(total=total or None, initial=start, unit="B", unit_scale=True,
-                                             unit_divisor=1024, desc=dest.name, mininterval=1) as bar:
-                for block in r.iter_content(chunk):
-                    f.write(block)
-                    bar.update(len(block))
+    for k in range(attempts):
+        have = part.stat().st_size if part.exists() else 0
+        headers = {"Range": f"bytes={have}-"} if have else {}
+        try:
+            with requests.get(url, stream=True, headers=headers, timeout=(30, 120)) as r:
+                if r.status_code == 416:                  # nothing left to fetch: already complete
+                    break
+                r.raise_for_status()
+                mode = "ab" if r.status_code == 206 else "wb"
+                start = have if mode == "ab" else 0
+                total = int(r.headers.get("content-length", 0)) + start
+                with open(part, mode) as f, tqdm(total=total or None, initial=start, unit="B", unit_scale=True,
+                                                 unit_divisor=1024, desc=dest.name, mininterval=1) as bar:
+                    for block in r.iter_content(chunk):
+                        f.write(block)
+                        bar.update(len(block))
+                if total and part.stat().st_size < total:
+                    raise IOError(f"connection dropped at {part.stat().st_size}/{total} bytes")
+            break
+        except (requests.RequestException, IOError) as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            if status is not None and status < 500 and status not in (408, 429):
+                raise                                     # 404 etc.: retrying will not help
+            if k == attempts - 1:
+                raise
+            wait = min(300, 15 * 2 ** k)
+            print(f"{dest.name}: {type(e).__name__}: {str(e)[:120]} -> retry {k + 1}/{attempts - 1} in {wait} s "
+                  f"(continues from {part.stat().st_size / 1e9 if part.exists() else 0:.2f} GB)")
+            time.sleep(wait)
     part.rename(dest)
     if md5 and _md5(dest) != md5:
         raise IOError(f"md5 mismatch for {dest.name}; delete it and retry")
