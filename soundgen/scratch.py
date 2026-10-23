@@ -264,3 +264,48 @@ def recognizability(rows, labels, packs=None, device=None, n_real=8):
     print(f"CLAP: generated {res.get('generated_accuracy', float('nan')):.2f} | "
           f"real {res.get('real_accuracy', float('nan')):.2f} (accuracy among {len(labels)} labels)")
     return res
+
+
+KEPT = ["cough_sneeze", "dog_bark", "door_knock", "glass_break", "gunshot", "keyboard", "sea_waves", "thunder"]
+MIXES = [("gunshot", "thunder"), ("glass_break", "door_knock"), ("dog_bark", "cough_sneeze")]
+
+
+def run_and_publish(run_dir, vocoder, packs, work_dir, labels=None, mixes=None, seeds=2, hand_vectors=2,
+                    guidance=2.0, clap=True, push=None):
+    """Everything after training, in one call: sounds from scratch + novelty + CLAP + page + zip, copied to
+    <run_dir>/publish/ and (push = colab.push_to_github) sent to GitHub results/<RUN>/. Returns the publish files."""
+    import shutil
+    run_dir, work = Path(run_dir), Path(work_dir)
+    mg, _ = SketchDiffusion.load(run_dir / "mel_gen.pt")
+    labels = [l for l in (labels or KEPT) if l in mg.vocab]
+    mixes = [m for m in (mixes if mixes is not None else MIXES) if all(x in mg.vocab for x in m)]
+    jobs = default_jobs(labels, mixes, seeds=tuple(range(1, seeds + 1)))
+    E = mg.net.embed.weight.detach()[1:]
+    g = torch.Generator().manual_seed(0)
+    for i in range(hand_vectors):          # a random point around the category vectors, belongs to no category
+        jobs.append(dict(name=f"vektor_{i + 1}", vec=E.mean(0) + E.std(0) * torch.randn(E.shape[1], generator=g),
+                         seed=1))
+    rows = from_scratch(run_dir / "mel_gen.pt", vocoder, jobs, work, packs=packs, guidance=guidance)
+    if clap:
+        try:
+            rec = recognizability(rows, labels, packs=packs)
+            (work / "clap.json").write_text(json.dumps(rec, indent=1))
+        except Exception as e:                                   # noqa: BLE001  (CLAP download etc.)
+            print(f"CLAP check skipped: {type(e).__name__}: {e}")
+    name = run_dir.name
+    page(rows, work / "index.html", f"{name} · sıfırdan üretim", zip_path=work / f"{name}_sesler.zip")
+    pub = run_dir / "publish"
+    pub.mkdir(exist_ok=True)
+    ck = torch.load(run_dir / "mel_gen.pt", map_location="cpu", weights_only=False)
+    ck["state"] = {k: (v.half() if torch.is_floating_point(v) else v) for k, v in ck["state"].items()}
+    torch.save(ck, pub / "mel_gen.pt")
+    for f in ("index.html", f"{name}_sesler.zip", "scratch.json", "clap.json"):
+        if (work / f).exists():
+            shutil.copy2(work / f, pub / f)
+    if (run_dir / "loss.csv").exists():
+        shutil.copy2(run_dir / "loss.csv", pub / "loss.csv")
+    files = sorted(pub.iterdir())
+    if push:
+        push(files, dest=f"results/{name}", message=f"{name}: sounds from scratch (vector -> mel -> vocoder)",
+             max_mb=95)
+    return files

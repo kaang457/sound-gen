@@ -65,9 +65,11 @@ kullanılmıyor. Ayrıntıları bu belgenin git geçmişinde ve [PROCESS.md](PRO
 |---|---|
 | 1 · Ayarlar | `RUN`, `PACK` (48 kHz), `VOCODER_RUN` (02_vocoder koşusu), `MAX_HOURS`, GPU'ya göre model genişliği (A100: 256 kanal, ~21 M parametre) |
 | 2 · Kuru deneme | ~5 dk eğitim: kayıp düşüyor mu, NaN var mı, mel üretici → vocoder zinciri çalışıyor mu |
-| 3 · Eğit | kaldığı yerden devam eder (`last.pt`), `MAX_HOURS` dolunca durur; kayıp eğrisi |
-| 4 · Sıfırdan üret | kategori vektörleri (her biri 2 tohum), karışımlar (ör. gunshot+thunder), elle vektörler (hiçbir kategoriye ait olmayan rastgele nokta). Her ses için mel resmi, oynatıcı ve "en yakın gerçek kayda uzaklık" |
-| 5 · GitHub | `results/<RUN>/`: `index.html`, sesler zip, `scratch.json`, `mel_gen.pt` (fp16), `loss.csv` |
+| 3 · Eğit + otomatik yayın | kaldığı yerden devam eder (`last.pt`), `MAX_HOURS` dolunca durur. Vocoder (02) hazırsa ardından kendiliğinden hücre 4'ün işini yapar ve `results/<RUN>/`'a gönderir: bilgisayar kapalı olabilir |
+| 4 · (Elle) Sıfırdan üret + test + gönder | farklı kategori / karışım / tohum / guidance ile tekrar: kategori vektörleri, karışımlar, elle vektörler; ezber testi, CLAP, sayfa, zip → GitHub |
+| 5 · Kayıp eğrisi | diffusion kaybı |
+
+GitHub'a giden (`results/<RUN>/`): `index.html`, `<RUN>_sesler.zip`, `scratch.json` (uzaklıklar), `clap.json`, `loss.csv`, `mel_gen.pt` (fp16). Checkpoint'ler (`last.pt`) Drive'da kalır.
 
 Hiçbir aşamada referans ses kullanılmaz: zamanlama, olay sayısı ve spektrum mel üreticiden, ses ayrıntısı vocoder'dan gelir.
 

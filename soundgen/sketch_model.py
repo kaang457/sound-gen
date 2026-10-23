@@ -296,7 +296,7 @@ def train_on_packs(packs, out_dir, steps=100_000, batch=64, lr=2e-4, cfg=None, m
             for e, p in zip(ema.parameters(), m.parameters()):
                 e.lerp_(p, 1 - 0.9995 if step > 2000 else 0.5)
         step += 1
-        hist.append(float(loss))
+        hist.append(loss.item())
         bar.update(1)
         if step % log_every == 0:
             sps = (time.time() - t0) / log_every
