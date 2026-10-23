@@ -444,12 +444,30 @@ def read_index(pack_dir):
 
 
 # ------------------------------------------------------------------ training data
+def pack_sample_rate(pack):
+    f = Path(pack) / "meta.json"
+    return int(json.loads(f.read_text()).get("sample_rate", 22050)) if f.exists() else 22050
+
+
+def resample(x, src, out):
+    if int(src) == int(out):
+        return np.asarray(x, np.float32)
+    from math import gcd
+    from scipy.signal import resample_poly
+    g = gcd(int(src), int(out))
+    return resample_poly(np.asarray(x, np.float32), int(out) // g, int(src) // g).astype(np.float32)
+
+
 class PackDataset:
     """Random crops from one or more packs, with event-aware cropping and augmentation."""
 
     def __init__(self, packs, vocab, split="train", segment=16384, labels=None,
-                 augment=True, min_clips=1, label_free=False):
+                 augment=True, min_clips=1, label_free=False, out_sr=None, return_index=False):
+        """segment: samples at out_sr. out_sr: rate the crops are delivered at (default: the pack's own rate);
+        a 48 kHz pack feeding a 44.1 kHz model is resampled crop by crop (scipy polyphase, in the workers)."""
         self.segment, self.augment, self.label_free = segment, augment, label_free
+        self.src_sr = {str(p): pack_sample_rate(p) for p in packs}
+        self.out_sr, self.return_index = out_sr, return_index
         self.vocab = {lab: i for i, lab in enumerate(vocab)}
         self.audio = {str(p): np.memmap(Path(p) / "audio.bin", dtype="<i2", mode="r") for p in packs}
         rows = [r for p in packs for r in read_index(p) if r["split"] == split]
@@ -469,7 +487,8 @@ class PackDataset:
     def __getitem__(self, i):
         r = self.rows[i]
         a = self.audio[r["pack"]][r["offset"]: r["offset"] + r["length"]]
-        n = self.segment
+        src, out = self.src_sr[r["pack"]], self.out_sr or self.src_sr[r["pack"]]
+        n = int(np.ceil(self.segment * src / out)) + (8 if src != out else 0)
         if len(a) <= n:
             x = np.zeros(n, np.float32)
             start = np.random.randint(0, n - len(a) + 1)
@@ -484,9 +503,14 @@ class PackDataset:
             else:
                 s = starts[0]
             x = a[s: s + n].astype(np.float32) / 32768.0
+        if src != out:
+            x = resample(x, src, out)
+            x = np.pad(x, (0, max(0, self.segment - len(x))))[: self.segment]
         if self.augment:
             x = x * (10 ** (np.random.uniform(-6.0, 3.0) / 20))
             if np.random.rand() < 0.5:
                 x = -x
             x = np.clip(x, -1.0, 1.0)
+        if self.return_index:
+            return x.astype(np.float32), i
         return x.astype(np.float32), 0 if self.label_free else self.vocab[r["label"]]

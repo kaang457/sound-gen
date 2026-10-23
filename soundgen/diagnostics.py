@@ -224,7 +224,7 @@ def diagnose_checkpoint(ckpt, packs, n_batches=4, batch=8, device=None, importan
     model = WaveFlow(FlowConfig(**ck["flow_cfg"]), len(vocab))
     model.load_state_dict(ck["model"])
     model.to(device)
-    mel = MelSketch(MelConfig(**ck["mel_cfg"])).to(device)
+    mel = MelSketch(ck["mel_cfg"]).to(device)
     seg = segment // model.cfg.h * model.cfg.h
     data = _batches(packs, vocab, n_batches, batch, seg)
 

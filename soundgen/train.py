@@ -21,8 +21,8 @@ import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 
-from .audio import MelConfig, MelSketch, save_audio, SR
-from .data import PackDataset, load_categories, read_index
+from .audio import MelConfig, MelSketch, save_audio, SR, SKETCH_MAX, mel_config
+from .data import PackDataset, load_categories, read_index, pack_sample_rate, resample
 from .model import FlowConfig, WaveFlow, count_parameters
 
 NULL = "<null>"
@@ -136,7 +136,7 @@ def _augment_sketch(s, noise, blur_p):
     if blur_p > 0:
         m = (torch.rand(s.shape[0], 1, 1, device=s.device) < blur_p).float()
         s = m * F.avg_pool1d(s, 3, 1, 1, count_include_pad=False) + (1 - m) * s
-    return s.clamp(0.0, 1.2)
+    return s.clamp(0.0, SKETCH_MAX)
 
 
 def _cosine(step, warmup, total, lr, min_lr):
@@ -179,7 +179,7 @@ def train(cfg: TrainConfig, device=None):
     if base_ck:
         vocab = list(base_ck["vocab"])
         new = [l for l in targets if l not in vocab]
-        mel_cfg = MelConfig(**base_ck["mel_cfg"])
+        mel_cfg = mel_config(base_ck["mel_cfg"])
         model = WaveFlow(FlowConfig(**base_ck["flow_cfg"]), len(vocab))
         model.load_state_dict(base_ck["ema"])            # transfer the EMA (smoother) weights
         parents = [_label_parent(l, vocab) for l in new]
@@ -215,17 +215,17 @@ def train(cfg: TrainConfig, device=None):
     print(f"trainable: {sum(p.numel() for p in trainable) / 1e6:.2f} M ({cfg.freeze})")
 
     # -------- data
-    for p in cfg.packs:            # a pack is resampled once, at build time: it must match the mel contract
-        meta_f = Path(p) / "meta.json"
-        pack_sr = json.loads(meta_f.read_text()).get("sample_rate", 22050) if meta_f.exists() else None
-        if pack_sr and int(pack_sr) != mel_cfg.sample_rate:
+    for p in cfg.packs:            # a lower-rate pack cannot feed a higher-rate model (no content up there)
+        pack_sr = pack_sample_rate(p)
+        if pack_sr < mel_cfg.sample_rate:
             raise ValueError(f"{p}: pack is {pack_sr} Hz but the mel contract is {mel_cfg.sample_rate} Hz. "
-                             f"Rebuild the pack with notebook 01 (build_pack(..., sr={mel_cfg.sample_rate})) "
-                             f"or train with mel=MEL_POC settings.")
+                             f"Rebuild the pack with notebook 01 (48 kHz).")
+        if pack_sr != mel_cfg.sample_rate:
+            print(f"{p}: {pack_sr} Hz pack -> resampled to {mel_cfg.sample_rate} Hz on the fly")
     # vocoder: short crops are enough (it only renders local detail), category model: ~0.7 s of context
     seg = (cfg.segment or int((0.35 if cfg.vocoder else 0.7) * mel_cfg.sample_rate)) // model.cfg.h * model.cfg.h
     labels_used = list(targets) + list(cfg.replay_labels or [])
-    ds = PackDataset(cfg.packs, vocab, "train", seg, labels_used, augment=True, label_free=cfg.vocoder)
+    ds = PackDataset(cfg.packs, vocab, "train", seg, labels_used, augment=True, label_free=cfg.vocoder, out_sr=mel_cfg.sample_rate)
     w = ds.sample_weights(cfg.balance_alpha)
     if cfg.replay_labels and cfg.replay_ratio > 0:
         is_replay = np.array([r["label"] not in targets for r in ds.rows])
@@ -237,10 +237,10 @@ def train(cfg: TrainConfig, device=None):
                                          pin_memory=device.type == "cuda", drop_last=True,
                                          persistent_workers=cfg.num_workers > 0)
     batches = _infinite(loader)
-    val_ds = PackDataset(cfg.packs, vocab, "val", seg, targets, augment=False, label_free=cfg.vocoder)
+    val_ds = PackDataset(cfg.packs, vocab, "val", seg, targets, augment=False, label_free=cfg.vocoder, out_sr=mel_cfg.sample_rate)
     if len(val_ds) == 0:
         print("WARNING: no validation clips for these labels; validating on train clips")
-        val_ds = PackDataset(cfg.packs, vocab, "train", seg, targets, augment=False, label_free=cfg.vocoder)
+        val_ds = PackDataset(cfg.packs, vocab, "train", seg, targets, augment=False, label_free=cfg.vocoder, out_sr=mel_cfg.sample_rate)
     rng_state = np.random.get_state()
     np.random.seed(1234)
     val_items = [val_ds[i % len(val_ds)] for i in range(min(64, max(len(val_ds), 1) * 2))] if len(val_ds) else []
@@ -414,7 +414,9 @@ def _write_samples(model, mel, ds, vocab, folder, device, per_label=None, max_la
     for r in rows:
         if r["label"] not in labels or seen[r["label"]] >= per_label:
             continue
-        a = ds.audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], n)].astype(np.float32) / 32768
+        src = ds.src_sr[r["pack"]]
+        a = ds.audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], int(n * src / sr) + 1)].astype(np.float32) / 32768
+        a = resample(a, src, sr)
         a = a[: len(a) // model.cfg.h * model.cfg.h]
         if len(a) < sr // 2:
             continue
@@ -444,7 +446,9 @@ def build_sketch_bank(packs, vocab, mel_cfg, path, per_label=48, ref_audio=4, ma
         rng.shuffle(group)
         items = []
         for k, r in enumerate(group[:per_label]):
-            a = np.asarray(audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], int(max_s * mel_cfg.sample_rate))])
+            src = pack_sample_rate(r["pack"])
+            a = np.asarray(audio[r["pack"]][r["offset"]: r["offset"] + min(r["length"], int(max_s * src))])
+            a = np.round(np.clip(resample(a.astype(np.float32) / 32768, src, mel_cfg.sample_rate), -1, 1) * 32767).astype(np.int16)
             s = mel(torch.from_numpy(a.astype(np.float32) / 32768)[None])[0].half()
             items.append(dict(sketch=s, id=r["id"], attribution=r["attribution"],
                               public_ok=r.get("public_ok") == "1",

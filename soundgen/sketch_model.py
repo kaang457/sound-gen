@@ -11,6 +11,7 @@ guidance (the vector is dropped 10 % of the time). Sampling: DDIM, 50 steps.
 """
 import json
 import math
+from pathlib import Path
 from dataclasses import dataclass, asdict
 
 import numpy as np
@@ -18,13 +19,15 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+from .audio import SKETCH_MAX
+
 MEAN, SCALE = 0.6, 0.3          # sketch values 0..1.2 -> roughly -2..2
 
 
 @dataclass
 class SketchConfig:
-    n_mels: int = 128           # mel contract v2 (the CPU proof of concept used 20 bands / 176 frames)
-    frames: int = 200           # 2.0 s at 100 frames/s (divisible by 4)
+    n_mels: int = 128           # mel contract v3 (the CPU proof of concept used 20 bands / 176 frames)
+    frames: int = 172           # 2.0 s at 86.13 frames/s (divisible by 4)
     channels: int = 128
     vec_dim: int = 64
     steps: int = 1000
@@ -105,6 +108,9 @@ class SketchDiffusion(nn.Module):
             return (w[:, None] * E[ids]).sum(0) / w.sum()
         return E[self.vocab.index(label) if label else 0]
 
+    def null_vec(self):
+        return self.net.embed.weight[0]
+
     # ---------------------------------------------------------------- training
     def loss(self, x0, labels, p_uncond=0.1):
         B = x0.shape[0]
@@ -124,7 +130,7 @@ class SketchDiffusion(nn.Module):
         frames = max(4, frames // 4 * 4)
         vec = vec.to(dev)
         vec = vec[None].expand(n, -1) if vec.dim() == 1 else vec
-        null = self.net.embed.weight[0][None].expand(n, -1)
+        null = self.null_vec()[None].expand(n, -1)
         x = torch.randn(n, self.cfg.n_mels, frames, device=dev, generator=generator)
         ts = torch.linspace(self.cfg.steps - 1, 0, steps, device=dev).long()
         for i, t in enumerate(ts):
@@ -136,7 +142,7 @@ class SketchDiffusion(nn.Module):
             x0 = ((x - (1 - ab).sqrt() * eps) / ab.sqrt()).clamp(-2.5, 2.5)
             ab_prev = self.abar[ts[i + 1]] if i + 1 < len(ts) else torch.tensor(1.0, device=dev)
             x = ab_prev.sqrt() * x0 + (1 - ab_prev).sqrt() * eps        # DDIM, eta = 0
-        return (x * SCALE + MEAN).clamp(0.0, 1.2)
+        return (x * SCALE + MEAN).clamp(0.0, SKETCH_MAX)
 
     # ---------------------------------------------------------------- io
     def save(self, path, extra=None):
@@ -210,18 +216,125 @@ def train_on_bank(bank, steps=4000, batch=32, lr=2e-4, cfg=None, device="cpu", s
 
 
 # -------------------------------------------------------------------- training on packs (Colab, mel contract v2)
+class MelGenerator(SketchDiffusion):
+    """Mel generator conditioned on CLAP vectors (512-d, unit length) instead of a label table.
+
+    Training: each clip is paired with its own CLAP *audio* embedding (no labels needed, every clip counts,
+    "other" included); for clips with a known category, 20 % of the time the CLAP *text* embedding of
+    "the sound of <label>" is used instead, so text prompts land where the model has learned.
+    Generation: any vector in that space: a prompt, a category (mean audio embedding of its clips), a mix,
+    an example sound, or a vector typed by hand."""
+
+    def __init__(self, cfg: SketchConfig, vocab, clap_id=None):
+        super().__init__(cfg, vocab)
+        self.null = nn.Parameter(torch.zeros(cfg.vec_dim))
+        self.register_buffer("label_vecs", torch.zeros(len(self.vocab), cfg.vec_dim))
+        self.clap_id = clap_id or CLAP_ID
+        self._clap = None
+
+    def null_vec(self):
+        return self.null
+
+    def clap(self):
+        if self._clap is None:
+            from .evaluate import Clap
+            self._clap = Clap(model_id=self.clap_id)
+        return self._clap
+
+    def vector(self, label=None, mix=None, text=None, audio=None, sr=None):
+        """label="gunshot" · text="spaceship engine hum" · audio=<waveform> (sr) ·
+        mix={"gunshot": .6, "spaceship engine hum": .4} (keys: labels or free text). Returns a unit vector."""
+        dev = self.label_vecs.device
+        parts = []
+        if label:
+            parts.append((self.label_vecs[self.vocab.index(label)], 1.0))
+        if text:
+            parts.append((torch.from_numpy(self.clap().text([text])[0]).to(dev), 1.0))
+        if audio is not None:
+            parts.append((torch.from_numpy(self.clap().audio([np.asarray(audio, np.float32)], sr)[0]).to(dev), 1.0))
+        for k, w in (mix or {}).items():
+            v = (self.label_vecs[self.vocab.index(k)] if k in self.vocab
+                 else torch.from_numpy(self.clap().text([k])[0]).to(dev))
+            parts.append((v, float(w)))
+        if not parts:
+            return self.null_vec().detach()
+        v = sum(w * p.float() for p, w in parts) / sum(w for _, w in parts)
+        return v / v.norm().clamp_min(1e-6)
+
+    def loss(self, x0, vec, p_uncond=0.1):
+        B = x0.shape[0]
+        t = torch.randint(0, self.cfg.steps, (B,), device=x0.device)
+        ab = self.abar[t][:, None, None]
+        eps = torch.randn_like(x0)
+        xt = ab.sqrt() * x0 + (1 - ab).sqrt() * eps
+        drop = torch.rand(B, device=x0.device) < p_uncond
+        vec = torch.where(drop[:, None], self.null[None].expand(B, -1), vec)
+        return F.mse_loss(self.net(xt, t, vec), eps)
+
+    def save(self, path, extra=None):
+        super().save(path, dict(cond="clap", clap_id=self.clap_id, **(extra or {})))
+
+    @classmethod
+    def load(cls, path, device="cpu"):
+        ck = torch.load(path, map_location="cpu", weights_only=False)
+        m = cls(SketchConfig(**ck["cfg"]), ck["vocab"], ck.get("clap_id"))
+        m.load_state_dict({k: v.float() if torch.is_floating_point(v) else v for k, v in ck["state"].items()})
+        return m.to(device).eval(), ck
+
+
+CLAP_ID = "laion/larger_clap_general"     # conditioning space; evaluation uses a different CLAP (less circular)
+
+
+def load_generator(path, device="cpu"):
+    """mel_gen.pt -> (model, ckpt), label- or CLAP-conditioned."""
+    ck = torch.load(path, map_location="cpu", weights_only=False)
+    return (MelGenerator if ck.get("cond") == "clap" else SketchDiffusion).load(path, device)
+
+
+def pack_clap(pack, clap_id=CLAP_ID, batch=32, max_s=10.0, device=None):
+    """CLAP audio embedding of every clip in a pack (all splits), cached next to it: clap_<model>.npy (fp16,
+    rows in index.csv order). Resumes from a partial file if the session dropped."""
+    from tqdm.auto import tqdm
+    from .data import read_index, pack_sample_rate
+    from .evaluate import Clap
+    pack = Path(pack)
+    f = pack / f"clap_{clap_id.split('/')[-1]}.npy"
+    rows = read_index(pack)
+    if f.exists():
+        e = np.load(f)
+        if len(e) == len(rows):
+            return e
+    part = f.with_suffix(".partial.npy")
+    done = np.load(part) if part.exists() else np.zeros((0, 512), np.float16)
+    sr = pack_sample_rate(pack)
+    audio = np.memmap(pack / "audio.bin", dtype="<i2", mode="r")
+    clap = Clap(device, model_id=clap_id)
+    out = [done]
+    for i in tqdm(range(len(done), len(rows), batch), desc="CLAP embeddings", unit="batch"):
+        wavs = [np.asarray(audio[r["offset"]: r["offset"] + min(r["length"], int(max_s * sr))], np.float32) / 32768
+                for r in rows[i: i + batch]]
+        out.append(clap.audio(wavs, sr).astype(np.float16))
+        if (i // batch) % 200 == 199:
+            np.save(part, np.concatenate(out))
+    e = np.concatenate(out)
+    np.save(f, e)
+    if part.exists():
+        part.unlink()
+    return e
+
+
 def train_on_packs(packs, out_dir, steps=100_000, batch=64, lr=2e-4, cfg=None, mel_cfg=None, device=None,
                    seed=0, labels=None, balance_alpha=0.5, p_uncond=0.1, max_minutes=None, save_every=5000,
-                   log_every=200, num_workers=2):
-    """Train the mel generator on the same packs WaveFlow uses: crops -> mel (on the GPU) -> diffusion loss.
+                   log_every=200, num_workers=2, cond="label", clap_id=CLAP_ID, p_text=0.2):
+    """Train the mel generator on the packs: crops -> (resample to the contract) -> mel on the GPU -> diffusion.
+    cond="label": a learned vector per label · cond="clap": each clip's CLAP audio embedding (see MelGenerator).
     Writes <out_dir>/mel_gen.pt (EMA weights, cfg, vocab, mel_cfg) and loss.csv; resumes from last.pt."""
     import csv
     import time
-    from pathlib import Path
     from collections import Counter
     from tqdm.auto import tqdm
     from .audio import MelConfig, MelSketch
-    from .data import PackDataset, read_index
+    from .data import PackDataset, read_index, pack_sample_rate
 
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     torch.manual_seed(seed)
@@ -229,24 +342,51 @@ def train_on_packs(packs, out_dir, steps=100_000, batch=64, lr=2e-4, cfg=None, m
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     mel_cfg = mel_cfg or MelConfig()
-    cfg = cfg or SketchConfig(n_mels=mel_cfg.n_mels)
+    cfg = cfg or SketchConfig(n_mels=mel_cfg.n_mels, vec_dim=512 if cond == "clap" else 64)
     if cfg.n_mels != mel_cfg.n_mels:
         raise ValueError(f"SketchConfig.n_mels {cfg.n_mels} != mel contract {mel_cfg.n_mels}")
-    for p in packs:
-        meta = json.loads((Path(p) / "meta.json").read_text())
-        if int(meta.get("sample_rate", 22050)) != mel_cfg.sample_rate:
-            raise ValueError(f"{p} is {meta.get('sample_rate')} Hz, mel contract is {mel_cfg.sample_rate} Hz")
+    srcs = {pack_sample_rate(p) for p in packs}
+    if len(srcs) != 1 or min(srcs) < mel_cfg.sample_rate:
+        raise ValueError(f"packs at {srcs} Hz; need one rate >= the contract's {mel_cfg.sample_rate} Hz")
+    src = srcs.pop()
     counts = Counter(r["label"] for p in packs for r in read_index(p) if r["split"] == "train")
     vocab = ["<null>"] + sorted(labels or counts)
-    seg = (cfg.frames - 1) * mel_cfg.hop                      # -> exactly cfg.frames mel frames (center=True)
-    ds = PackDataset(packs, vocab, "train", seg, vocab[1:], augment=True)
+    # crop at the pack's rate, long enough for cfg.frames frames after resampling
+    seg = int(np.ceil((cfg.frames + 1) * mel_cfg.hop * src / mel_cfg.sample_rate)) + 16
+    ds = PackDataset(packs, vocab, "train", seg, vocab[1:], augment=True, return_index=True)
     w = ds.sample_weights(balance_alpha)
     sampler = torch.utils.data.WeightedRandomSampler(w, num_samples=2_000_000, replacement=True)
     loader = torch.utils.data.DataLoader(ds, batch, sampler=sampler, num_workers=num_workers, drop_last=True,
                                          pin_memory=device.type == "cuda", persistent_workers=num_workers > 0)
-    mel = MelSketch(mel_cfg).to(device)
-    m = SketchDiffusion(cfg, vocab).to(device)
-    ema = SketchDiffusion(cfg, vocab).to(device)
+    mel = MelSketch(mel_cfg, in_sr=src).to(device)
+    if cond == "clap":
+        # every row's own CLAP audio vector, aligned with ds.rows; label vectors = mean of their clips
+        pos = {}
+        for p in packs:
+            e = pack_clap(p, clap_id, device=device)
+            for k, row in enumerate(read_index(p)):
+                pos[(str(p), row["id"])] = e[k]
+        E = torch.from_numpy(np.stack([pos[(r["pack"], r["id"])] for r in ds.rows]).astype(np.float32)).to(device)
+        lab = torch.tensor([vocab.index(r["label"]) for r in ds.rows], device=device)
+        from .evaluate import Clap, label_text
+        clap = Clap(device, model_id=clap_id)
+        T = torch.zeros(len(vocab), cfg.vec_dim, device=device)
+        has_text = torch.zeros(len(vocab), dtype=torch.bool, device=device)
+        named = [i for i, l in enumerate(vocab) if i > 0 and l != "other"]
+        if named:
+            T[named] = torch.from_numpy(clap.text([label_text(vocab[i]) for i in named])).to(device)
+            has_text[named] = True
+        del clap
+        make = lambda: MelGenerator(cfg, vocab, clap_id).to(device)
+    else:
+        make = lambda: SketchDiffusion(cfg, vocab).to(device)
+    m, ema = make(), make()
+    if cond == "clap":
+        for i in range(1, len(vocab)):
+            sel = E[lab == i]
+            if len(sel):
+                v = sel.mean(0)
+                m.label_vecs[i] = v / v.norm().clamp_min(1e-6)
     ema.load_state_dict(m.state_dict())
     ema.requires_grad_(False)
     opt = torch.optim.AdamW(m.parameters(), lr=lr, weight_decay=0.0)
@@ -258,8 +398,9 @@ def train_on_packs(packs, out_dir, steps=100_000, batch=64, lr=2e-4, cfg=None, m
         opt.load_state_dict(ck["opt"])
         step = ck["step"]
         print(f"resumed at step {step}")
-    print(f"mel generator: {sum(p.numel() for p in m.parameters()) / 1e6:.2f} M params, "
-          f"{len(vocab) - 1} labels, {len(ds)} clips, crop {seg / mel_cfg.sample_rate:.2f} s")
+    print(f"mel generator ({cond}): {sum(p.numel() for p in m.parameters()) / 1e6:.2f} M params, "
+          f"{len(vocab) - 1} labels, {len(ds)} clips, crop {cfg.frames / mel_cfg.fps:.2f} s "
+          f"({src} Hz pack -> {mel_cfg.sample_rate} Hz mel)")
 
     def save(final=False):
         torch.save(dict(model=m.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), step=step), out / "last.pt")
@@ -272,19 +413,26 @@ def train_on_packs(packs, out_dir, steps=100_000, batch=64, lr=2e-4, cfg=None, m
     wr = csv.writer(log)
     if step == 0:
         wr.writerow(["step", "loss", "lr", "sec_per_step"])
-    t0, hist, it = time.time(), [], iter(loader)
+    t0, t_start, hist, it = time.time(), time.time(), [], iter(loader)
     bar = tqdm(total=steps, initial=step, desc="mel generator", mininterval=10)
     m.train()
     while step < steps:
         try:
-            x, y = next(it)
+            x, k = next(it)
         except StopIteration:              # the sampler is finite (2M draws): start a new pass
             it = iter(loader)
-            x, y = next(it)
+            x, k = next(it)
+        k = k.to(device)
         with torch.no_grad():
-            s = mel(x.to(device, non_blocking=True))[:, :, : cfg.frames]
-            x0 = (s - MEAN) / SCALE
-        loss = m.loss(x0, y.to(device), p_uncond)
+            sk = mel(x.to(device, non_blocking=True))[:, :, : cfg.frames]
+            x0 = (sk - MEAN) / SCALE
+            if cond == "clap":
+                c = E[k]
+                use_text = has_text[lab[k]] & (torch.rand(len(k), device=device) < p_text)
+                c = torch.where(use_text[:, None], T[lab[k]], c)
+            else:
+                c = torch.tensor([vocab.index(ds.rows[int(i)]["label"]) for i in k], device=device)
+        loss = m.loss(x0, c, p_uncond)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(m.parameters(), 1.0)
@@ -306,7 +454,7 @@ def train_on_packs(packs, out_dir, steps=100_000, batch=64, lr=2e-4, cfg=None, m
             bar.set_postfix(loss=f"{np.mean(hist[-log_every:]):.4f}")
         if step % save_every == 0:
             save()
-        if max_minutes and (time.time() - bar.start_t) / 60 > max_minutes:
+        if max_minutes and (time.time() - t_start) / 60 > max_minutes:
             print(f"time budget reached at step {step}")
             break
     bar.close()

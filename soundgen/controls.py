@@ -15,7 +15,7 @@ from dataclasses import dataclass, asdict
 
 import numpy as np
 
-from .audio import DB_FLOOR
+from .audio import DB_FLOOR, SKETCH_MAX
 
 ENVIRONMENTS = {            # RT60 (s), wet level relative to direct (dB), extra HF loss (dB)
     "dry": (0.0, -99.0, 0.0),
@@ -85,7 +85,7 @@ def apply_controls(sketch, controls: Controls, kind="event", mel_cfg=None, seed=
     if rt60 > 0:
         db = add_reverb(db, rt60, wet_db, fps, extend=c.duration is None)
         db = db - hf_loss * pos
-    return np.clip((db - DB_FLOOR) / 100.0, 0.0, 1.2).astype(np.float32)
+    return np.clip((db - DB_FLOOR) / 100.0, 0.0, SKETCH_MAX).astype(np.float32)
 
 
 # ------------------------------------------------------------------ primitives

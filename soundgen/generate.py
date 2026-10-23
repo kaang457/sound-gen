@@ -25,7 +25,7 @@ class Generator:
         self.vocab = ck["vocab"]
         self.mel_cfg = ck["mel_cfg"]
         self.sr = int(self.mel_cfg["sample_rate"])     # 22050 for poc_v1, 48000 for contract v2
-        self.mel = MelSketch(MelConfig(**self.mel_cfg)).to(self.device)
+        self.mel = MelSketch(self.mel_cfg).to(self.device)
         bank = bank or Path(ckpt).parent / "sketch_bank.pt"
         self.bank = torch.load(bank, map_location="cpu", weights_only=False) if Path(bank).exists() else None
         self.step = ck.get("step")
@@ -136,23 +136,25 @@ def refine_v1(x, sketch, mel_cfg, sr=SR, max_db=30.0, q=30.0):
     return y.astype(np.float32)
 
 
-def clean(x, sr=SR, spike_db=12.0):
+def clean(x, sr=SR, spike_db=12.0, tone_removal=True):
     """Post-processing: DC/rumble high-pass, narrow constant-tone removal
-    (WaveFlow's known artefact, cf. Andreu & Villanueva 2022), short fades, soft limit."""
+    (WaveFlow's known artefact, cf. Andreu & Villanueva 2022; off for BigVGAN, it would eat real tones),
+    short fades, soft limit."""
     from scipy.signal import butter, sosfiltfilt
     from scipy.ndimage import median_filter
     x = np.asarray(x, np.float64)
     if len(x) < 4096:
         return x.astype(np.float32)
     x = sosfiltfilt(butter(2, 25, "highpass", fs=sr, output="sos"), x)
-    t = torch.from_numpy(np.ascontiguousarray(x))
-    win = torch.hann_window(2048, dtype=torch.float64)
-    X = torch.stft(t, 2048, 512, window=win, return_complex=True)
-    avg = 20 * np.log10(X.abs().mean(dim=1).numpy() + 1e-9)
-    excess = avg - median_filter(avg, size=31, mode="nearest")
-    gain_db = np.where(excess > spike_db, -(excess - 3.0), 0.0)
-    X = X * torch.from_numpy(10 ** (gain_db / 20))[:, None]
-    x = torch.istft(X, 2048, 512, window=win, length=len(x)).numpy()
+    if tone_removal:
+        t = torch.from_numpy(np.ascontiguousarray(x))
+        win = torch.hann_window(2048, dtype=torch.float64)
+        X = torch.stft(t, 2048, 512, window=win, return_complex=True)
+        avg = 20 * np.log10(X.abs().mean(dim=1).numpy() + 1e-9)
+        excess = avg - median_filter(avg, size=31, mode="nearest")
+        gain_db = np.where(excess > spike_db, -(excess - 3.0), 0.0)
+        X = X * torch.from_numpy(10 ** (gain_db / 20))[:, None]
+        x = torch.istft(X, 2048, 512, window=win, length=len(x)).numpy()
     f = int(0.005 * sr)
     x[:f] *= np.linspace(0, 1, f)
     x[-f:] *= np.linspace(1, 0, f)
