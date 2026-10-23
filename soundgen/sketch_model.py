@@ -123,7 +123,7 @@ class SketchDiffusion(nn.Module):
 
     # ---------------------------------------------------------------- sampling
     @torch.no_grad()
-    def sample(self, vec, n=1, steps=50, guidance=2.0, frames=None, generator=None):
+    def sample(self, vec, n=1, steps=50, guidance=2.0, frames=None, generator=None, noise=None):
         """vec [vec_dim] (or [n, vec_dim]) -> n new sketches [n, n_mels, frames] in sketch units (0..1.2)."""
         dev = self.abar.device
         frames = frames or self.cfg.frames
@@ -131,7 +131,13 @@ class SketchDiffusion(nn.Module):
         vec = vec.to(dev)
         vec = vec[None].expand(n, -1) if vec.dim() == 1 else vec
         null = self.null_vec()[None].expand(n, -1)
-        x = torch.randn(n, self.cfg.n_mels, frames, device=dev, generator=generator)
+        if noise is not None:              # starting noise given (variations / blends between variations)
+            x = noise.to(dev).float()
+            n, frames = x.shape[0], x.shape[-1]
+            vec = vec[:1].expand(n, -1) if vec.shape[0] != n else vec
+            null = self.null_vec()[None].expand(n, -1)
+        else:
+            x = torch.randn(n, self.cfg.n_mels, frames, device=dev, generator=generator)
         ts = torch.linspace(self.cfg.steps - 1, 0, steps, device=dev).long()
         for i, t in enumerate(ts):
             tt = t.repeat(n)

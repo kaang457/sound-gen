@@ -56,7 +56,7 @@ def local_copy(src, dst):
     """Copy a pack from Drive to the local disk (much faster random reads)."""
     src, dst = Path(src), Path(dst)
     dst.mkdir(parents=True, exist_ok=True)
-    for f in ("audio.bin", "index.csv", "meta.json"):
+    for f in ["audio.bin", "index.csv", "meta.json"] + [p.name for p in src.glob("clap_*.npy")]:
         s, d = src / f, dst / f
         if s.exists() and (not d.exists() or d.stat().st_size != s.stat().st_size):
             shutil.copy2(s, d)

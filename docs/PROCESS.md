@@ -323,3 +323,18 @@ Uzaklık tek başına kalite göstermez (kötü bir ses de "uzak" çıkar); bu y
 (4) prosedürel sci-fi veri üreteci, (5) dondurulmuş metin kodlayıcı (CLAP) ile vektör yerine kelime.
 
 CPU'da 20 bantlık bir ön deneme (poc_v1 taslak bankasıyla, 6000 adım) yapıldı; render edilmedi, rota 128 banda geçti.
+
+---
+
+## 12. Rota v3: CLAP koşulu, hazır vocoder (BigVGAN-v2), stüdyo (23 Ekim)
+
+| Karar | Neden |
+|---|---|
+| Koşul: kategori vektörü yerine **CLAP vektörü** (AudioLDM yöntemi) | Etiket gerekmez, her klip kendi ses vektörüyle öğrenilir ("other" dahil); üretimde serbest metin ("spaceship engine hum") kullanılabilir. Modality gap'i azaltmak için kategorisi bilinen kliplerde %20 metin vektörü. Koşul modeli `laion/larger_clap_general`; değerlendirme `laion/clap-htsat-unfused` (döngüsel olmasın diye farklı). |
+| Vocoder: **NVIDIA BigVGAN-v2 44 kHz** (hazır, MIT, model kartında "ready for commercial use") | Evrensel vocoder'ı sıfırdan eğitmek için verimiz ve sürem az; WaveFlow sıralı (16 satır) ve vuruşlarda zayıf. Compute mel üreticiye kalır. Eğitim verisinin bazı alt kümelerinin lisans kısıtı hukuken gri alan; vocoder içerik üretmediği için risk düşük (hukuki tavsiye değildir). |
+| Mel sözleşmesi v3 = BigVGAN'ınki: 44,1 kHz, 2048 / 512, 128 bant, 0–22,05 kHz, ln(max(mel, 1e-5)) | Hazır vocoder doğrudan okur; birim dönüşümü dB'ye birebir (1e-5 = −100 dB). `get_mel_spectrogram` ile fark 7e-7 (test edildi). 48 kHz paketler eğitimde 44,1 kHz'e çevrilir; 01 boşa gitmez. |
+| WaveFlow opsiyonel kol (02) | Aynı sözleşmeyle eğitilip BigVGAN'la birebir kıyaslanabilir; ürün kalitesi ona bağlı değil. |
+| Efektler sesin üzerinde (`fx.py`), üretim kontrolleri mel'de | Şiddet / uzaklık / ortam / stereo / süre kesin ve anında olmalı (DAW gibi). Olay sayısı gibi içeriği değiştirenler üretimde kalır. |
+| Reverb: sentetik stereo IR (erken yansımalar + 3 bantlı, tizleri daha hızlı sönen gürültü kuyruğu), FFT konvolüsyon | Geri besleme yok → metalik çınlama yok; her ortamda aynı "yankı miktarı" aynı yükseklikte (enerji normalize). Ölçülen RT60: oda 0,42 s, salon 1,68 s, mağara 2,87 s, açık alan 0,33 s. |
+| Varyasyon arası karışım: başlangıç gürültülerinin **slerp** ortası | İki sesin üst üste bindirilmesi değil, ikisinden miras alan yeni tek bir ses. 4 varyasyon → 6 karışım. |
+| Stüdyo: Gradio, Colab GPU'da, `share=True` bağlantısı | Model GPU ister; iş sahibine telefondan bile gösterilebilir. Efektler Python'da (2 s ses ~0,1 s). |
