@@ -33,14 +33,25 @@ class Clap:
         wavs = [resample_poly(np.asarray(w, np.float64), 48000 // g, sr // g).astype(np.float32) for w in wavs]
         feats = self.proc.feature_extractor(wavs, sampling_rate=48000, return_tensors="pt")
         feats = {k: v.to(self.device) for k, v in feats.items()}
-        e = self.model.get_audio_features(**feats)
+        e = self._features(self.model.get_audio_features(**feats), self.model.audio_projection)
         return torch.nn.functional.normalize(e, dim=-1).cpu().numpy()
 
     @torch.no_grad()
     def text(self, texts):
         tok = self.proc.tokenizer(texts, padding=True, return_tensors="pt").to(self.device)
-        e = self.model.get_text_features(**tok)
+        e = self._features(self.model.get_text_features(**tok), self.model.text_projection)
         return torch.nn.functional.normalize(e, dim=-1).cpu().numpy()
+
+    def _features(self, out, projection):
+        """transformers < 5 returns the projected embedding tensor; 5.x returns a BaseModelOutputWithPooling.
+        Either way -> [N, projection_dim]."""
+        if torch.is_tensor(out):
+            return out.float()
+        pooled = getattr(out, "pooler_output", None)
+        if pooled is None:
+            pooled = out[1]
+        dim = self.model.config.projection_dim
+        return (pooled if pooled.shape[-1] == dim else projection(pooled)).float()
 
 
 def category_match(clap, wavs, labels, all_labels, sr=SR):
