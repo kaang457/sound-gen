@@ -27,7 +27,7 @@ MEAN, SCALE = 0.6, 0.3          # sketch values 0..1.2 -> roughly -2..2
 @dataclass
 class SketchConfig:
     n_mels: int = 128           # mel contract v3 (the CPU proof of concept used 20 bands / 176 frames)
-    frames: int = 172           # 2.0 s at 86.13 frames/s (divisible by 4)
+    frames: int = 344           # 4.0 s at 86.13 frames/s (divisible by 4); a gunfight does not fit in 2 s
     channels: int = 128
     vec_dim: int = 64
     steps: int = 1000

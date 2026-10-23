@@ -63,7 +63,7 @@ Tek hücre: gradio'yu kurar, modeli (Drive ya da GitHub'dan) ve BigVGAN'ı yükl
 
 | Bölüm | Ne yapar |
 |---|---|
-| Üret | istek, opsiyonel ikinci istek + payı, uzunluk (1–5 s), istek gücü, olay sayısı, tohum |
+| Üret | istek, opsiyonel ikinci istek + payı, uzunluk (1–6 s, varsayılan 4), istek gücü, tohum. "gunshot" ile "gunfight" farkını model istekten anlar |
 | Sesler | 4 varyasyon + 6 karışım (V1×V2 …: iki varyasyonun başlangıç gürültüsünün ortasından üretilen yeni ses) |
 | İşle | şiddet (dB), uzaklık, ortam (kuru / oda / salon / mağara / açık alan), yankı miktarı, stereo konum, süre çarpanı (perde korunur), kırpma, fade |
 | İndir | seçilen ses mono + stereo WAV (24 bit) ya da bütün sesler zip |

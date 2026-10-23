@@ -60,8 +60,7 @@ class Studio:
         return v
 
     @torch.no_grad()
-    def generate(self, prompt, prompt_b="", mix_b=0.0, n=4, seconds=2.0, seed=0, guidance=3.0, count=1,
-                 blends=True):
+    def generate(self, prompt, prompt_b="", mix_b=0.0, n=4, seconds=4.0, seed=0, guidance=3.0, blends=True):
         """-> list of sounds: dict(name, kind, audio [T] float32, sr, mel). Variations V1..Vn, then blends."""
         vec = self.vector(prompt, prompt_b, mix_b).to(self.device)
         frames = max(8, int(round(seconds * self.fps / 4)) * 4)
@@ -82,8 +81,7 @@ class Studio:
         from .vocoder import render
         sounds = []
         for name, kind, m in zip(names, kinds, mels):
-            c = Controls(count=int(count), spread=1.0) if count > 1 else Controls()
-            a, edited = render(self.voc, m, c, "event", seed)
+            a, edited = render(self.voc, m, Controls(), "event", seed)
             sounds.append(dict(name=name, kind=kind, audio=a.astype(np.float32), sr=self.sr, mel=edited,
                                prompt=prompt, prompt_b=prompt_b, mix_b=mix_b, seed=seed))
         return sounds

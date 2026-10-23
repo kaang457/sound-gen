@@ -4,7 +4,8 @@
     from soundgen.studio_ui import build
     build(Studio("runs/melgen_v1/mel_gen.pt")).queue().launch(share=True)
 
-Left: generate (prompt, optional second prompt + mix, length, prompt strength, events, seed).
+Left: generate (prompt, optional second prompt + mix, length, prompt strength, seed). "A gunfight" vs "a gunshot"
+is the model's job (prompt), there is no rule-based event duplication.
 Middle: the 4 variations and 6 blends, pick one. Right: the effects rack, live preview, mono/stereo WAV.
 """
 import numpy as np
@@ -54,9 +55,8 @@ def build(studio, title="Ses Stüdyosu"):
                 prompt = gr.Textbox(label="İstek", value="laser gunshot", placeholder="ör. spaceship engine hum")
                 prompt_b = gr.Textbox(label="İkinci istek (opsiyonel)", placeholder="ör. zombie growl")
                 mix_b = gr.Slider(0, 1, 0.0, step=0.05, label="İkinci isteğin payı")
-                seconds = gr.Slider(1.0, 5.0, 2.0, step=0.5, label="Uzunluk (s)")
+                seconds = gr.Slider(1.0, 6.0, 4.0, step=0.5, label="Uzunluk (s)")
                 guidance = gr.Slider(1.0, 6.0, 3.0, step=0.5, label="İstek gücü")
-                count = gr.Slider(1, 10, 1, step=1, label="Olay sayısı (ör. çatışma)")
                 seed = gr.Number(0, precision=0, label="Tohum")
                 blends = gr.Checkbox(True, label="Varyasyonlar arası karışımlar")
                 go = gr.Button("Üret", elem_id="go")
@@ -105,11 +105,10 @@ def build(studio, title="Ses Stüdyosu"):
             p = ENVIRONMENTS.get(e)
             return gr.update(value=p["wet"] if p else 0.0, interactive=p is not None)
 
-        def on_generate(pr, pb, mb, sec, gd, cnt, sd, bl):
+        def on_generate(pr, pb, mb, sec, gd, sd, bl):
             if not pr or not pr.strip():
                 raise gr.Error("Bir istek yaz")
-            out = studio.generate(pr, pb, mb, n=N_VAR, seconds=sec, seed=int(sd or 0), guidance=gd,
-                                  count=int(cnt), blends=bl)
+            out = studio.generate(pr, pb, mb, n=N_VAR, seconds=sec, seed=int(sd or 0), guidance=gd, blends=bl)
             ups = []
             for k in range(N_SLOTS):
                 if k < len(out):
@@ -134,7 +133,7 @@ def build(studio, title="Ses Stüdyosu"):
                 raise gr.Error("Önce üret")
             return str(studio.export_all(snds, make_rack(*vals)))
 
-        go.click(on_generate, [prompt, prompt_b, mix_b, seconds, guidance, count, seed, blends],
+        go.click(on_generate, [prompt, prompt_b, mix_b, seconds, guidance, seed, blends],
                  [sounds, pick, status] + slots).then(on_rack, [sounds, pick] + rack_inputs,
                                                      [preview, f_mono, f_stereo])
         args, outs = [sounds, pick] + rack_inputs, [preview, f_mono, f_stereo]

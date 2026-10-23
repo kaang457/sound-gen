@@ -150,14 +150,19 @@ def from_scratch(mel_gen, vocoder, jobs, out_dir, packs=None, steps=50, guidance
                       generator=g)[0].cpu().numpy()
         top = j.get("label") or (max(j["mix"], key=j["mix"].get) if j.get("mix") else None)
         a, edited = render(voc, m, j.get("controls") or Controls(), _kind(top), seed)
+        if j.get("fx") is not None:                       # the studio's effects rack, applied after the vocoder
+            from .fx import process
+            a = process(a, voc.sr, j["fx"])[1]
         f = out / f"{j['name']}.wav"
         save_audio(f, a, voc.sr)
         nov, nl, nid = index.nearest(m) if index else (None, None, None)
         rows.append(dict(name=j["name"], wav=str(f), mel=m, edited=edited, seconds=len(a) / voc.sr,
                          spec={k: v for k, v in j.items() if k in ("label", "mix", "seed", "text", "note")},
                          controls=(j["controls"].to_dict() if j.get("controls") else None),
+                         fx=(j["fx"].to_dict() if j.get("fx") is not None else None),
+                         events=count_events(a, voc.sr),
                          nearest_db=nov, nearest_label=nl, nearest_id=nid, real_to_real_db=real_to_real))
-        print(f"{j['name']:28s} {len(a) / voc.sr:.2f}s  nearest training clip "
+        print(f"{j['name']:28s} {len(a) / voc.sr:.2f}s  events {rows[-1]['events']:2d}  nearest training clip "
               f"{'-' if nov is None else f'{nov:.1f} dB ({nl})'}  | unseen real: "
               f"{'-' if real_to_real is None else f'{real_to_real:.1f} dB'}")
     meta = [{k: v for k, v in r.items() if k not in ("mel", "edited")} for r in rows]
@@ -213,6 +218,7 @@ def page(rows, dest, title, zip_path=None):
                    f"{sp.get('seed', 0)}</span>"
                    + (f"<span class='k'>en yakın eğitim kaydı: {r['nearest_db']:.1f} dB ({html.escape(str(r['nearest_label']))})</span>"
                       if r.get("nearest_db") is not None else "")
+                   + (f"<span class='k'>olay sayısı ≈ {r['events']}</span>" if r.get("events") is not None else "")
                    + (f"<span class='k'>CLAP: {html.escape(r['clap'])}</span>" if r.get("clap") else "")
                    + (f"<span class='k'>istem eşleşmesi (CLAP): {'✓' if r['prompt_ok'] else '✗'} "
                       f"(benzerlik {r['prompt_sim']:.2f})</span>" if r.get("prompt_sim") is not None else "")
@@ -257,7 +263,7 @@ def recognizability(rows, labels, packs=None, device=None, n_real=8):
     from .evaluate import Clap, category_match, label_text
     clap = Clap(device)
     res = dict(labels=labels)
-    gen_rows = [r for r in rows if r["spec"].get("label") in labels and not r.get("controls")]
+    gen_rows = [r for r in rows if r["spec"].get("label") in labels and not r.get("controls") and not r.get("fx")]
     if gen_rows:
         wavs = [sf.read(r["wav"], dtype="float32")[0] for r in gen_rows]
         m = category_match(clap, wavs, [r["spec"]["label"] for r in gen_rows], labels, sr=sf.info(gen_rows[0]["wav"]).samplerate)
@@ -307,8 +313,11 @@ def recognizability(rows, labels, packs=None, device=None, n_real=8):
 
 KEPT = ["cough_sneeze", "dog_bark", "door_knock", "glass_break", "gunshot", "keyboard", "sea_waves", "thunder"]
 MIXES = [("gunshot", "thunder"), ("glass_break", "door_knock"), ("dog_bark", "cough_sneeze")]
-PROMPTS = ["spaceship engine hum", "sci-fi laser gun shot", "metal sword clash", "monster growl",
-           "footsteps on gravel", "heavy rain on a tin roof", "distant explosion", "electric sparks crackling"]
+PROMPTS = ["a single gunshot", "a gunfight with many gunshots", "a dog barking", "many dogs barking",
+           "spaceship engine hum", "sci-fi laser gun shot", "metal sword clash", "monster growl",
+           "distant explosion", "heavy rain on a tin roof"]
+# pairs whose difference the model must understand (one event vs many): compared on the page and in clap.json
+PAIRS = [("a single gunshot", "a gunfight with many gunshots"), ("a dog barking", "many dogs barking")]
 
 
 def demo_jobs(mg, labels=None, mixes=None, prompts=None, seeds=2, hand_vectors=2, controls_demo=True):
@@ -331,11 +340,12 @@ def demo_jobs(mg, labels=None, mixes=None, prompts=None, seeds=2, hand_vectors=2
         if clap_model:
             v = v / v.norm()
         jobs.append(dict(name=f"vektor_{i + 1}", vec=v, seed=1))
-    if controls_demo and "gunshot" in mg.vocab:
-        for name, c, note in [("catisma_8", Controls(count=8, spread=1.0), "kontrol: 8 atış, çatışma"),
-                              ("uzak", Controls(distance=0.8), "kontrol: uzakta"),
-                              ("magara", Controls(environment="cave"), "kontrol: mağarada")]:
-            jobs.append(dict(name=f"gunshot_{name}", label="gunshot", seed=1, controls=c, note=note))
+    if controls_demo and "gunshot" in mg.vocab:            # the studio's effects rack on a generated gunshot
+        from .fx import Rack
+        for name, rk, note in [("uzak", Rack(distance=0.8), "efekt: uzakta"),
+                               ("magara", Rack(environment="cave"), "efekt: mağarada"),
+                               ("uzak_salon_sol", Rack(distance=0.5, environment="hall", pan=-0.6), "efekt: uzak, salon")]:
+            jobs.append(dict(name=f"gunshot_{name}", label="gunshot", seed=1, fx=rk, note=note))
     return jobs, labels
 
 
@@ -354,6 +364,12 @@ def run_and_publish(run_dir, vocoder, packs, work_dir, labels=None, mixes=None, 
             (work / "clap.json").write_text(json.dumps(rec, indent=1))
         except Exception as e:                                   # noqa: BLE001  (CLAP download etc.)
             print(f"CLAP check skipped: {type(e).__name__}: {e}")
+    by_text = {r["spec"].get("text"): r for r in rows if r["spec"].get("text")}
+    pairs = [dict(one=a, many=b, events_one=by_text[a]["events"], events_many=by_text[b]["events"])
+             for a, b in PAIRS if a in by_text and b in by_text]
+    for p_ in pairs:
+        print(f"one vs many: '{p_['one']}' {p_['events_one']} events | '{p_['many']}' {p_['events_many']} events")
+    (work / "pairs.json").write_text(json.dumps(pairs, indent=1))
     name = run_dir.name
     page(rows, work / "index.html", f"{name} · sıfırdan üretim", zip_path=work / f"{name}_sesler.zip")
     pub = run_dir / "publish"
@@ -361,7 +377,7 @@ def run_and_publish(run_dir, vocoder, packs, work_dir, labels=None, mixes=None, 
     ck = torch.load(run_dir / "mel_gen.pt", map_location="cpu", weights_only=False)
     ck["state"] = {k: (v.half() if torch.is_floating_point(v) else v) for k, v in ck["state"].items()}
     torch.save(ck, pub / "mel_gen.pt")
-    for f in ("index.html", f"{name}_sesler.zip", "scratch.json", "clap.json"):
+    for f in ("index.html", f"{name}_sesler.zip", "scratch.json", "clap.json", "pairs.json"):
         if (work / f).exists():
             shutil.copy2(work / f, pub / f)
     if (run_dir / "loss.csv").exists():
@@ -371,3 +387,18 @@ def run_and_publish(run_dir, vocoder, packs, work_dir, labels=None, mixes=None, 
         push(files, dest=f"results/{name}", message=f"{name}: sounds from scratch (vector -> mel -> vocoder)",
              max_mb=95)
     return files
+
+
+def count_events(x, sr, floor_db=-40.0, min_gap=0.06, prominence_db=8.0):
+    """Rough number of distinct events (onsets) in a sound: peaks of the 10 ms energy envelope that stand
+    prominence_db above their surroundings, within floor_db of the loudest, at least min_gap apart."""
+    from scipy.signal import find_peaks
+    x = np.asarray(x, np.float32)
+    hop = int(0.01 * sr)
+    if len(x) < hop * 5:
+        return 0
+    n = len(x) // hop
+    e = 10 * np.log10((x[: n * hop].reshape(n, hop) ** 2).mean(1) + 1e-12)
+    e = np.convolve(e, np.ones(3) / 3, "same")
+    pk, _ = find_peaks(e, height=e.max() + floor_db, prominence=prominence_db, distance=max(1, int(min_gap / 0.01)))
+    return int(len(pk))

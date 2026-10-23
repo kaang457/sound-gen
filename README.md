@@ -25,8 +25,6 @@ Sıra: **01 → 03 → 04**. Eski poc yolunun notebook'ları `notebooks/legacy/`
  [BİZİM] mel üretici: diffusion, gürültüden vektöre uyan YENİ bir mel çizer        soundgen/sketch_model.py
    │      (4 varyasyon = 4 farklı başlangıç gürültüsü; karışım = iki gürültünün küresel ortası)
    ▼
- [BİZİM] üretim kontrolleri: olay sayısı (tek atış → çatışma)                       soundgen/controls.py
-   ▼
  BigVGAN-v2 (hazır, NVIDIA, MIT): mel → 44,1 kHz ses                               soundgen/vocoder.py
    ▼
  [BİZİM] efekt rafı: şiddet, uzaklık, ortam (sentetik IR reverb), stereo, süre      soundgen/fx.py
@@ -46,8 +44,10 @@ Gerekçeler ve kararların geçmişi: [docs/PROCESS.md §11–§12](docs/PROCESS
 
 ## Sıfırdan üretim nasıl test ediliyor (03, eğitimden sonra otomatik)
 
-Test seti: 8 kategori × 2 tohum, 3 karışım, 8 serbest istek (uzay gemisi, lazer silahı, kılıç, canavar…), 2 elle
-vektör, üretilmiş bir silah sesine kontroller (çatışma, uzak, mağara). Her ses için:
+Test seti: 8 kategori × 2 tohum, 3 karışım, 10 serbest istek (uzay gemisi, lazer silahı, kılıç, canavar…), 2 elle
+vektör, üretilmiş bir silah sesine efekt rafı (uzak, mağara, salon). **Tek mi, çok mu?** "a single gunshot" ile
+"a gunfight with many gunshots" (ve tek köpek / sürü) yan yana üretilir ve olay sayısı otomatik sayılır: farkı
+model istekten kendisi anlamalı; kural ya da sentetik veri yok. Her ses için:
 1. **Ezber mi?** Eğitimdeki en yakın kayda uzaklık (her zaman kaydırmasında); ölçüt, modelin hiç görmediği gerçek
    kayıtların aynı uzaklığı. Birebir kopya 0 dB.
 2. **Tanınıyor mu?** Ayrı bir CLAP modeliyle (koşullamada kullanılandan farklı): kategori doğruluğu (gerçek kayıtlarınkiyle
