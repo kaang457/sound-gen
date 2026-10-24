@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "soundgen"
 version = "0.1.0"
-description = "Parametric multi-category Foley generation with conditional WaveFlow + transfer learning"
+description = "Prompt-to-sound-effect generation (MMAudio-style flow-matching transformer) + DAW-style effects studio"
 requires-python = ">=3.10"
 # torch / torchaudio are preinstalled on Colab and deliberately not listed (avoids reinstalls)
 dependencies = ["numpy", "scipy", "soundfile", "pyyaml", "requests", "tqdm"]
@@ -13,7 +13,9 @@ dependencies = ["numpy", "scipy", "soundfile", "pyyaml", "requests", "tqdm"]
 [project.optional-dependencies]
 eval = ["transformers"]
 baseline = ["diffusers", "transformers", "accelerate"]
+mm = ["einops", "open_clip_torch", "torchdiffeq", "librosa", "huggingface_hub", "omegaconf"]
+studio = ["gradio>=4.44,<6"]
 dev = ["pytest"]
 
 [tool.setuptools]
-packages = ["soundgen"]
+packages = ["soundgen", "soundgen.mm"]

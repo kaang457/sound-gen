@@ -1,15 +1,12 @@
-"""Sounds from scratch: vector -> mel generator -> (controls) -> vocoder -> audio. No reference sound.
+"""Checks for sounds generated from scratch, and the page that shows them.
 
-    rows = from_scratch("runs/melgen_v1/mel_gen.pt", "bigvgan", jobs, "out/", packs=[pack])
-    page(rows, "out/index.html", "melgen_v1 · sıfırdan")
-
-A job is a dict:  name, and ONE of  label="gunshot" | text="spaceship engine hum" (CLAP models) |
-mix={"gunshot": .7, "thunder": .3} (keys: labels, or free text for CLAP models) | vec=<tensor [vec_dim]>,
-plus optional seed, controls (Controls), guidance, frames. The vocoder is "bigvgan" or a WaveFlow checkpoint.
-
-Novelty: each generated mel is compared with real mels from the packs (nearest neighbour over time offsets, mean |dB|
-over loud cells). The same distance between two different real clips is the reference: a generated mel about as
-far from its nearest real clip as real clips are from each other is new, not a copy.
+    NoveltyIndex     is it a copy? nearest training clip at every frame offset (mean |dB| over loud mel cells),
+                     next to the same distance for real recordings the model never saw (val split)
+    recognizability  is it recognisable? CLAP zero-shot category + "closer to its own prompt than to the others"
+                     (an evaluation CLAP, not the one the model is conditioned on)
+    count_events     one event or many? (a gunshot vs a gunfight)
+    page             one HTML page: mel picture + player + the measurements per sound, and a zip of the sounds
+    run_and_publish  the standard test set for a trained generator -> results/<RUN>/ on GitHub
 """
 import base64
 import html
@@ -19,10 +16,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
-from .controls import Controls
-from .sketch_model import load_generator
-
 
 def _clip_mels(packs, mel_cfg, split, per_label, max_s, seed, device):
     """{label: [(clip_id, mel [n_mels, F] on device)]} from a pack split."""
@@ -106,7 +99,9 @@ class NoveltyIndex:
     def baseline(self, n=24, seed=1):
         """Median nearest-training-clip distance of unseen real recordings (val split), same crop length."""
         rng = np.random.default_rng(seed)
-        pool = [(l, cid, m) for l, v in self.val.items() for cid, m in v if m.shape[1] >= self.frames]
+        # shorter clips are padded with silence (as a generated sound with a quiet tail would be)
+        pool = [(l, cid, m if m.shape[1] >= self.frames else torch.nn.functional.pad(m, (0, self.frames - m.shape[1])))
+                for l, v in self.val.items() for cid, m in v]
         if not pool:
             return None
         ds = []
@@ -118,69 +113,6 @@ class NoveltyIndex:
         return float(np.median(ds))
 
 
-def from_scratch(mel_gen, vocoder, jobs, out_dir, packs=None, steps=50, guidance=2.0, device=None,
-                 per_label_ref=150):
-    from .audio import save_audio, mel_config
-    from .vocoder import load_vocoder, render
-    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    mg, ck = load_generator(mel_gen, device)
-    voc = load_vocoder(vocoder, device)
-    if ck.get("mel_cfg") and mel_config(ck["mel_cfg"]) != mel_config(voc.mel_cfg):
-        raise ValueError(f"mel contract mismatch: generator {ck['mel_cfg']} vs vocoder {voc.mel_cfg}")
-    if getattr(voc, "vocoder", True) is False:
-        print("note: WaveFlow checkpoint is category-conditioned, not a universal vocoder")
-    index = NoveltyIndex(packs, voc.mel_cfg, mg.cfg.frames, per_label=per_label_ref, device=device) if packs else None
-    real_to_real = index.baseline() if index else None
-    if index:
-        print(f"novelty index: {index.n} training clips; unseen real recordings are {real_to_real:.1f} dB "
-              f"from their nearest training clip (median)")
-    rows = []
-    for j in jobs:
-        seed = j.get("seed", 0)
-        if "vec" in j:
-            vec = torch.as_tensor(j["vec"], dtype=torch.float32)
-        elif j.get("text"):
-            vec = mg.vector(text=j["text"])
-        else:
-            vec = mg.vector(label=j.get("label"), mix=j.get("mix"))
-        g = torch.Generator(device=device).manual_seed(seed)
-        m = mg.sample(vec, n=1, steps=steps, guidance=j.get("guidance", guidance), frames=j.get("frames"),
-                      generator=g)[0].cpu().numpy()
-        top = j.get("label") or (max(j["mix"], key=j["mix"].get) if j.get("mix") else None)
-        a, edited = render(voc, m, j.get("controls") or Controls(), _kind(top), seed)
-        if j.get("fx") is not None:                       # the studio's effects rack, applied after the vocoder
-            from .fx import process
-            a = process(a, voc.sr, j["fx"])[1]
-        f = out / f"{j['name']}.wav"
-        save_audio(f, a, voc.sr)
-        nov, nl, nid = index.nearest(m) if index else (None, None, None)
-        rows.append(dict(name=j["name"], wav=str(f), mel=m, edited=edited, seconds=len(a) / voc.sr,
-                         spec={k: v for k, v in j.items() if k in ("label", "mix", "seed", "text", "note")},
-                         controls=(j["controls"].to_dict() if j.get("controls") else None),
-                         fx=(j["fx"].to_dict() if j.get("fx") is not None else None),
-                         events=count_events(a, voc.sr),
-                         nearest_db=nov, nearest_label=nl, nearest_id=nid, real_to_real_db=real_to_real))
-        print(f"{j['name']:28s} {len(a) / voc.sr:.2f}s  events {rows[-1]['events']:2d}  nearest training clip "
-              f"{'-' if nov is None else f'{nov:.1f} dB ({nl})'}  | unseen real: "
-              f"{'-' if real_to_real is None else f'{real_to_real:.1f} dB'}")
-    meta = [{k: v for k, v in r.items() if k not in ("mel", "edited")} for r in rows]
-    meta.append(dict(real_to_real_db=real_to_real, index_clips=index.n if index else 0, vocoder=voc.kind))
-    (out / "scratch.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False))
-    return rows
-
-
-def _kind(label):
-    """Controls treat textures (loopable) and events differently; unknown labels / prompts count as events."""
-    if not label:
-        return "event"
-    try:
-        from .data import load_categories
-        cats = load_categories()["categories"]
-        return cats.get(label, cats.get(label.split("/")[0], {})).get("type", "event")
-    except Exception:                                            # noqa: BLE001
-        return "event"
 
 
 def _png(m):
@@ -248,10 +180,6 @@ audio{height:34px;max-width:260px}.wrap{overflow-x:auto}"""
     return Path(dest)
 
 
-def default_jobs(labels, mixes=(), seeds=(1, 2)):
-    jobs = [dict(name=f"{l.replace('/', '__')}_{s}", label=l, seed=s) for l in labels for s in seeds]
-    jobs += [dict(name="_plus_".join(m) + "_1", mix={k: 1.0 / len(m) for k in m}, seed=1) for m in mixes]
-    return jobs
 
 
 def recognizability(rows, labels, packs=None, device=None, n_real=8):
@@ -311,82 +239,6 @@ def recognizability(rows, labels, packs=None, device=None, n_real=8):
     return res
 
 
-KEPT = ["cough_sneeze", "dog_bark", "door_knock", "glass_break", "gunshot", "keyboard", "sea_waves", "thunder"]
-MIXES = [("gunshot", "thunder"), ("glass_break", "door_knock"), ("dog_bark", "cough_sneeze")]
-PROMPTS = ["a single gunshot", "a gunfight with many gunshots", "a dog barking", "many dogs barking",
-           "spaceship engine hum", "sci-fi laser gun shot", "metal sword clash", "monster growl",
-           "distant explosion", "heavy rain on a tin roof"]
-# pairs whose difference the model must understand (one event vs many): compared on the page and in clap.json
-PAIRS = [("a single gunshot", "a gunfight with many gunshots"), ("a dog barking", "many dogs barking")]
-
-
-def demo_jobs(mg, labels=None, mixes=None, prompts=None, seeds=2, hand_vectors=2, controls_demo=True):
-    """The standard from-scratch test set: categories x seeds, mixes, prompts (CLAP models), hand-typed vectors,
-    and the controls applied to a generated gunshot (firefight, distance, cave)."""
-    from .controls import Controls
-    labels = [l for l in (labels or KEPT) if l in mg.vocab]
-    mixes = [m for m in (mixes if mixes is not None else MIXES) if all(x in mg.vocab for x in m)]
-    jobs = default_jobs(labels, mixes, seeds=tuple(range(1, seeds + 1)))
-    clap_model = getattr(mg, "label_vecs", None) is not None
-    if clap_model:
-        for k, ptxt in enumerate(prompts if prompts is not None else PROMPTS):
-            jobs.append(dict(name=f"istem_{k + 1}", text=ptxt, seed=1))
-        V = mg.label_vecs.detach()[1:]
-    else:
-        V = mg.net.embed.weight.detach()[1:]
-    g = torch.Generator().manual_seed(0)
-    for i in range(hand_vectors):          # a random point around the category vectors, belongs to no category
-        v = V.mean(0).cpu() + V.std(0).cpu() * torch.randn(V.shape[1], generator=g)
-        if clap_model:
-            v = v / v.norm()
-        jobs.append(dict(name=f"vektor_{i + 1}", vec=v, seed=1))
-    if controls_demo and "gunshot" in mg.vocab:            # the studio's effects rack on a generated gunshot
-        from .fx import Rack
-        for name, rk, note in [("uzak", Rack(distance=0.8), "efekt: uzakta"),
-                               ("magara", Rack(environment="cave"), "efekt: mağarada"),
-                               ("uzak_salon_sol", Rack(distance=0.5, environment="hall", pan=-0.6), "efekt: uzak, salon")]:
-            jobs.append(dict(name=f"gunshot_{name}", label="gunshot", seed=1, fx=rk, note=note))
-    return jobs, labels
-
-
-def run_and_publish(run_dir, vocoder, packs, work_dir, labels=None, mixes=None, prompts=None, seeds=2,
-                    hand_vectors=2, guidance=2.0, clap=True, push=None):
-    """Everything after training, in one call: sounds from scratch + novelty + CLAP + page + zip, copied to
-    <run_dir>/publish/ and (push = colab.push_to_github) sent to GitHub results/<RUN>/. Returns the publish files."""
-    import shutil
-    run_dir, work = Path(run_dir), Path(work_dir)
-    mg, _ = load_generator(run_dir / "mel_gen.pt")
-    jobs, labels = demo_jobs(mg, labels, mixes, prompts, seeds, hand_vectors)
-    rows = from_scratch(run_dir / "mel_gen.pt", vocoder, jobs, work, packs=packs, guidance=guidance)
-    if clap:
-        try:
-            rec = recognizability(rows, labels, packs=packs)
-            (work / "clap.json").write_text(json.dumps(rec, indent=1))
-        except Exception as e:                                   # noqa: BLE001  (CLAP download etc.)
-            print(f"CLAP check skipped: {type(e).__name__}: {e}")
-    by_text = {r["spec"].get("text"): r for r in rows if r["spec"].get("text")}
-    pairs = [dict(one=a, many=b, events_one=by_text[a]["events"], events_many=by_text[b]["events"])
-             for a, b in PAIRS if a in by_text and b in by_text]
-    for p_ in pairs:
-        print(f"one vs many: '{p_['one']}' {p_['events_one']} events | '{p_['many']}' {p_['events_many']} events")
-    (work / "pairs.json").write_text(json.dumps(pairs, indent=1))
-    name = run_dir.name
-    page(rows, work / "index.html", f"{name} · sıfırdan üretim", zip_path=work / f"{name}_sesler.zip")
-    pub = run_dir / "publish"
-    pub.mkdir(exist_ok=True)
-    ck = torch.load(run_dir / "mel_gen.pt", map_location="cpu", weights_only=False)
-    ck["state"] = {k: (v.half() if torch.is_floating_point(v) else v) for k, v in ck["state"].items()}
-    torch.save(ck, pub / "mel_gen.pt")
-    for f in ("index.html", f"{name}_sesler.zip", "scratch.json", "clap.json", "pairs.json"):
-        if (work / f).exists():
-            shutil.copy2(work / f, pub / f)
-    if (run_dir / "loss.csv").exists():
-        shutil.copy2(run_dir / "loss.csv", pub / "loss.csv")
-    files = sorted(pub.iterdir())
-    if push:
-        push(files, dest=f"results/{name}", message=f"{name}: sounds from scratch (vector -> mel -> vocoder)",
-             max_mb=95)
-    return files
 
 
 def count_events(x, sr, floor_db=-40.0, min_gap=0.06, prominence_db=8.0):
@@ -402,3 +254,94 @@ def count_events(x, sr, floor_db=-40.0, min_gap=0.06, prominence_db=8.0):
     e = np.convolve(e, np.ones(3) / 3, "same")
     pk, _ = find_peaks(e, height=e.max() + floor_db, prominence=prominence_db, distance=max(1, int(min_gap / 0.01)))
     return int(len(pk))
+
+LABEL_PROMPTS = ["gunshot", "glass breaking", "door knock", "thunder", "dog barking", "cough", "keyboard typing",
+                 "sea waves"]
+PROMPTS = ["a single gunshot", "a gunfight with many gunshots", "a dog barking", "many dogs barking",
+           "spaceship engine hum", "sci-fi laser gun shot", "metal sword clash", "monster growl",
+           "footsteps on gravel", "heavy rain on a tin roof", "distant explosion", "zombie growl"]
+# one event vs many: the model must get the difference from the prompt alone (no rules, no synthetic scenes)
+PAIRS = [("a single gunshot", "a gunfight with many gunshots"), ("a dog barking", "many dogs barking")]
+
+
+def _loudest(m, frames):
+    if m.shape[1] <= frames:
+        return m
+    e = np.convolve(m.mean(0), np.ones(frames), "valid")
+    st = int(np.argmax(e))
+    return m[:, st: st + frames]
+
+
+def run_and_publish(generator, run_dir, packs, work_dir, prompts=None, seconds=4.0, seed=1, clap=True, push=None,
+                    novelty=True, per_label_ref=150):
+    """Every prompt -> 8 candidates (3 variations + 5 blends); the page shows variation A and the A×B blend of each
+    prompt, all 8 go into the zip. Measures novelty, CLAP match, event count. -> files in <run_dir>/publish."""
+    import shutil
+    import soundfile as sf
+    from .audio import MelSketch, MEL_V3
+    run_dir, work = Path(run_dir), Path(work_dir)
+    work.mkdir(parents=True, exist_ok=True)
+    prompts = list(prompts or (PROMPTS + LABEL_PROMPTS))
+    mel = MelSketch(MEL_V3)
+    rows, all_wavs = [], []
+    for k, p in enumerate(prompts):
+        sounds = generator.generate(p, seconds=seconds, seed=seed)
+        for s in sounds:
+            f = work / f"{k + 1:02d}_{_slug(p)}_{_slug(s['name'])}.wav"
+            sf.write(f, s["audio"], s["sr"], subtype="PCM_16")
+            all_wavs.append(f)
+            if s["name"] in ("A", "A→B %33"):
+                m = mel(torch.from_numpy(s["audio"])[None])[0].numpy()
+                rows.append(dict(name=f"{p} · {s['name']}", wav=str(f), mel=m, spec=dict(text=p, seed=seed),
+                                 events=count_events(s["audio"], s["sr"])))
+        print(f"{p:36s} events A={rows[-2]['events']} blend={rows[-1]['events']}")
+    ref = None
+    if novelty and packs:
+        frames = int(4.0 * MEL_V3.sample_rate / MEL_V3.hop) // 4 * 4
+        index = NoveltyIndex(packs, MEL_V3.to_dict(), frames, per_label=per_label_ref)
+        ref = index.baseline()
+        for r in rows:
+            d, lab, cid = index.nearest(_loudest(r["mel"], frames))
+            r.update(nearest_db=d, nearest_label=lab, nearest_id=cid, real_to_real_db=ref)
+        if ref is not None:
+            print(f"novelty: unseen real recordings are {ref:.1f} dB from their nearest training clip; generated: "
+                  f"median {np.median([r['nearest_db'] for r in rows]):.1f} dB")
+    by_text = {}
+    for r in rows:
+        by_text.setdefault(r["spec"]["text"], r)
+    pairs = [dict(one=a, many=b, events_one=by_text[a]["events"], events_many=by_text[b]["events"])
+             for a, b in PAIRS if a in by_text and b in by_text]
+    for p_ in pairs:
+        print(f"one vs many: '{p_['one']}' {p_['events_one']} events | '{p_['many']}' {p_['events_many']} events")
+    (work / "pairs.json").write_text(json.dumps(pairs, indent=1))
+    if clap:
+        try:
+            rec = recognizability(rows, [], packs=None)
+            (work / "clap.json").write_text(json.dumps(rec, indent=1))
+        except Exception as e:                                   # noqa: BLE001  (CLAP download etc.)
+            print(f"CLAP check skipped: {type(e).__name__}: {e}")
+    meta = [{k: v for k, v in r.items() if k != "mel"} for r in rows]
+    meta.append(dict(real_to_real_db=ref, seconds=seconds, seed=seed, step=getattr(generator, "step", None)))
+    (work / "scratch.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False, default=float))
+    name = run_dir.name
+    page(rows, work / "index.html", f"{name} · istekten sıfırdan ses")
+    import zipfile
+    with zipfile.ZipFile(work / f"{name}_sesler.zip", "w", zipfile.ZIP_DEFLATED) as z:
+        for f in all_wavs:
+            z.write(f, f.name)
+    pub = run_dir / "publish"
+    pub.mkdir(parents=True, exist_ok=True)
+    for f in ("index.html", f"{name}_sesler.zip", "scratch.json", "clap.json", "pairs.json"):
+        if (work / f).exists():
+            shutil.copy2(work / f, pub / f)
+    if (run_dir / "loss.csv").exists():
+        shutil.copy2(run_dir / "loss.csv", pub / "loss.csv")
+    files = sorted(pub.iterdir())
+    if push:
+        push(files, dest=f"results/{name}", message=f"{name}: sounds from prompts (8 candidates each)", max_mb=95)
+    return files
+
+
+def _slug(s):
+    keep = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in s.strip().lower())
+    return keep.replace("__", "_")[:48].strip("_") or "x"

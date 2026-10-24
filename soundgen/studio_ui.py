@@ -6,14 +6,13 @@
 
 Left: generate (prompt, optional second prompt + mix, length, prompt strength, seed). "A gunfight" vs "a gunshot"
 is the model's job (prompt), there is no rule-based event duplication.
-Middle: the 4 variations and 6 blends, pick one. Right: the effects rack, live preview, mono/stereo WAV.
+Middle: the 3 variations and 5 blends, pick one. Right: the effects rack, live preview, mono/stereo WAV.
 """
 import numpy as np
 
 from .fx import ENVIRONMENTS, Rack
 
-N_VAR = 4
-N_SLOTS = N_VAR + N_VAR * (N_VAR - 1) // 2          # 4 variations + 6 blends
+N_SLOTS = 8                                          # 3 variations + 5 blends (soundgen/mm/generate.py PLAN)
 
 CSS = """
 .gradio-container {max-width: 1320px !important; background: #16171a !important;}
@@ -46,7 +45,7 @@ def build(studio, title="Ses Stüdyosu"):
 
     with gr.Blocks(title=title, theme=theme, css=CSS) as demo:
         sounds = gr.State([])
-        gr.Markdown(f"# {title}\nİstek yaz → sıfırdan 4 varyasyon + aralarında 6 karışım → düzenle → indir.",
+        gr.Markdown(f"# {title}\nİstek yaz → sıfırdan 3 varyasyon + aralarında 5 karışım → düzenle → indir.",
                     elem_id="title")
         with gr.Row(equal_height=False):
             # ---------------------------------------------------------------- generate
@@ -55,10 +54,9 @@ def build(studio, title="Ses Stüdyosu"):
                 prompt = gr.Textbox(label="İstek", value="laser gunshot", placeholder="ör. spaceship engine hum")
                 prompt_b = gr.Textbox(label="İkinci istek (opsiyonel)", placeholder="ör. zombie growl")
                 mix_b = gr.Slider(0, 1, 0.0, step=0.05, label="İkinci isteğin payı")
-                seconds = gr.Slider(1.0, 6.0, 4.0, step=0.5, label="Uzunluk (s)")
-                guidance = gr.Slider(1.0, 6.0, 3.0, step=0.5, label="İstek gücü")
+                seconds = gr.Slider(1.0, 8.0, 4.0, step=0.5, label="Uzunluk (s)")
+                guidance = gr.Slider(1.0, 8.0, 4.5, step=0.5, label="İstek gücü")
                 seed = gr.Number(0, precision=0, label="Tohum")
-                blends = gr.Checkbox(True, label="Varyasyonlar arası karışımlar")
                 go = gr.Button("Üret", elem_id="go")
                 status = gr.Markdown("")
             # ---------------------------------------------------------------- results
@@ -68,7 +66,7 @@ def build(studio, title="Ses Stüdyosu"):
                 for row in range(0, N_SLOTS, 2):
                     with gr.Row():
                         for k in range(row, min(row + 2, N_SLOTS)):
-                            slots.append(gr.Audio(label=f"#{k + 1}", interactive=False, visible=k < N_VAR,
+                            slots.append(gr.Audio(label=f"#{k + 1}", interactive=False, visible=False,
                                                   elem_classes="slot", show_download_button=True))
                 pick = gr.Radio([], label="Düzenlenecek ses")
             # ---------------------------------------------------------------- effects rack
@@ -105,10 +103,10 @@ def build(studio, title="Ses Stüdyosu"):
             p = ENVIRONMENTS.get(e)
             return gr.update(value=p["wet"] if p else 0.0, interactive=p is not None)
 
-        def on_generate(pr, pb, mb, sec, gd, sd, bl):
+        def on_generate(pr, pb, mb, sec, gd, sd):
             if not pr or not pr.strip():
                 raise gr.Error("Bir istek yaz")
-            out = studio.generate(pr, pb, mb, n=N_VAR, seconds=sec, seed=int(sd or 0), guidance=gd, blends=bl)
+            out = studio.generate(pr, pb, mb, seconds=sec, seed=int(sd or 0), guidance=gd)
             ups = []
             for k in range(N_SLOTS):
                 if k < len(out):
@@ -133,7 +131,7 @@ def build(studio, title="Ses Stüdyosu"):
                 raise gr.Error("Önce üret")
             return str(studio.export_all(snds, make_rack(*vals)))
 
-        go.click(on_generate, [prompt, prompt_b, mix_b, seconds, guidance, seed, blends],
+        go.click(on_generate, [prompt, prompt_b, mix_b, seconds, guidance, seed],
                  [sounds, pick, status] + slots).then(on_rack, [sounds, pick] + rack_inputs,
                                                      [preview, f_mono, f_stereo])
         args, outs = [sounds, pick] + rack_inputs, [preview, f_mono, f_stereo]

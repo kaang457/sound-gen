@@ -1,60 +1,22 @@
-"""End-to-end smoke test on synthetic sounds (CPU or GPU, ~2-5 min on CPU).
+"""End-to-end test on synthetic data: python -m soundgen.smoke
 
-    python -m soundgen.smoke
-
-Checks: flow invertibility, exact log-det on a tiny model, pack building, base
-training, transfer-learning fine-tune of a new sub-category, sketch bank,
-parametric generation with MC dropout, export.
+Always: pack building (48 kHz), effects rack, copy detection (an exact copy scores 0 dB), event counting.
+With MMAudio available (soundgen.mm.setup.ensure_mmaudio + ext_weights): features -> a tiny network trained for a
+few steps -> 8 candidates. The text encoder is replaced by a deterministic stand-in here (CLIP is a 4 GB download);
+the Colab notebook's dry run uses the real one.
 """
+import hashlib
 import math
+import sys
 import tempfile
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from .audio import SR, save_audio
-from .controls import Controls
-from .model import FlowConfig, WaveFlow
+from .audio import save_audio
 
-
-def check_flow(device="cpu"):
-    for up in ("transposed", "interp"):
-        _check_flow(device, up)
-    _check_flow(device, "interp", fixes=True)
-
-
-def _check_flow(device, upsampler, fixes=False):
-    torch.manual_seed(0)
-    cfg = FlowConfig(n_flows=4, n_layers=4, h=8, res_channels=16, n_mels=20, label_dim=8, dropout=0.1,
-                     upsampler=upsampler, cond_norm=fixes, actnorm=fixes)
-    m = WaveFlow(cfg, 3).to(device)
-    if fixes:                                        # ActNorm's data-dependent init needs one train forward
-        with torch.no_grad():
-            m.train()(0.3 * torch.randn(2, 512, device=device), torch.rand(2, 20, 4, device=device),
-                      torch.tensor([1, 2], device=device))
-    m.eval()
-    for f in m.flows:                                # non-trivial flows (end conv starts at zero)
-        torch.nn.init.normal_(f.end.weight, std=0.05)
-    T = 8 * 64
-    x = 0.3 * torch.randn(2, T, device=device)
-    s = torch.rand(2, 20, T // 256 + 2, device=device)
-    y = torch.tensor([1, 2], device=device)
-    z, logdet = m(x, s, y)
-    x2 = m.reverse(z, s, y)
-    err = float((x - x2).abs().max())
-    assert err < 1e-4, f"inverse error {err}"
-    # exact log-det vs autograd Jacobian on a tiny input
-    xs = 0.3 * torch.randn(1, 8 * 4, device=device, dtype=torch.float64)
-    m64 = m.double()
-    s1 = torch.rand(1, 20, 2, device=device, dtype=torch.float64)
-    f = lambda v: m64(v.view(1, -1), s1, y[:1])[0].transpose(2, 3).reshape(-1)
-    J = torch.autograd.functional.jacobian(f, xs.view(-1))
-    ld_true = torch.linalg.slogdet(J)[1].item()
-    ld = m64(xs, s1, y[:1])[1].item()
-    assert abs(ld - ld_true) < 1e-6 * max(1, abs(ld_true)) + 1e-6, f"logdet {ld} vs {ld_true}"
-    m.float()
-    print(f"flow ok ({upsampler} upsampler{', cond_norm + actnorm' if fixes else ''}): inverse err {err:.2e}, logdet {ld:.4f} == {ld_true:.4f}")
+SR = 48000
 
 
 def synthetic_items(folder, n=40):
@@ -62,80 +24,87 @@ def synthetic_items(folder, n=40):
     rng = np.random.default_rng(0)
     folder = Path(folder)
     items = []
-    for label in ("clicks", "burst", "hum", "clicks/soft"):
-        for i in range(n if "/" not in label else 12):
+    for label in ("clicks", "burst", "hum"):
+        for i in range(n):
             t = np.arange(int(1.5 * SR)) / SR
-            if label.startswith("clicks"):
+            if label == "clicks":
                 x = np.zeros_like(t)
                 for o in np.arange(0.05, 1.4, rng.uniform(0.2, 0.4)):
                     k = int(o * SR)
-                    x[k:k + 400] += rng.normal(0, 0.5 if label == "clicks" else 0.15, 400) * np.exp(-np.arange(400) / 80)
+                    x[k:k + 400] += rng.normal(0, 0.5, 400) * np.exp(-np.arange(400) / 80)
             elif label == "burst":
                 x = rng.normal(0, 0.5, len(t)) * np.exp(-t / rng.uniform(0.05, 0.3))
             else:
                 x = 0.3 * np.sin(2 * math.pi * rng.uniform(80, 200) * t) + 0.02 * rng.normal(size=len(t))
             p = folder / label / f"{i}.wav"
             p.parent.mkdir(parents=True, exist_ok=True)
-            save_audio(p, x)
+            save_audio(p, x, SR)
             items.append(dict(path=str(p), label=label, source="synthetic", src_id=f"{label}{i}",
                               license="none", attribution="synthetic", public_ok=True))
     return items
 
 
-def main(device=None):
+def fake_text(texts, batch=64):
+    out = []
+    for t in texts:
+        g = torch.Generator().manual_seed(int(hashlib.md5(t.encode()).hexdigest()[:8], 16))
+        x = torch.randn(77, 1024, generator=g)
+        out.append(x / x.norm(dim=-1, keepdim=True))
+    return torch.stack(out)
+
+
+TINY = dict(latent_dim=40, clip_dim=1024, sync_dim=768, text_dim=1024, hidden_dim=64, depth=2, fused_depth=1,
+            num_heads=2, latent_seq_len=345, clip_seq_len=64, sync_seq_len=192)
+
+
+def main(mm=None):
     from .data import build_pack
-    from .train import TrainConfig, train
-    from .generate import Generator, export
-    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-    check_flow(device)
+    from .fx import Rack, process
+    from .checks import NoveltyIndex, count_events
+    from .audio import MEL_V3
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        items = synthetic_items(tmp / "wav")
-        build_pack(items, tmp / "pack")
-        small = dict(n_flows=2, n_layers=4, h=8, res_channels=16, label_dim=16, upsampler="interp")
-        base = TrainConfig(packs=[str(tmp / "pack")], out_dir=str(tmp / "base"), model=small, steps=30,
-                           batch_size=4, segment=8192, warmup=5, eval_every=15, sample_every=30,
-                           num_workers=0, min_clips=5, log_every=10)
-        train(base, device)
-        ft = TrainConfig(packs=[str(tmp / "pack")], out_dir=str(tmp / "ft"), labels=["clicks/soft"], steps=20,
-                         batch_size=4, segment=8192, warmup=2, eval_every=10, sample_every=20, num_workers=0,
-                         init_from=str(tmp / "base" / "best.pt"), freeze="last_flows", trainable_flows=1,
-                         l2sp=1e-3, replay_labels=["clicks"], replay_ratio=0.3, min_clips=1, log_every=10)
-        train(ft, device)
-        # ---- route v2: universal vocoder (mel only) + mel generator (vector -> new mel), no reference sound
-        from .sketch_model import SketchConfig, train_on_packs
-        voc = TrainConfig(packs=[str(tmp / "pack")], out_dir=str(tmp / "voc"), model=small, steps=12, vocoder=True,
-                          batch_size=4, segment=8192, warmup=2, eval_every=6, sample_every=12, num_workers=0,
-                          log_every=6)
-        train(voc, device)
-        mg = train_on_packs([str(tmp / "pack")], tmp / "melgen", steps=6, batch=4, device=device, num_workers=0,
-                            cfg=SketchConfig(channels=16, frames=48), log_every=3, save_every=6)
-        new = mg.sample(mg.vector(mix={"burst": 0.5, "hum": 0.5}), n=1, steps=4)[0].cpu().numpy()
-        vg = Generator(tmp / "voc" / "best.pt", device=device)
-        assert vg.vocoder
-        out = vg.generate("scifi_blade", Controls(intensity=0.7), seed=1, mel=new)   # label unknown to WaveFlow
-        assert np.isfinite(out["audio"]).all() and out["audio"].shape[1] > 0
-        print(f"route v2 ok: vector -> new mel {new.shape} -> vocoder -> {out['audio'].shape[1] / vg.sr:.2f}s")
-        from .scratch import from_scratch, page, default_jobs
-        rows = from_scratch(tmp / "melgen" / "mel_gen.pt", tmp / "voc" / "best.pt",
-                            default_jobs(["burst", "hum"], mixes=[("burst", "hum")], seeds=(1,))
-                            + [dict(name="hand_vector", vec=torch.randn(64), seed=1)], tmp / "scratch",
-                            packs=[str(tmp / "pack")], steps=4, device=device, per_label_ref=3)
-        page(rows, tmp / "scratch" / "index.html", "smoke", zip_path=tmp / "scratch" / "sounds.zip")
-        assert len(rows) == 4 and all(r["nearest_db"] is not None for r in rows)
-
-        gen = Generator(tmp / "ft" / "best.pt", device=device)
-        assert "clicks/soft" in gen.labels and "hum" in gen.labels, gen.labels
-        for label, c in [("clicks/soft", Controls(speed=1.5, duration=2.0, environment="room")),
-                         ("burst", Controls(intensity=0.8, distance=0.5)),
-                         ("hum", Controls(duration=3.0))]:
-            out = gen.generate(label, c, seed=1, mc_dropout=True, n=2)
-            a = out["audio"]
-            assert np.isfinite(a).all() and a.shape[0] == 2, label
-            export(out, tmp / "export")
-            print(f"generated {label}: {a.shape[1] / SR:.2f}s, peak {np.abs(a).max():.3f}")
+        build_pack(synthetic_items(tmp / "wav", n=12), tmp / "pack", sr=SR)
+        # effects rack
+        x = np.zeros(44100, np.float32)
+        x[1000:1400] = np.random.default_rng(0).normal(0, 0.5, 400)
+        st, mo = process(x, 44100, Rack(intensity_db=-3, distance=0.5, environment="hall", pan=-0.4, stretch=1.2))
+        assert st.shape[0] == 2 and np.isfinite(st).all() and np.abs(st).max() <= 1.0
+        print(f"fx ok: stereo {st.shape}, peak {np.abs(st).max():.2f}")
+        # copy detection + event counting
+        ix = NoveltyIndex([str(tmp / "pack")], MEL_V3.to_dict(), 48, device="cpu")
+        k = int((ix.owner == 3).nonzero()[0])
+        q = ((ix.bank[:, k + 5: k + 53] + 100) / 100).numpy()
+        d = ix.nearest(q)[0]
+        assert d < 1e-3, d
+        clicks = np.zeros(3 * 44100, np.float32)
+        for t in (0.2, 0.9, 1.6, 2.5):
+            clicks[int(t * 44100): int(t * 44100) + 400] = 0.5
+        assert count_events(clicks, 44100) == 4
+        print(f"checks ok: copy -> {d:.3f} dB, baseline {ix.baseline():.1f} dB, events 4")
+        if mm is None:
+            try:
+                import mmaudio  # noqa: F401
+                mm = True
+            except ImportError:
+                mm = False
+        if mm:
+            from .mm.setup import ext_weights
+            from .mm.features import extract, Codec
+            from .mm.train import train
+            from .mm.generate import Generator
+            w = ext_weights()
+            codec = Codec(w["vae"], "cpu")
+            extract([str(tmp / "pack")], tmp / "feat", tmp / "raw", w["vae"], device="cpu", batch=4,
+                    num_workers=0, codec=codec, encode_text=fake_text)
+            ck = train(tmp / "feat", tmp / "run", batch=4, steps=12, warmup=4, val_every=6, save_every=12,
+                       log_every=6, empty_string=w["empty"], device="cpu", net_override=TINY)
+            g = Generator(ck, w["vae"], device="cpu", steps=3, codec=codec, encode_text=fake_text)
+            s = g.generate("a gunshot", prompt_b="thunder", mix_b=0.3, seconds=1.0, seed=1)
+            assert len(s) == 8 and all(np.isfinite(x["audio"]).all() for x in s)
+            print(f"mm ok: 8 candidates {[x['name'] for x in s]}")
     print("SMOKE TEST PASSED")
 
 
 if __name__ == "__main__":
-    main()
+    main(mm=("--mm" in sys.argv) or None)
