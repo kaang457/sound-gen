@@ -370,7 +370,8 @@ class Job:
         mix = None
         self.stems = []
         for i, (name, a) in enumerate(self.audio.items()):
-            f = stems / f"{i + 1:02d}_{_slug(name)}.wav"     # each stem is the track itself, also when muted
+            # each stem is the track itself, also when muted; a new name per mix so players never replay a cached file
+            f = stems / f"{i + 1:02d}_{_slug(name)}_{getattr(self, '_ver', 0) + 1:03d}.wav"
             sf.write(f, getattr(self, "placed", {}).get(name, a).T, self.sr, subtype="PCM_24")
             self.stems.append(f)
             mix = a.copy() if mix is None else mix + a
