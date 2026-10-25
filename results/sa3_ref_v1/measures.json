@@ -39,7 +39,7 @@
    "short": "tek tabanca atışı",
    "prompt": "A single pistol gunshot, sharp crack with a short punchy tail, close mic, outdoors",
    "seconds": 2.5,
-   "gen_s": 0.5400938987731934,
+   "gen_s": 0.6211333274841309,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/01_tek_tabanca_atisi_v1.wav",
@@ -81,7 +81,7 @@
    "short": "çatışma",
    "prompt": "A gunfight: rapid bursts of automatic rifle fire and scattered pistol shots from several shooters, outdoor battlefield",
    "seconds": 6,
-   "gen_s": 0.5475935935974121,
+   "gen_s": 0.5752987861633301,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/02_catisma_v1.wav",
@@ -123,7 +123,7 @@
    "short": "pompalı tüfek",
    "prompt": "A pump-action shotgun: pump rack followed by one heavy shotgun blast with a boomy tail",
    "seconds": 3,
-   "gen_s": 0.5275657176971436,
+   "gen_s": 0.6515729427337646,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/03_pompali_tufek_v1.wav",
@@ -165,7 +165,7 @@
    "short": "lazer silah",
    "prompt": "A sci-fi laser gun shot, bright zappy pew with a fast pitch drop and a short electric tail",
    "seconds": 2,
-   "gen_s": 0.5965285301208496,
+   "gen_s": 0.6271779537200928,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/04_lazer_silah_v1.wav",
@@ -207,7 +207,7 @@
    "short": "kılıç çarpışması",
    "prompt": "Two metal swords clash, bright ringing steel impact with a short metallic shimmer",
    "seconds": 2.5,
-   "gen_s": 0.5214388370513916,
+   "gen_s": 0.656019926071167,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/05_kilic_carpismasi_v1.wav",
@@ -249,7 +249,7 @@
    "short": "ok ve yay",
    "prompt": "A bow releases an arrow: string twang, fast whoosh, the arrow thuds into wood",
    "seconds": 2.5,
-   "gen_s": 0.508061408996582,
+   "gen_s": 0.5325822830200195,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/06_ok_ve_yay_v1.wav",
@@ -291,7 +291,7 @@
    "short": "büyük patlama",
    "prompt": "A large explosion, deep boom with debris falling and a long rumbling tail",
    "seconds": 5,
-   "gen_s": 0.5131213665008545,
+   "gen_s": 0.6338193416595459,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/07_buyuk_patlama_v1.wav",
@@ -333,7 +333,7 @@
    "short": "uzak patlama",
    "prompt": "A distant explosion heard from far away, muffled low boom echoing across a valley",
    "seconds": 5,
-   "gen_s": 0.5214745998382568,
+   "gen_s": 0.5462698936462402,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/08_uzak_patlama_v1.wav",
@@ -375,7 +375,7 @@
    "short": "yumruk",
    "prompt": "A heavy punch impact, meaty thud with a fast cloth whoosh, fighting game",
    "seconds": 1.5,
-   "gen_s": 0.6029059886932373,
+   "gen_s": 0.5200085639953613,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/09_yumruk_v1.wav",
@@ -417,7 +417,7 @@
    "short": "cam kırılması",
    "prompt": "A window pane shatters, glass breaking and shards falling on a hard floor",
    "seconds": 3,
-   "gen_s": 0.5115721225738525,
+   "gen_s": 0.5304038524627686,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/10_cam_kirilmasi_v1.wav",
@@ -459,7 +459,7 @@
    "short": "uzay gemisi motoru",
    "prompt": "A large spaceship engine idling, deep steady sci-fi hum with soft mechanical whir, loopable",
    "seconds": 6,
-   "gen_s": 0.5677261352539062,
+   "gen_s": 0.5823190212249756,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/11_uzay_gemisi_motoru_v1.wav",
@@ -501,7 +501,7 @@
    "short": "uzay gemisi geçişi",
    "prompt": "A sci-fi spaceship flies past fast from left to right, roaring jet whoosh with doppler pitch shift",
    "seconds": 5,
-   "gen_s": 0.526801586151123,
+   "gen_s": 0.5836117267608643,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/12_uzay_gemisi_gecisi_v1.wav",
@@ -543,7 +543,7 @@
    "short": "enerji kalkanı",
    "prompt": "A sci-fi energy shield powering up, rising electric hum with a crisp shimmering lock-in",
    "seconds": 3,
-   "gen_s": 0.5721950531005859,
+   "gen_s": 0.532111644744873,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/13_enerji_kalkani_v1.wav",
@@ -585,7 +585,7 @@
    "short": "ışınlanma",
    "prompt": "A sci-fi teleport effect, swirling sparkly whoosh ending in a soft electric pop",
    "seconds": 3,
-   "gen_s": 0.588019609451294,
+   "gen_s": 0.5475170612335205,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/14_isinlanma_v1.wav",
@@ -627,7 +627,7 @@
    "short": "zombi hırıltısı",
    "prompt": "A zombie growl, wet raspy throaty groan, slow and menacing, close mic",
    "seconds": 4,
-   "gen_s": 0.5212554931640625,
+   "gen_s": 0.5600771903991699,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/15_zombi_hiriltisi_v1.wav",
@@ -669,7 +669,7 @@
    "short": "canavar kükremesi",
    "prompt": "A huge monster roar, deep guttural bellow with a gritty distorted edge",
    "seconds": 4,
-   "gen_s": 0.5259766578674316,
+   "gen_s": 0.5731139183044434,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/16_canavar_kukremesi_v1.wav",
@@ -711,7 +711,7 @@
    "short": "ejderha kanatları",
    "prompt": "A dragon flapping its huge leathery wings, heavy slow whooshes of air",
    "seconds": 4,
-   "gen_s": 0.5090963840484619,
+   "gen_s": 0.6028225421905518,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/17_ejderha_kanatlari_v1.wav",
@@ -753,7 +753,7 @@
    "short": "köpek havlaması",
    "prompt": "A medium-size dog barking several times, outdoors",
    "seconds": 4,
-   "gen_s": 0.5040650367736816,
+   "gen_s": 0.5837583541870117,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/18_kopek_havlamasi_v1.wav",
@@ -795,7 +795,7 @@
    "short": "çakılda ayak sesi",
    "prompt": "Footsteps walking on gravel, steady pace, crunchy close-mic foley",
    "seconds": 5,
-   "gen_s": 0.5074892044067383,
+   "gen_s": 0.542776346206665,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/19_cakilda_ayak_sesi_v1.wav",
@@ -837,7 +837,7 @@
    "short": "ahşapta ayak sesi",
    "prompt": "Footsteps walking on a creaky old wooden floor indoors, boots",
    "seconds": 5,
-   "gen_s": 0.49762415885925293,
+   "gen_s": 0.5223829746246338,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/20_ahsapta_ayak_sesi_v1.wav",
@@ -879,7 +879,7 @@
    "short": "at dörtnala",
    "prompt": "A horse galloping on a dirt road, rhythmic hoof beats passing by",
    "seconds": 5,
-   "gen_s": 0.5286009311676025,
+   "gen_s": 0.5929279327392578,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/21_at_dortnala_v1.wav",
@@ -921,7 +921,7 @@
    "short": "kapı gıcırtısı",
    "prompt": "An old wooden door slowly creaks open with a long squeaky hinge",
    "seconds": 4,
-   "gen_s": 0.5040318965911865,
+   "gen_s": 0.5282294750213623,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/22_kapi_gicirtisi_v1.wav",
@@ -963,7 +963,7 @@
    "short": "sandık açılışı",
    "prompt": "A heavy wooden treasure chest unlocks with a metal latch click and the lid creaks open",
    "seconds": 3,
-   "gen_s": 0.569403886795044,
+   "gen_s": 0.5365204811096191,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/23_sandik_acilisi_v1.wav",
@@ -1005,7 +1005,7 @@
    "short": "ateş topu büyüsü",
    "prompt": "A fireball spell: whooshing burst of fire launched forward with a crackling roar",
    "seconds": 3,
-   "gen_s": 0.5125937461853027,
+   "gen_s": 0.5273721218109131,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/24_ates_topu_buyusu_v1.wav",
@@ -1047,7 +1047,7 @@
    "short": "iyileştirme büyüsü",
    "prompt": "A healing magic spell, soft glittering chimes rising with a warm shimmer",
    "seconds": 3,
-   "gen_s": 0.508577823638916,
+   "gen_s": 0.5610089302062988,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/25_iyilestirme_buyusu_v1.wav",
@@ -1089,7 +1089,7 @@
    "short": "menü tıklaması",
    "prompt": "A clean short user interface button click, soft and modern",
    "seconds": 1,
-   "gen_s": 0.4984257221221924,
+   "gen_s": 0.524219274520874,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/26_menu_tiklamasi_v1.wav",
@@ -1131,7 +1131,7 @@
    "short": "altın toplama",
    "prompt": "A coin pickup sound for a video game, bright short metallic ching",
    "seconds": 1,
-   "gen_s": 0.5120108127593994,
+   "gen_s": 0.5108621120452881,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/27_altin_toplama_v1.wav",
@@ -1173,7 +1173,7 @@
    "short": "güçlendirme",
    "prompt": "A video game power-up pickup, quick rising synth arpeggio with sparkle",
    "seconds": 2,
-   "gen_s": 0.5108156204223633,
+   "gen_s": 0.5230133533477783,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/28_guclendirme_v1.wav",
@@ -1215,7 +1215,7 @@
    "short": "teneke çatıda yağmur",
    "prompt": "Heavy rain falling on a tin roof, steady dense patter, loopable ambience",
    "seconds": 8,
-   "gen_s": 0.582789421081543,
+   "gen_s": 0.5827822685241699,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/29_teneke_catida_yagmur_v1.wav",
@@ -1257,7 +1257,7 @@
    "short": "orman",
    "prompt": "Forest ambience in the morning, birds chirping, light breeze in the leaves",
    "seconds": 8,
-   "gen_s": 0.543485164642334,
+   "gen_s": 0.6937804222106934,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/30_orman_v1.wav",
@@ -1299,7 +1299,7 @@
    "short": "mağarada rüzgâr",
    "prompt": "Wind howling through a dark cave, hollow low drone with distant water drips",
    "seconds": 8,
-   "gen_s": 0.6288309097290039,
+   "gen_s": 0.5672035217285156,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/31_magarada_ruzgar_v1.wav",
@@ -1341,7 +1341,7 @@
    "short": "kamp ateşi",
    "prompt": "A crackling campfire, wood pops and soft flames, close mic",
    "seconds": 6,
-   "gen_s": 0.5600900650024414,
+   "gen_s": 0.625899076461792,
    "vars": [
     {
      "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/32_kamp_atesi_v1.wav",
