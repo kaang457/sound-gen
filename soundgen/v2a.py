@@ -137,13 +137,18 @@ class Planner:
         self.proc = hfcache.load(lambda: AutoProcessor.from_pretrained(mid), [mid])
         hfcache.backup()
 
-    def ask(self, content, max_new_tokens=2048):
+    def ask(self, content, max_new_tokens=1536):
+        import time
         import torch
+        t0 = time.time()
         msgs = [{"role": "user", "content": content}]
         inputs = self.proc.apply_chat_template(msgs, tokenize=True, add_generation_prompt=True, return_dict=True,
                                                return_tensors="pt").to(self.model.device)
         with torch.inference_mode():
             ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+        n_in, n_out = inputs["input_ids"].shape[1], ids.shape[1] - inputs["input_ids"].shape[1]
+        print(f"  planlayıcı: {n_in} girdi token'ı, {n_out} çıktı token'ı, {time.time() - t0:.0f} s"
+              + (" (sınıra dayandı: çıktı yarım kalmış olabilir)" if n_out >= max_new_tokens else ""), flush=True)
         return self.proc.batch_decode(ids[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 
     def plan(self, job, fps=2.0, width=448, tries=2):
@@ -152,14 +157,16 @@ class Planner:
             content += [{"type": "text", "text": f"<{t:.1f} seconds>"}, {"type": "image", "image": img}]
         content.append({"type": "text", "text": PROMPT.format(dur=job.duration)})
         last = None
-        for _ in range(tries):
+        print(f"planlayıcı: {len(content) // 2} kare ({fps:g} fps) izleniyor…", flush=True)
+        for k in range(tries):
             last = self.ask(content)
             try:
                 j = parse_json(last)
                 job.scene = j.get("scene", "")
                 return clean(j.get("tracks", []), job.duration)
-            except ValueError:
-                continue
+            except ValueError as e:
+                print(f"  planlayıcı JSON vermedi ({e}); {'tekrar deneniyor' if k + 1 < tries else 'vazgeçildi'}",
+                      flush=True)
         raise ValueError(f"planner did not return JSON:\n{last}")
 
 

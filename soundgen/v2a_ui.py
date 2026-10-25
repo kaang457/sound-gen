@@ -65,6 +65,7 @@ class VideoStudio:
         self.job.plan = self.planner.plan(self.job, fps=plan_fps)
         self.job.save_plan()
         t1 = time.time()
+        print(f"plan hazır ({t1 - t0:.0f} s): {len(self.job.plan)} iz; sesler üretiliyor…", flush=True)
         out = self.job.render(self.gen)
         return out, (f"**Sahne:** {self.job.scene or '–'}  \n{len(self.job.plan)} iz · plan {t1 - t0:.0f} s · "
                      f"ses {time.time() - t1:.0f} s · video {self.job.duration:.1f} s")
