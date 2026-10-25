@@ -42,11 +42,9 @@ Qwen3-VL (Apache-2.0) + Stable Audio 3 Small-SFX. GPU: L4 / A100 (8B planlayıc�
 
 | Hücre | Ne yapar |
 |---|---|
-| 1 | modeller (Drive önbelleği, `OFFLINE`), planlayıcı boyutu GPU belleğine göre |
-| 2 | video (yükle / Drive yolu / `demo`) → saniyede 2 zaman damgalı kare → iz planı (ortam / sürekli / olay; istek, zaman, konum, uzaklık, seviye) → `plan.json` |
-| 3 | planı düzelt: iz ekle, sustur, isteği değiştir (ya da Drive'da `plan.json`) |
-| 4 | olay zamanlarını hareket tepelerine hizala, izleri üret, miksle, mp4'e bas; notebook'ta oynat |
-| 5 | tek izi yeniden üret (yeni istek / tohum / seviye); diğer izler aynı kalır |
-| 6 | paket indir: sesli video + miks + izler (stem) + plan |
+| 1 | modeller (yerel önbellek + Drive yedeği, `OFFLINE`), planlayıcı boyutu GPU belleğine göre |
+| 2 | **video stüdyosu (arayüz):** video yükle → sahneyi çöz → sesli video + zaman çizelgesi; her iz için ses (dB), sol ↔ sağ, yakın → uzak, sustur, solo, zaman, istek → yeniden üret, sil, tek başına dinle; iz ekle; paket indir |
+| 3–7 | aynı işler arayüzsüz, kodla (plan, düzeltme, üretim, tek iz değiştirme, indirme) |
 
+Ses seviyesi / konum / sustur / solo model çağırmaz (~1 s, üretilen ses önbellekte). Zaman ve istek değişikliği yalnız o izi yeniden üretir.
 Çıktılar Drive'da `MyDrive/sound-gen/v2a/<video adı>/`. Videolar GitHub'a gönderilmez (repo herkese açık).

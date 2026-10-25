@@ -10,7 +10,7 @@ Hedef: Unreal için bir ses aracı.
 | [02_train](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/02_train.ipynb) | özellikleri çıkarır, modeli eğitir, sonra test sayfasını GitHub'a yollar | A100 önerilir |
 | [03_studio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/03_studio.ipynb) | tarayıcıda stüdyo: istek → 8 aday → düzenle → mono / stereo WAV | herhangi bir GPU |
 | [04_stable_audio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/04_stable_audio.ipynb) | **hazır model, eğitim yok:** Stable Audio 3 Small-SFX ile ~30 oyun sesi referans seti (GitHub'a sayfa + tablo) ve aynı stüdyo | herhangi bir GPU |
-| [05_video_to_audio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/05_video_to_audio.ipynb) | **sessiz gameplay videosu → sesli video:** Qwen3-VL sahneyi izler, iz planı çıkarır; Stable Audio 3 her izi üretir; miks + mp4; tek izi yeniden üretme | L4 / A100 |
+| [05_video_to_audio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/05_video_to_audio.ipynb) | **sessiz gameplay videosu → sesli video:** Qwen3-VL sahneyi izler, iz planı çıkarır; Stable Audio 3 her izi üretir; arayüzde her iz ayrı: ses, sustur, solo, konum, zaman, istek → yeniden üret | L4 / A100 |
 
 Kendi modelimiz için sıra: **01 → 02 → 03**. Hemen sonuç için: **04** ve **05** (tek başlarına çalışır).
 
@@ -89,6 +89,7 @@ soundgen/
   mm/features.py   paket → açıklamalar → VAE latentleri + CLIP metin token'ları (önbellek)
   mm/train.py      flow matching eğitimi (GPU'da, veri yükleyicisiz), EMA, devam etme, zaman bütçesi
   mm/generate.py   istek → 3 varyasyon + 5 karışım → ses
+  v2a_ui.py        video stüdyosu (Gradio): iz başına düzenleme, zaman çizelgesi
   v2a.py           sessiz video → iz planı (Qwen3-VL) → izler (SA3) → miks → mp4; tek iz yeniden üretme
   sa3.py           hazır model: Stable Audio 3 Small-SFX (kurulum, erişim, üretim, referans seti + sayfa/tablo)
   checks.py        ezber testi, CLAP tanınabilirlik, olay sayısı, test sayfası + zip

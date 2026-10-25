@@ -17,9 +17,10 @@ Everything runs offline once the weights are on disk (HF cache on Drive).
     gen = sa3.SA3(); planner = v2a.Planner()                    # Qwen/Qwen3-VL-8B-Instruct
     job = v2a.Job("clip.mp4", work_dir)
     job.plan = planner.plan(job)                                  # list of tracks (dicts), editable
-    job.render(gen)                                               # -> job.mix_wav, job.stems
-    job.mux()                                                     # -> job.out_mp4
-    job.regenerate(gen, "Sea waves", prompt="Calm sea waves gently lapping on a rocky shore", seed=7)
+    job.render(gen)                                               # generate + mix + mp4 -> job.out_mp4, job.stems
+    job.edit(2, gain_db=-6, pan=-0.4); job.remix()                # mixing changes: no model call, ~1 s
+    job.regenerate(gen, "Sea waves", prompt="Calm sea waves gently lapping on a rocky shore")   # one track only
+    # or the studio: soundgen.v2a_ui.build(gen, planner)
 """
 import json
 import re
@@ -200,6 +201,9 @@ def clean(tracks, dur):
                         level=t.get("level") if t.get("level") in LEVEL_DB else "medium",
                         seed=int(t.get("seed", len(out) + 1)), gain_db=float(t.get("gain_db", 0) or 0),
                         mute=bool(t.get("mute", False))))
+        o = out[-1]
+        o["pan"] = float(np.clip(float(t["pan"]) if _num(t.get("pan")) else PAN[o["position"]], -1, 1))
+        o["dist"] = float(np.clip(float(t["dist"]) if _num(t.get("dist")) else DISTANCE[o["distance"]], 0, 1))
     return out
 
 
@@ -220,6 +224,7 @@ class Job:
         self.duration, self.fps, self.w, self.h = probe(self.video)
         self.scene, self.plan, self.snap_events = "", [], snap_events
         self.audio = {}                                  # track name -> stereo [2, T] at gen.sr (placed, mixed level)
+        self.clips = {}                                  # track name -> generated audio (cached; reused by remix)
         self.sr = None
         self._motion = None
 
@@ -250,60 +255,103 @@ class Job:
             when = (", ".join(f"{x:.1f}" for x in t["events"]) if t["kind"] == "events"
                     else f"{t['start']:.1f}–{t['end']:.1f} s")
             rows.append(f"{i + 1:2d}. {t['name']:<20s} {t['kind']:<10s} {when:<28s} {t['position']:<6s} "
-                        f"{t['distance']:<4s} {t['level']:<6s} {'(sessiz) ' if t['mute'] else ''}| {t['prompt']}")
+                        f"{t['distance']:<4s} {t['level']:<6s} {t['gain_db']:+.0f} dB {'(sessiz) ' if t['mute'] else ''}| {t['prompt']}")
         return "\n".join(rows)
 
-    # -- render
-    def render(self, gen, only=None, variations=None):
-        """Generate the tracks (all, or only the names in `only`) and write stems + mix."""
+    # -- render: generation (slow, model) is cached per track; placement + mix (fast, DSP) is redone on every edit
+    def track(self, key):
+        """A track by name or by its 1-based number in table()."""
+        if isinstance(key, int) or (isinstance(key, str) and key.strip().isdigit()):
+            i = int(key) - 1
+            if 0 <= i < len(self.plan):
+                return self.plan[i]
+        t = next((x for x in self.plan if x["name"] == str(key).strip()), None)
+        if t is None:
+            raise KeyError(f"iz bulunamadı: '{key}'. İzler: "
+                           + ", ".join(f"{i + 1} = {x['name']}" for i, x in enumerate(self.plan)))
+        return t
+
+    @staticmethod
+    def _sig(t, sr):
+        """What the generated audio depends on (anything else is mixing)."""
+        if t["kind"] == "events":
+            return (t["kind"], t["prompt"], t["seed"], round(t["event_seconds"], 2), len(t["events"]))
+        return (t["kind"], t["prompt"], t["seed"], int(round((t["end"] - t["start"]) * 2)))
+
+    def _generate(self, gen, t):
+        sig = self._sig(t, gen.sr)
+        c = self.clips.get(t["name"])
+        if c is not None and c["sig"] == sig:
+            return False
+        if t["kind"] == "events":
+            clips = list(gen.raw(t["prompt"], seconds=t["event_seconds"], n=len(t["events"]), seed=t["seed"]))
+        else:
+            clips = [gen.raw(t["prompt"], seconds=min(t["end"] - t["start"] + 0.5, 120.0), n=1, seed=t["seed"])[0]]
+        self.clips[t["name"]] = dict(sig=sig, clips=clips)
+        return True
+
+    def render(self, gen, only=None, force=False):
+        """Generate what is missing / changed (all tracks, or only those in `only`), then place + mix + mux."""
         self.sr = gen.sr
-        n = int(round(self.duration * self.sr))
-        if self.snap_events:
-            e, f = self.motion()
         for t in self.plan:
             if only and t["name"] not in only:
                 continue
-            if t["mute"]:
-                self.audio[t["name"]] = np.zeros((2, n), np.float32)
-                continue
+            if force:
+                self.clips.pop(t["name"], None)
+            if not t["mute"] and self._generate(gen, t):
+                print(f"  {t['name']:<20s} {t['kind']:<10s} üretildi")
+        return self.remix()
+
+    def remix(self):
+        """Mixing only (level, mute, pan, distance, times): no model call, ~1 s. -> mp4 path."""
+        if self.sr is None:
+            raise RuntimeError("önce render(gen)")
+        n = int(round(self.duration * self.sr))
+        if self.snap_events:
+            e, f = self.motion()
+        self.audio, self.placed = {}, {}                 # audio: what goes into the mix; placed: the track itself
+        for t in self.plan:
             if t["kind"] == "events" and self.snap_events:
                 t["events_snapped"] = snap(t["events"], e, f)
-            self.audio[t["name"]] = self._track(gen, t, n)
-            print(f"  {t['name']:<20s} {t['kind']:<10s} hazır")
-        self.audio = {t["name"]: self.audio[t["name"]] for t in self.plan if t["name"] in self.audio}
-        return self.mixdown()
+            c = self.clips.get(t["name"])
+            pl = self._place(t, c["clips"], n) if c and c["clips"] else np.zeros((2, n), np.float32)
+            self.placed[t["name"]] = pl
+            self.audio[t["name"]] = np.zeros_like(pl) if t["mute"] else pl
+        self.mixdown()
+        return self.mux()
 
-    def _track(self, gen, t, n):
+    def _place(self, t, clips, n):
         from .fx import Rack, process
-        sr = gen.sr
+        sr = self.sr
         buf = np.zeros((2, n), np.float32)
+        rack = Rack(distance=t["dist"], pan=t["pan"])
         if t["kind"] in ("ambience", "continuous"):
             a, b = int(t["start"] * sr), int(t["end"] * sr)
             seg = b - a
-            clip = gen.raw(t["prompt"], seconds=min(seg / sr + 0.5, 120.0), n=1, seed=t["seed"])[0]
-            clip = _loop(clip, seg, sr)
+            clip = _loop(clips[0], seg, sr)
             if t["kind"] == "continuous":                          # point source: mono -> distance + pan
-                st, _ = process(clip.mean(0), sr, Rack(distance=DISTANCE[t["distance"]], pan=PAN[t["position"]]))
+                st, _ = process(clip.mean(0), sr, rack)
                 clip = st[:, :seg]
-            else:                                                  # bed: keep its own stereo, far = darker
-                if t["distance"] == "far":
-                    clip = _lowpass(clip, sr, 3500)
+            else:                                                  # bed: its own stereo; distance darkens, pan tilts
+                if t["dist"] > 0.5:
+                    clip = _lowpass(clip, sr, 9000 - 7000 * t["dist"])
+                if abs(t["pan"]) > 0.01:
+                    g = np.array([np.sqrt(0.5 * (1 - t["pan"])), np.sqrt(0.5 * (1 + t["pan"]))]) * np.sqrt(2)
+                    clip = clip * g[:, None].astype(np.float32)
             fi = min(int(0.4 * sr), seg // 4) if a > 0 else int(0.05 * sr)
             fo = min(int(0.6 * sr), seg // 4) if b < n else int(0.05 * sr)
             clip = _fade_io(clip[:, :seg], fi, fo)
             buf[:, a: a + clip.shape[1]] += clip
         else:
             times = t.get("events_snapped") or t["events"]
-            clips = gen.raw(t["prompt"], seconds=t["event_seconds"], n=len(times), seed=t["seed"])  # all different
             for tm, c in zip(times, clips):
-                st, _ = process(c.mean(0), sr, Rack(distance=DISTANCE[t["distance"]], pan=PAN[t["position"]]))
+                st, _ = process(c.mean(0), sr, rack)
                 st = st[:, _onset(st, sr):]                       # the sound's attack lands on the event time
                 a = int(tm * sr)
                 k = min(st.shape[1], n - a)
                 if k > 0:
                     buf[:, a: a + k] += _fade_io(st[:, :k], 0, min(int(0.02 * sr), k // 4))
-        buf = _norm_rms(buf, LEVEL_DB[t["level"]] + t["gain_db"])
-        return buf
+        return _norm_rms(buf, LEVEL_DB[t["level"]] + t["gain_db"])
 
     def mixdown(self):
         from .fx import limiter
@@ -315,43 +363,102 @@ class Job:
         mix = None
         self.stems = []
         for i, (name, a) in enumerate(self.audio.items()):
-            f = stems / f"{i + 1:02d}_{_slug(name)}.wav"
-            sf.write(f, a.T, self.sr, subtype="PCM_24")
+            f = stems / f"{i + 1:02d}_{_slug(name)}.wav"     # each stem is the track itself, also when muted
+            sf.write(f, getattr(self, "placed", {}).get(name, a).T, self.sr, subtype="PCM_24")
             self.stems.append(f)
             mix = a.copy() if mix is None else mix + a
         if mix is None:
-            raise ValueError("plan is empty")
+            raise ValueError("plan boş")
         mix = limiter(mix * (10 ** (-1 / 20)))
         self.mix_wav = self.dir / "mix.wav"
         sf.write(self.mix_wav, np.asarray(mix).T, self.sr, subtype="PCM_24")
         return self.mix_wav
 
+    def timeline(self, solo=None):
+        """PNG: one lane per track (loudness over time), event marks, muted lanes grey. -> path"""
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        names = list(self.audio)
+        h = 0.55 * max(len(names), 1) + 0.6
+        fig, ax = plt.subplots(figsize=(9, h), dpi=110)
+        hop = int(0.05 * self.sr)
+        cols = ["#e8873a", "#3a8fe8", "#4fb36b", "#c25bd6", "#d6c25b", "#5bd6c8", "#d65b6e", "#8a8f99"]
+        for k, name in enumerate(names):
+            t = next(x for x in self.plan if x["name"] == name)
+            a = getattr(self, "placed", self.audio).get(name, self.audio[name]).mean(0)
+            m = len(a) // hop
+            env = np.sqrt((a[: m * hop].reshape(m, hop) ** 2).mean(1) + 1e-12)
+            db = np.clip((20 * np.log10(env) + 60) / 60, 0, 1) * 0.42
+            x = np.arange(m) * hop / self.sr
+            y0 = len(names) - 1 - k
+            off = t["mute"] or (solo and solo != name)
+            c = "#9a9ca3" if off else cols[k % len(cols)]
+            ax.fill_between(x, y0 - db, y0 + db, color=c, alpha=0.35 if off else 0.85, lw=0)
+            for e in (t.get("events_snapped") or t["events"]) if t["kind"] == "events" else []:
+                ax.plot([e, e], [y0 - 0.45, y0 + 0.45], color=c, lw=1.2)
+            ax.text(-0.01 * self.duration, y0, f"{k + 1}. {name}", ha="right", va="center", fontsize=8,
+                    color="#9a9ca3" if off else "#333")
+        ax.set_xlim(0, self.duration)
+        ax.set_ylim(-0.6, len(names) - 0.4)
+        ax.set_yticks([])
+        ax.set_xlabel("saniye", fontsize=8)
+        ax.tick_params(labelsize=8)
+        for sp in ("top", "right", "left"):
+            ax.spines[sp].set_visible(False)
+        ax.grid(axis="x", alpha=0.25)
+        fig.subplots_adjust(left=0.28, right=0.98, top=0.95, bottom=0.6 / h)
+        out = self.dir / "timeline.png"
+        fig.savefig(out)
+        plt.close(fig)
+        return out
+
     def mux(self, out=None):
-        """Video stream copied as is + the mix as AAC (any existing audio in the input is dropped)."""
-        self.out_mp4 = Path(out or self.dir / f"{self.video.stem}_sesli.mp4")
+        """Video stream copied as is + the mix as AAC (any existing audio in the input is dropped).
+        A new file name each time (players / browsers cache by name); older versions are removed."""
+        self._ver = getattr(self, "_ver", 0) + 1
+        old = list(self.dir.glob(f"{self.video.stem}_sesli*.mp4"))
+        self.out_mp4 = Path(out or self.dir / f"{self.video.stem}_sesli_{self._ver:03d}.mp4")
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(self.video), "-i", str(self.mix_wav), "-map", "0:v:0",
                         "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-shortest",
                         str(self.out_mp4)], check=True)
+        for f in old:
+            if f != self.out_mp4:
+                f.unlink(missing_ok=True)
         return self.out_mp4
 
-    def regenerate(self, gen, name, prompt=None, seed=None, **changes):
-        """Re-do one track (new prompt / seed / level / times ...) and re-render the mix; others stay as they are."""
-        t = next((x for x in self.plan if x["name"] == name), None)
-        if t is None:
-            raise KeyError(f"no track '{name}'; tracks: {[x['name'] for x in self.plan]}")
-        if prompt:
-            t["prompt"] = prompt
-        t["seed"] = int(seed) if seed is not None else t["seed"] + 100
-        t.update(changes)
+    def edit(self, key, **changes):
+        """Change a track (gain_db, mute, pan, dist, level, prompt, seed, events, start, end, ...).
+        Returns the track. Call remix() (mixing changes) or render(gen) (prompt / seed / length / count changes)."""
+        t = self.track(key)
+        name = t["name"]
+        t.update({k: v for k, v in changes.items() if v is not None})
+        i = self.plan.index(t)
         self.plan = clean(self.plan, self.duration)
-        self.render(gen, only=[name])
-        return self.mux()
+        if self.plan[i]["name"] != name:                          # keep the cache when the name was normalised
+            self.clips[self.plan[i]["name"]] = self.clips.pop(name, None) or {"sig": None, "clips": []}
+        self.save_plan()
+        return self.plan[i]
+
+    def regenerate(self, gen, key, prompt=None, seed=None, **changes):
+        """Re-do one track (new prompt and / or new seed); the other tracks are not touched. -> mp4"""
+        t = self.track(key)
+        t = self.edit(t["name"], prompt=prompt or None, seed=int(seed) if seed is not None else t["seed"] + 100,
+                      **changes)
+        return self.render(gen, only=[t["name"]])
 
     def add(self, gen, **track):
         """Add a track by hand (e.g. the planner missed the church bell) and render only that one."""
         self.plan = clean(self.plan + [track], self.duration)
-        self.render(gen, only=[self.plan[-1]["name"]])
-        return self.mux()
+        self.save_plan()
+        return self.render(gen, only=[self.plan[-1]["name"]])
+
+    def remove(self, key):
+        t = self.track(key)
+        self.plan.remove(t)
+        self.clips.pop(t["name"], None)
+        self.save_plan()
+        return self.remix()
 
     def package(self, name=None):
         """zip: video with sound, mix, stems, plan."""
