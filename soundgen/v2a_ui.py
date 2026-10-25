@@ -73,8 +73,10 @@ class VideoStudio:
         t1 = time.time()
         print(f"plan hazır ({t1 - t0:.0f} s): {len(self.job.plan)} iz; sesler üretiliyor…", flush=True)
         out = self.job.render(self.gen)
-        return out, (f"**Sahne:** {self.job.scene or '–'}  \n{len(self.job.plan)} iz · plan {t1 - t0:.0f} s · "
-                     f"ses {time.time() - t1:.0f} s · video {self.job.duration:.1f} s")
+        tm = self.job.timing
+        return out, (f"**Sahne:** {self.job.scene or '–'}  \n{len(self.job.plan)} iz · video {self.job.duration:.1f} s  \n"
+                     f"Süreler: planlama (video anlama) **{t1 - t0:.0f} s** · ses üretimi {tm.get('gen_s', 0):.1f} s · "
+                     f"miks + video {tm.get('place_s', 0) + tm.get('mix_s', 0) + tm.get('mux_s', 0):.1f} s")
 
     def regenerate_all(self):
         self._need()
@@ -259,7 +261,12 @@ def build(gen, planner, root, title="Video Ses Stüdyosu"):
                     out, msg = fn(*a)
                 except Exception as e:                                     # noqa: BLE001
                     err(e)
-                return [str(out), msg, str(st.job.timeline(st.solo))] + slots()
+                tl_png = str(st.job.timeline(st.solo))
+                if st.job and "Süreler" not in msg:
+                    tm = st.job.timing
+                    msg += (f"  \n<small>ses üretimi {tm.get('gen_s', 0):.1f} s · miks + video "
+                            f"{tm.get('place_s', 0) + tm.get('mix_s', 0) + tm.get('mux_s', 0):.1f} s</small>")
+                return [str(out), msg, tl_png] + slots()
             return run
 
         outs = [vout, status, tl] + slot_outputs

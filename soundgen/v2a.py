@@ -133,8 +133,13 @@ class Planner:
         if dtype is None:
             dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
         from . import hfcache
+        # whole model on the GPU: "auto" silently puts layers on the CPU when memory is tight (minutes per plan)
+        dm = device or ({"": 0} if torch.cuda.is_available() else "cpu")
         self.model = hfcache.load(lambda: AutoModelForImageTextToText.from_pretrained(
-            mid, dtype=dtype, device_map=device or "auto").eval(), [mid])
+            mid, dtype=dtype, device_map=dm).eval(), [mid])
+        on = sorted({str(v) for v in (getattr(self.model, "hf_device_map", None) or {"": dm}).values()})
+        if any("cpu" in d or "disk" in d for d in on) and torch.cuda.is_available():
+            print(f"UYARI: planlayıcının bir kısmı GPU dışında ({on}); planlama çok yavaş olur", flush=True)
         self.proc = hfcache.load(lambda: AutoProcessor.from_pretrained(mid), [mid])
         hfcache.backup()
 
@@ -304,15 +309,29 @@ class Job:
 
     def render(self, gen, only=None, force=False):
         """Generate what is missing / changed (all tracks, or only those in `only`), then place + mix + mux."""
+        import time
         self.sr = gen.sr
+        t0 = time.time()
+        made = 0
         for t in self.plan:
             if only and t["name"] not in only:
                 continue
             if force:
                 self.clips.pop(t["name"], None)
+            t1 = time.time()
             if not t["mute"] and self._generate(gen, t):
-                print(f"  {t['name']:<20s} {t['kind']:<10s} üretildi")
-        return self.remix()
+                made += 1
+                print(f"  {t['name']:<20s} {t['kind']:<10s} üretildi ({time.time() - t1:.1f} s)", flush=True)
+        t_gen = time.time() - t0
+        out = self.remix()
+        self.timing = dict(gen_s=t_gen, tracks=made, **self.timing)
+        print(f"  süre: ses üretimi {t_gen:.1f} s ({made} iz) · " + self.timing_text(), flush=True)
+        return out
+
+    def timing_text(self):
+        t = getattr(self, "timing", {})
+        return " · ".join(f"{k} {t[v]:.1f} s" for k, v in (("yerleştirme", "place_s"), ("miks", "mix_s"),
+                                                            ("video", "mux_s"), ("çizelge", "timeline_s")) if v in t)
 
     def remix(self):
         """Mixing only (level, mute, pan, distance, times): no model call, ~1 s. -> mp4 path."""
@@ -321,6 +340,8 @@ class Job:
         n = int(round(self.duration * self.sr))
         if self.snap_events:
             e, f = self.motion()
+        import time
+        t0 = time.time()
         self.audio, self.placed = {}, {}                 # audio: what goes into the mix; placed: the track itself
         for t in self.plan:
             if t["kind"] == "events" and self.snap_events:
@@ -329,8 +350,12 @@ class Job:
             pl = self._place(t, c["clips"], n) if c and c["clips"] else np.zeros((2, n), np.float32)
             self.placed[t["name"]] = pl
             self.audio[t["name"]] = np.zeros_like(pl) if t["mute"] else pl
+        t1 = time.time()
         self.mixdown()
-        return self.mux()
+        t2 = time.time()
+        out = self.mux()
+        self.timing = dict(place_s=t1 - t0, mix_s=t2 - t1, mux_s=time.time() - t2)
+        return out
 
     def _place(self, t, clips, n):
         from .fx import Rack, process
@@ -390,6 +415,8 @@ class Job:
 
     def timeline(self, solo=None):
         """PNG: one lane per track (loudness over time), event marks, muted lanes grey. -> path"""
+        import time
+        t_start = time.time()
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
@@ -424,6 +451,7 @@ class Job:
         fig.subplots_adjust(left=0.28, right=0.98, top=0.95, bottom=0.6 / h)
         out = self.dir / "timeline.png"
         fig.savefig(out)
+        getattr(self, "timing", {}).update(timeline_s=time.time() - t_start)
         plt.close(fig)
         return out
 
