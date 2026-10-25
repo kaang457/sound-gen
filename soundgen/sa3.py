@@ -10,8 +10,7 @@ The text encoder (google/t5gemma-b-b-ul2) comes with the Gemma Terms of Use. Bot
 log in, accept the terms on each page, put a read token in the Colab secret HF_TOKEN.
 
     from soundgen import sa3
-    sa3.install(); sa3.check_access()
-    gen = sa3.SA3()                                       # small-sfx, 44.1 kHz stereo, ~0.4 s per batch on a GPU
+    gen = sa3.load(P.drive)                               # cache, install, access check, small-sfx, 44.1 kHz stereo, ~0.4 s per batch on a GPU
     sounds = gen.generate("a single pistol gunshot", seconds=3, seed=1)       # 8 candidates (8 seeds)
     files = sa3.reference_run(gen, run_dir, push=colab.push_to_github)        # the reference set -> results/<RUN>
 
@@ -32,55 +31,27 @@ GATED = {"small-sfx": ["stabilityai/stable-audio-3-small-sfx", "google/t5gemma-b
 PREFIX = "TrackType: SFX, "                         # Stability's prompt guide: "more semantically reasonable SFX"
 
 
-LOCAL_CACHE = Path("/content/hf_cache")
+def load(drive_dir=None, model="small-sfx", offline=False):
+    """Everything cell 1 of the notebooks needs: local HF cache (+ Drive backup), install, access check, model.
+    Kept here (not in the notebook) so a `git pull` in cell 0 brings fixes without reopening the notebook."""
+    from . import hfcache
+    hfcache.setup(drive_dir, offline=offline)
+    install()
+    if not offline:
+        check_access(model)
+    gen = SA3(model)
+    hfcache.backup()
+    return gen
 
 
-def use_cache(backup_dir=None, local=LOCAL_CACHE):
-    """Hugging Face cache on the LOCAL disk (Drive's FUSE corrupts the hub's chunked downloads: "header too large").
-    Drive keeps one tar backup (symlinks preserved) so a new session / offline run restores it instead of downloading.
-    Call before anything imports huggingface_hub. -> path of the backup tar (or None)."""
-    import os
-    if "huggingface_hub" in sys.modules and os.environ.get("HF_HOME") != str(local):
-        raise RuntimeError("huggingface_hub was already imported with another cache folder: "
-                           "Runtime → Restart session, then run the cells again")
-    local = Path(local)
-    local.mkdir(parents=True, exist_ok=True)
-    os.environ["HF_HOME"] = str(local)
-    tar = Path(backup_dir) / "hf_cache.tar" if backup_dir else None
-    if tar and tar.exists() and not (local / "hub").exists():
-        print(f"önbellek Drive'dan geri yükleniyor ({tar.stat().st_size / 2**30:.1f} GB)…")
-        subprocess.run(["tar", "-xf", str(tar), "-C", str(local)], check=True)
-    return tar
+def use_cache(backup_dir=None, **kw):          # older notebook cells
+    from . import hfcache
+    return hfcache.setup(backup_dir, **kw)
 
 
-def backup_cache(tar, local=LOCAL_CACHE):
-    """Write/refresh the Drive tar when the local cache has grown (new models downloaded)."""
-    if not tar:
-        return
-    tar, local = Path(tar), Path(local)
-    hub = local / "hub"
-    if not hub.exists():
-        return
-    size = sum(f.stat().st_size for f in hub.rglob("*") if f.is_file() and not f.is_symlink())
-    if tar.exists() and tar.stat().st_size >= 0.98 * size:
-        return
-    tar.parent.mkdir(parents=True, exist_ok=True)
-    tmp = tar.with_suffix(".tar.part")
-    print(f"önbellek Drive'a yedekleniyor ({size / 2**30:.1f} GB, bir kez)…")
-    subprocess.run(["tar", "-cf", str(tmp), "-C", str(local), "hub"], check=True)
-    tmp.replace(tar)
-
-
-def _drop_from_cache(repo):
-    try:
-        from huggingface_hub import scan_cache_dir
-        info = scan_cache_dir()
-        revs = [r.commit_hash for repo_ in info.repos if repo_.repo_id == repo for r in repo_.revisions]
-        if revs:
-            info.delete_revisions(*revs).execute()
-            print(f"bozuk önbellek silindi: {repo}")
-    except Exception as e:                                             # noqa: BLE001
-        print(f"önbellek temizlenemedi ({repo}): {e}")
+def backup_cache(tar=None):                      # older notebook cells
+    from . import hfcache
+    return hfcache.backup(tar)
 
 
 def install():
@@ -137,16 +108,8 @@ class SA3:
         from stable_audio_3 import StableAudioModel
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.name = model
-        try:
-            self.m = StableAudioModel.from_pretrained(model, device=self.device)
-        except Exception as e:                                         # noqa: BLE001
-            if "header" not in str(e).lower() and "deserializ" not in str(e).lower():
-                raise
-            # a corrupted / partial download in the cache: delete it and download once more
-            print(f"ağırlık dosyası bozuk ({e}); yeniden indiriliyor")
-            for repo in GATED[model]:
-                _drop_from_cache(repo)
-            self.m = StableAudioModel.from_pretrained(model, device=self.device)
+        from . import hfcache
+        self.m = hfcache.load(lambda: StableAudioModel.from_pretrained(model, device=self.device), GATED[model])
         self.sr = int(self.m.model.sample_rate)
         self.base = model.endswith("-base")
         self.steps = steps or (50 if self.base else 8)        # post-trained: 8 (more does not help); base: ~50

@@ -130,8 +130,11 @@ class Planner:
         self.model_id = mid
         if dtype is None:
             dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
-        self.model = AutoModelForImageTextToText.from_pretrained(mid, dtype=dtype, device_map=device or "auto").eval()
-        self.proc = AutoProcessor.from_pretrained(mid)
+        from . import hfcache
+        self.model = hfcache.load(lambda: AutoModelForImageTextToText.from_pretrained(
+            mid, dtype=dtype, device_map=device or "auto").eval(), [mid])
+        self.proc = hfcache.load(lambda: AutoProcessor.from_pretrained(mid), [mid])
+        hfcache.backup()
 
     def ask(self, content, max_new_tokens=2048):
         import torch
