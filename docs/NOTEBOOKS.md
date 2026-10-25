@@ -1,6 +1,6 @@
 # Notebook'lar
 
-Kendi modelimiz: **01 → 02 → 03**. Hazır model: **04** (tek başına). Her notebook'un hücre 0'ı repoyu çeker, paketi kurar ve Drive'ı bağlar.
+Kendi modelimiz: **01 → 02 → 03**. Hazır modeller: **04** (referans seti + stüdyo), **05** (videodan ses); ikisi de tek başına. Her notebook'un hücre 0'ı repoyu çeker, paketi kurar ve Drive'ı bağlar.
 
 ```
 01_data ──► pack48_poc (Drive) ──► 02_train ──► features/ + runs/<RUN>/ema.pt (Drive) ──► 03_studio (paylaşım linki)
@@ -36,3 +36,17 @@ ve Colab secret `HF_TOKEN`. Ağırlıklar `MyDrive/sound-gen/hf_cache`'e bir kez
 | 3 | sayfayı notebook'ta göster |
 | 4 | kendi isteklerin (`istek \| saniye`) |
 | 5 | stüdyo aynı modelle: 8 varyasyon + efekt rafı + mono / stereo WAV |
+
+## 05_video_to_audio — sessiz video → sesli video (eğitim yok)
+Qwen3-VL (Apache-2.0) + Stable Audio 3 Small-SFX. GPU: L4 / A100 (8B planlayıcı), T4'te 4B. 04'teki HF hazırlığı yeterli.
+
+| Hücre | Ne yapar |
+|---|---|
+| 1 | modeller (Drive önbelleği, `OFFLINE`), planlayıcı boyutu GPU belleğine göre |
+| 2 | video (yükle / Drive yolu / `demo`) → saniyede 2 zaman damgalı kare → iz planı (ortam / sürekli / olay; istek, zaman, konum, uzaklık, seviye) → `plan.json` |
+| 3 | planı düzelt: iz ekle, sustur, isteği değiştir (ya da Drive'da `plan.json`) |
+| 4 | olay zamanlarını hareket tepelerine hizala, izleri üret, miksle, mp4'e bas; notebook'ta oynat |
+| 5 | tek izi yeniden üret (yeni istek / tohum / seviye); diğer izler aynı kalır |
+| 6 | paket indir: sesli video + miks + izler (stem) + plan |
+
+Çıktılar Drive'da `MyDrive/sound-gen/v2a/<video adı>/`. Videolar GitHub'a gönderilmez (repo herkese açık).

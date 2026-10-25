@@ -10,8 +10,20 @@ Hedef: Unreal için bir ses aracı.
 | [02_train](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/02_train.ipynb) | özellikleri çıkarır, modeli eğitir, sonra test sayfasını GitHub'a yollar | A100 önerilir |
 | [03_studio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/03_studio.ipynb) | tarayıcıda stüdyo: istek → 8 aday → düzenle → mono / stereo WAV | herhangi bir GPU |
 | [04_stable_audio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/04_stable_audio.ipynb) | **hazır model, eğitim yok:** Stable Audio 3 Small-SFX ile ~30 oyun sesi referans seti (GitHub'a sayfa + tablo) ve aynı stüdyo | herhangi bir GPU |
+| [05_video_to_audio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/05_video_to_audio.ipynb) | **sessiz gameplay videosu → sesli video:** Qwen3-VL sahneyi izler, iz planı çıkarır; Stable Audio 3 her izi üretir; miks + mp4; tek izi yeniden üretme | L4 / A100 |
 
-Kendi modelimiz için sıra: **01 → 02 → 03**. Hemen sonuç için: **04** (tek başına çalışır).
+Kendi modelimiz için sıra: **01 → 02 → 03**. Hemen sonuç için: **04** ve **05** (tek başlarına çalışır).
+
+## Videodan ses (hazır modellerle)
+
+```
+sessiz video ─► Qwen3-VL (Apache-2.0): "hangi sesler, nerede, ne zaman" → iz planı (JSON, düzenlenebilir)
+             ─► hareket enerjisi: olay zamanları görüntüdeki vuruşa / adıma hizalanır
+plan ────────► Stable Audio 3 Small-SFX: iz başına ses (ortam döngülü, sürekli, olaylar her biri farklı)
+             ─► mikser (seviye, uzaklık, stereo konum) → izler + stereo miks → ffmpeg → sesli mp4
+```
+Eğitim yok, harici API yok; ağırlıklar indikten sonra internetsiz çalışır. Kod: `soundgen/v2a.py`.
+Sınır: olaylar zamanında, ama bir ayak sesi klibinin içindeki adımlar her adıma kare kare oturmaz (ileride senkron modeli).
 
 ## Hızlı yol: hazır açık ağırlıklı model (Stable Audio 3)
 
@@ -55,7 +67,8 @@ Buraya nasıl gelindiği (WaveFlow, taslak modeli, CLAP denemeleri): **[docs/RES
 | Kod | özellik çıkarma, eğitim, 8 adaylı üretim, test sayfası, stüdyo hazır; CPU'da uçtan uca test geçti (küçük ağ, sentetik veri) |
 | İlk eğitim | `mm_v1`: araştırma verisiyle (~48 saat, lisans filtresiz, ticari kullanılamaz) — sonuç `results/mm_v1/` |
 | Hazır model | `04_stable_audio`: Stable Audio 3 Small-SFX referans seti — sonuç `results/sa3_ref_v1/` |
-| Sıradaki | ticari veriyle Stable Audio 3 LoRA ince ayarı; lisanslı veri teklifleri (Pro Sound Effects, BOOM, Shutterstock); faz 2: video |
+| Videodan ses | `05_video_to_audio`: Qwen3-VL + Stable Audio 3, eğitimsiz |
+| Sıradaki | ticari veriyle Stable Audio 3 LoRA ince ayarı; videodan ses için GUI; lisanslı veri teklifleri (Pro Sound Effects, BOOM, Shutterstock); faz 2: video |
 
 ## Kullanılan hazır parçalar ve lisansları
 
@@ -64,6 +77,7 @@ Buraya nasıl gelindiği (WaveFlow, taslak modeli, CLAP denemeleri): **[docs/RES
 | MMAudio kodu | MIT | ağ, VAE ve flow matching kodu |
 | MMAudio 44,1 kHz mel-VAE (`v1-44.pth`) | MMAudio sürümüyle (ticari kullanım için doğrulanmalı) | ticari üründe kendi VAE'mizle değiştirilebilir (etiketsiz veriyle eğitilir) |
 | BigVGAN-v2 (NVIDIA) | MIT, "ticari kullanıma hazır" | vocoder |
+| Qwen3-VL-8B / 4B-Instruct (Alibaba) | Apache-2.0 | videodan ses planı (05) |
 | Stable Audio 3 Small-SFX (Stability AI) | Stability AI Community License (1 M $ gelir altı ticari serbest) | hazır model (04); T5Gemma metin kodlayıcı Gemma şartlarıyla |
 | DFN5B CLIP ViT-H/14 (Apple) | model kartına bakılmalı | metin kodlayıcı |
 | Eğitim verisi `poc_max` | karışık (NC dahil) | sadece kavram kanıtı |
@@ -75,13 +89,14 @@ soundgen/
   mm/features.py   paket → açıklamalar → VAE latentleri + CLIP metin token'ları (önbellek)
   mm/train.py      flow matching eğitimi (GPU'da, veri yükleyicisiz), EMA, devam etme, zaman bütçesi
   mm/generate.py   istek → 3 varyasyon + 5 karışım → ses
+  v2a.py           sessiz video → iz planı (Qwen3-VL) → izler (SA3) → miks → mp4; tek iz yeniden üretme
   sa3.py           hazır model: Stable Audio 3 Small-SFX (kurulum, erişim, üretim, referans seti + sayfa/tablo)
   checks.py        ezber testi, CLAP tanınabilirlik, olay sayısı, test sayfası + zip
   fx.py            efekt rafı (sinyal işleme)
   studio.py, studio_ui.py   stüdyo motoru + Gradio arayüzü
   data.py          veri indirme ve 48 kHz paket
   audio.py, evaluate.py, colab.py, smoke.py (python -m soundgen.smoke [--mm])
-notebooks/         01_data, 02_train, 03_studio, 04_stable_audio
+notebooks/         01_data, 02_train, 03_studio, 04_stable_audio, 05_video_to_audio
 docs/              ARCHITECTURE.md, RESEARCH.md, NOTEBOOKS.md
 results/           koşu başına test sayfası, sesler, ölçümler (modeller Drive'da)
 ```
