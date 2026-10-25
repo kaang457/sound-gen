@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 
 KINDS = ("ambience", "continuous", "events")
+EVENT_GEN_S = 4.0                                      # shortest clip asked from the model for one event
 LEVEL_DB = {"low": -18.0, "medium": -10.0, "high": -4.0}
 DISTANCE = {"near": 0.05, "mid": 0.35, "far": 0.75}
 PAN = {"left": -0.6, "center": 0.0, "right": 0.6}
@@ -291,10 +292,14 @@ class Job:
         if c is not None and c["sig"] == sig:
             return False
         if t["kind"] == "events":
-            clips = list(gen.raw(t["prompt"], seconds=t["event_seconds"], n=len(t["events"]), seed=t["seed"]))
+            # Never ask the model for very short clips: at 1-2 s Stable Audio 3 largely ignores the prompt (04's
+            # reference set: 1 s sounds matched their prompt worst). Generate >= 4 s, trim to the sound afterwards.
+            sec = max(EVENT_GEN_S, t["event_seconds"] + 1.0)
+            clips = list(gen.raw(t["prompt"], seconds=sec, n=len(t["events"]), seed=t["seed"]))
         else:
             clips = [gen.raw(t["prompt"], seconds=min(t["end"] - t["start"] + 0.5, 120.0), n=1, seed=t["seed"])[0]]
         self.clips[t["name"]] = dict(sig=sig, clips=clips)
+        print(f"    istek: “{t['prompt']}” · tohum {t['seed']}", flush=True)
         return True
 
     def render(self, gen, only=None, force=False):
@@ -354,6 +359,7 @@ class Job:
             for tm, c in zip(times, clips):
                 st, _ = process(c.mean(0), sr, rack)
                 st = st[:, _onset(st, sr):]                       # the sound's attack lands on the event time
+                st = _trim_tail(st, sr, t["event_seconds"])       # its own decay, not the rest of the long clip
                 a = int(tm * sr)
                 k = min(st.shape[1], n - a)
                 if k > 0:
@@ -510,6 +516,23 @@ def _onset(x, sr, rel_db=-24.0):
         return 0
     k = int(np.argmax(lim >= m.max() * 10 ** (rel_db / 20)))
     return max(0, k - int(0.005 * sr))
+
+
+def _trim_tail(x, sr, seconds, floor_db=-40.0, fade_s=0.25):
+    """Keep at least `seconds`, then until the sound has decayed to peak + floor_db (max the clip), fade out."""
+    n = x.shape[1]
+    keep = min(n, int(seconds * sr))
+    env = np.abs(x).max(0)
+    pk = env.max()
+    if pk > 0 and keep < n:
+        hop = int(0.02 * sr)
+        m = (n - keep) // hop
+        if m > 0:
+            frames = env[keep: keep + m * hop].reshape(m, hop).max(1)
+            quiet = np.nonzero(frames < pk * 10 ** (floor_db / 20))[0]
+            keep += int(quiet[0] * hop) if len(quiet) else m * hop
+    k = min(int(fade_s * sr), keep // 3)
+    return _fade_io(x[:, :keep], 0, k)
 
 
 def _lowpass(x, sr, fc):
