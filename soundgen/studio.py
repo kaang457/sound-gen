@@ -13,9 +13,11 @@ from .fx import Rack, process
 
 
 class Studio:
-    def __init__(self, ckpt, vae_ckpt, device=None, steps=25, cfg=4.5, generator=None):
-        from .mm.generate import Generator
-        self.gen = generator or Generator(ckpt, vae_ckpt, device=device, steps=steps, cfg=cfg)
+    def __init__(self, ckpt=None, vae_ckpt=None, device=None, steps=25, cfg=4.5, generator=None):
+        if generator is None:                       # our generator; or pass a ready one, e.g. soundgen.sa3.SA3()
+            from .mm.generate import Generator
+            generator = Generator(ckpt, vae_ckpt, device=device, steps=steps, cfg=cfg)
+        self.gen = generator
         self.sr = self.gen.sr
         self.out = Path(tempfile.mkdtemp(prefix="studio_"))
 

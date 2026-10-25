@@ -36,7 +36,7 @@ def _to_gradio(x, sr):
     return sr, (np.clip(x, -1, 1) * 32767).astype(np.int16)
 
 
-def build(studio, title="Ses Stüdyosu"):
+def build(studio, title="Ses Stüdyosu", subtitle="İstek yaz → sıfırdan 3 varyasyon + aralarında 5 karışım → düzenle → indir."):
     import gradio as gr
 
     theme = gr.themes.Base(primary_hue="orange", neutral_hue="zinc").set(
@@ -45,7 +45,7 @@ def build(studio, title="Ses Stüdyosu"):
 
     with gr.Blocks(title=title, theme=theme, css=CSS) as demo:
         sounds = gr.State([])
-        gr.Markdown(f"# {title}\nİstek yaz → sıfırdan 3 varyasyon + aralarında 5 karışım → düzenle → indir.",
+        gr.Markdown(f"# {title}\n{subtitle}",
                     elem_id="title")
         with gr.Row(equal_height=False):
             # ---------------------------------------------------------------- generate

@@ -1,6 +1,6 @@
 # Notebook'lar
 
-Sıra: **01 → 02 → 03**. Her notebook'un hücre 0'ı repoyu çeker, paketi kurar ve Drive'ı bağlar.
+Kendi modelimiz: **01 → 02 → 03**. Hazır model: **04** (tek başına). Her notebook'un hücre 0'ı repoyu çeker, paketi kurar ve Drive'ı bağlar.
 
 ```
 01_data ──► pack48_poc (Drive) ──► 02_train ──► features/ + runs/<RUN>/ema.pt (Drive) ──► 03_studio (paylaşım linki)
@@ -23,3 +23,16 @@ Sıra: **01 → 02 → 03**. Her notebook'un hücre 0'ı repoyu çeker, paketi k
 ## 03_studio — GUI
 Tek hücre: gradio + model + VAE/BigVGAN; `…gradio.live` bağlantısı. İstek → 8 aday (A, B, C + A→B %33, A→B %67,
 B×C, A×C, A×B×C) → efekt rafı → mono / stereo WAV ya da hepsi zip.
+
+## 04_stable_audio — hazır model (eğitim yok)
+Stable Audio 3 Small-SFX (Stability AI, açık ağırlık). Gerekli: Hugging Face'te iki sayfada lisans onayı
+([model](https://huggingface.co/stabilityai/stable-audio-3-small-sfx), [T5Gemma](https://huggingface.co/google/t5gemma-b-b-ul2))
+ve Colab secret `HF_TOKEN`. Ağırlıklar `MyDrive/sound-gen/hf_cache`'e bir kez iner; `OFFLINE = True` internetsiz yükler.
+
+| Hücre | Ne yapar |
+|---|---|
+| 1 | kurulum (Colab'ın torch'una dokunmadan), erişim kontrolü, model yükleme, tek ses denemesi |
+| 2 | referans seti: 32 oyun sesi (silah, patlama, bilim kurgu, yaratık, foley, büyü / arayüz, ortam) × 4 varyasyon; CLAP istek eşleşmesi, tek / çok olay; sayfa + README tablosu + WAV zip → GitHub `results/<RUN>/`; tüm varyasyonlar Drive'da |
+| 3 | sayfayı notebook'ta göster |
+| 4 | kendi isteklerin (`istek \| saniye`) |
+| 5 | stüdyo aynı modelle: 8 varyasyon + efekt rafı + mono / stereo WAV |
