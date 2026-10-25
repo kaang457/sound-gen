@@ -27,7 +27,7 @@ B×C, A×C, A×B×C) → efekt rafı → mono / stereo WAV ya da hepsi zip.
 ## 04_stable_audio — hazır model (eğitim yok)
 Stable Audio 3 Small-SFX (Stability AI, açık ağırlık). Gerekli: Hugging Face'te iki sayfada lisans onayı
 ([model](https://huggingface.co/stabilityai/stable-audio-3-small-sfx), [T5Gemma](https://huggingface.co/google/t5gemma-b-b-ul2))
-ve Colab secret `HF_TOKEN`. Ağırlıklar `MyDrive/sound-gen/hf_cache`'e bir kez iner; `OFFLINE = True` internetsiz yükler.
+ve Colab secret `HF_TOKEN`. Ağırlıklar bir kez iner (yerel disk, Drive'da `hf_cache.tar` yedeği); `OFFLINE = True` internetsiz yükler.
 
 | Hücre | Ne yapar |
 |---|---|
