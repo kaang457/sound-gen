@@ -29,19 +29,25 @@ def times_text(t):
     return f"{t['start']:.1f}-{t['end']:.1f}"
 
 
+RANGE = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*[-–—]\s*(\d+(?:[.,]\d+)?)\s*(s|sn)?\s*$")
+
+
 def parse_times(text, kind, dur):
-    """'2, 5.1, 8' -> events; '0-12' or '3.5 - 9' -> (start, end)."""
-    # "2, 5.1, 8" -> 2 / 5.1 / 8 ; "2,5" (no space) -> 2.5 ; "0-12" -> 0 / 12
-    nums = [float(x.replace(",", ".")) for x in re.findall(r"\d+(?:[.,]\d+)?", text or "")]
-    nums = [min(max(x, 0.0), dur) for x in nums]
-    if kind == "events":
-        if not nums:
-            raise ValueError("olay zamanı yok (ör. 2, 5.1, 8)")
-        return dict(events=sorted(nums))
-    if len(nums) < 2:
-        raise ValueError("başlangıç-bitiş yaz (ör. 0-12)")
-    a, b = sorted(nums[:2])
-    return dict(start=a, end=b)
+    """The form of the text decides, whatever the track was before:
+         '0-12', '3.5 – 9'      -> a span: start / end (an event track becomes 'continuous')
+         '2, 5.1, 8', '6.5'     -> event times (a span track becomes 'events')
+       '2,5' (no space) is 2.5."""
+    text = (text or "").strip()
+    m = RANGE.match(text)
+    if m:
+        a, b = sorted(min(max(float(x.replace(",", ".")), 0.0), dur) for x in m.groups()[:2])
+        if b - a < 0.2:
+            raise ValueError("aralık çok kısa")
+        return dict(start=a, end=b, kind=kind if kind in ("ambience", "continuous") else "continuous")
+    nums = [min(max(float(x.replace(",", ".")), 0.0), dur) for x in re.findall(r"\d+(?:[.,]\d+)?", text)]
+    if not nums:
+        raise ValueError("zaman yaz: olay anları '2, 5.1, 8' ya da aralık '0-12'")
+    return dict(events=sorted(nums), kind="events")
 
 
 class VideoStudio:
@@ -103,18 +109,26 @@ class VideoStudio:
     def set_times(self, i, text):
         self._need()
         t = self.job.plan[i]
+        if (text or "").strip() == times_text(t):
+            return self.job.out_mp4, f"{t['name']}: zaman aynı"
         ch = parse_times(text, t["kind"], self.job.duration)
+        was = t["kind"]
         t = self.job.edit(i + 1, **ch)
-        return self.job.render(self.gen, only=[t["name"]]), f"{t['name']}: zamanlar {times_text(t)}"
+        note = f" (tür: {KIND_TR[was]} → {KIND_TR[t['kind']]})" if t["kind"] != was else ""
+        return self.job.render(self.gen, only=[t["name"]]), f"{t['name']}: zaman {times_text(t)}{note}"
 
-    def regenerate(self, i, prompt=None):
-        """New variation of one track; a changed prompt is used. Other tracks untouched."""
+    def regenerate(self, i, prompt=None, times=None):
+        """New variation of one track with what is in its row now (prompt and time); others untouched."""
         self._need()
         t = self.job.plan[i]
+        if times is not None and times.strip() and times.strip() != times_text(t):
+            self.job.edit(i + 1, **parse_times(times, t["kind"], self.job.duration))
+            t = self.job.plan[i]
         p = (prompt or "").strip()
         out = self.job.regenerate(self.gen, i + 1, prompt=p if p and p != t["prompt"] else None)
         t = self.job.plan[i]
-        return out, f"{t['name']}: yeni varyasyon (tohum {t['seed']})"
+        return out, (f"{t['name']}: yeni varyasyon · {KIND_TR[t['kind']]} {times_text(t)} · "
+                     f"“{t['prompt']}” · tohum {t['seed']}")
 
     def toggle_solo(self, i):
         self._need()
@@ -216,7 +230,7 @@ def build(gen, planner, root, title="Video Ses Stüdyosu"):
                         with gr.Row():
                             mute = gr.Checkbox(label="Sustur", scale=1)
                             solo = gr.Button("Solo", size="sm", scale=1)
-                            times = gr.Textbox(label="Zaman (olay: 2, 5.1 · aralık: 0-12)", scale=4)
+                            times = gr.Textbox(label="Zaman: olay anları 2, 5.1 · ya da aralık 0-12 (Enter ya da Yeniden üret)", scale=4)
                         with gr.Row():
                             prompt = gr.Textbox(label="İstek", scale=6, lines=1)
                             regen = gr.Button("Yeniden üret", size="sm", scale=1)
@@ -262,8 +276,8 @@ def build(gen, planner, root, title="Video Ses Stüdyosu"):
                 c.release(f_mix, mix_in, outs)
             r["mute"].input(f_mix, mix_in, outs)
             r["times"].submit(wrap(lambda txt, i=i: st.set_times(i, txt)), [r["times"]], outs)
-            r["regen"].click(wrap(lambda p, i=i: st.regenerate(i, p)), [r["prompt"]], outs)
-            r["prompt"].submit(wrap(lambda p, i=i: st.regenerate(i, p)), [r["prompt"]], outs)
+            r["regen"].click(wrap(lambda p, txt, i=i: st.regenerate(i, p, txt)), [r["prompt"], r["times"]], outs)
+            r["prompt"].submit(wrap(lambda p, txt, i=i: st.regenerate(i, p, txt)), [r["prompt"], r["times"]], outs)
             r["solo"].click(wrap(lambda i=i: st.toggle_solo(i)), None, outs)
             r["rm"].click(wrap(lambda i=i: st.remove(i)), None, outs)
     return demo
