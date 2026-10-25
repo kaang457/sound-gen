@@ -51,11 +51,20 @@ def parse_times(text, kind, dur):
 
 
 class VideoStudio:
-    def __init__(self, gen, planner, root):
+    def __init__(self, gen, planner, root, candidates=3, scorer="clap"):
         self.gen, self.planner = gen, planner
         self.root = Path(root)
         self.job = None
         self.solo = None
+        self.candidates = int(candidates)
+        self.scorer = None
+        if scorer == "clap":
+            try:
+                self.scorer = v2a.ClapScorer()
+            except Exception as e:                                     # noqa: BLE001
+                print(f"CLAP yüklenemedi, adaylar sırayla ({type(e).__name__}: {e})")
+        elif callable(scorer):
+            self.scorer = scorer
 
     # ---------------------------------------------------------------- whole video
     def open(self, video_path, plan_fps=2.0):
@@ -66,6 +75,7 @@ class VideoStudio:
         dst = work / f"{name}{src.suffix.lower() or '.mp4'}"
         shutil.copy2(src, dst)
         self.job = v2a.Job(dst, work)
+        self.job.candidates, self.job.scorer = self.candidates, self.scorer
         self.solo = None
         t0 = time.time()
         self.job.plan = self.planner.plan(self.job, fps=plan_fps)
@@ -97,9 +107,23 @@ class VideoStudio:
         stem = self.job.stems[i] if getattr(self.job, "stems", None) and i < len(self.job.stems) else None
         when = (f"{len(t['events'])} olay" if t["kind"] == "events" else f"{t['start']:.1f}–{t['end']:.1f} s")
         flag = " · 🔇" if t["mute"] else (" · 🎧 solo" if self.solo == t["name"] else "")
+        c = self.job.clips.get(t["name"]) or {}
+        sc = c.get("scores")
+        cands = [f"{j + 1}" + (f" · {sc[j]:.2f}" if sc else "") for j in range(len(c.get("sets", [])))]
         return dict(header=f"**{i + 1}. {t['name']}** · {KIND_TR[t['kind']]} · {when}{flag}", prompt=t["prompt"],
                     times=times_text(t), gain=t["gain_db"], mute=t["mute"], pan=t["pan"], dist=t["dist"],
-                    solo=self.solo == t["name"], stem=str(stem) if stem else None)
+                    solo=self.solo == t["name"], stem=str(stem) if stem else None, cands=cands,
+                    cand=cands[c.get("pick", 0)] if cands else None)
+
+    def pick(self, i, label):
+        self._need()
+        if not label:
+            return self.job.out_mp4, "aday seçilmedi"
+        j = int(str(label).split("·")[0].strip()) - 1
+        self.job.pick(i + 1, j)
+        if self.solo:
+            self._remix()
+        return self.job.out_mp4, f"{self.job.plan[i]['name']}: aday {j + 1}"
 
     def set_mix(self, i, gain=None, mute=None, pan=None, dist=None):
         self._need()
@@ -188,9 +212,9 @@ CSS = """
 """
 
 
-def build(gen, planner, root, title="Video Ses Stüdyosu"):
+def build(gen, planner, root, title="Video Ses Stüdyosu", candidates=3, scorer="clap"):
     import gradio as gr
-    st = VideoStudio(gen, planner, root)
+    st = VideoStudio(gen, planner, root, candidates=candidates, scorer=scorer)
 
     def err(e):
         raise gr.Error(str(e))
@@ -207,6 +231,8 @@ def build(gen, planner, root, title="Video Ses Stüdyosu"):
                     again = gr.Button("Hepsini yeniden üret")
                 vout = gr.Video(label="Sesli video", interactive=False, autoplay=False)
                 status = gr.Markdown("")
+                with gr.Accordion("Planlayıcının sahne betimlemesi (planın dayandığı metin)", open=False):
+                    notes = gr.Markdown("")
                 tl = gr.Image(label="Zaman çizelgesi: hangi iz ne zaman ses çıkarıyor (çizgiler: olay anları)",
                               interactive=False, type="filepath")
                 with gr.Row():
@@ -237,22 +263,24 @@ def build(gen, planner, root, title="Video Ses Stüdyosu"):
                             prompt = gr.Textbox(label="İstek", scale=6, lines=1)
                             regen = gr.Button("Yeniden üret", size="sm", scale=1)
                             rm = gr.Button("Sil", size="sm", scale=1)
-                        stem = gr.Audio(label="Bu iz tek başına", interactive=False, type="filepath")
+                        with gr.Row():
+                            cand = gr.Radio([], label="Aday (CLAP: isteğe benzerlik, yüksek = daha iyi)", scale=2)
+                            stem = gr.Audio(label="Bu iz tek başına", interactive=False, type="filepath", scale=3)
                     rows.append(dict(box=box, head=head, gain=gain, pan=pan, dist=dist, mute=mute, solo=solo,
-                                     times=times, prompt=prompt, regen=regen, rm=rm, stem=stem))
+                                     times=times, prompt=prompt, regen=regen, rm=rm, stem=stem, cand=cand))
 
         slot_outputs = [c for r in rows for c in (r["box"], r["head"], r["gain"], r["pan"], r["dist"], r["mute"],
-                                                  r["times"], r["prompt"], r["stem"])]
+                                                  r["times"], r["prompt"], r["stem"], r["cand"])]
 
         def slots():
             ups = []
             for i in range(N_SLOTS):
                 s = st.slot(i)
                 if s is None:
-                    ups += [gr.update(visible=False)] + [gr.update()] * 8
+                    ups += [gr.update(visible=False)] + [gr.update()] * 9
                 else:
                     ups += [gr.update(visible=True), s["header"], s["gain"], s["pan"], s["dist"], s["mute"],
-                            s["times"], s["prompt"], s["stem"]]
+                            s["times"], s["prompt"], s["stem"], gr.update(choices=s["cands"], value=s["cand"])]
             return ups
 
         def wrap(fn):
@@ -266,10 +294,11 @@ def build(gen, planner, root, title="Video Ses Stüdyosu"):
                     tm = st.job.timing
                     msg += (f"  \n<small>ses üretimi {tm.get('gen_s', 0):.1f} s · miks + video "
                             f"{tm.get('place_s', 0) + tm.get('mix_s', 0) + tm.get('mux_s', 0):.1f} s</small>")
-                return [str(out), msg, tl_png] + slots()
+                nt = getattr(st.job, "notes", "") or ""
+                return [str(out), msg, tl_png, nt.replace("\n", "  \n")] + slots()
             return run
 
-        outs = [vout, status, tl] + slot_outputs
+        outs = [vout, status, tl, notes] + slot_outputs
         go.click(wrap(lambda v: st.open(v) if v else (_ for _ in ()).throw(ValueError("önce video yükle"))),
                  [vin], outs)
         again.click(wrap(st.regenerate_all), None, outs)
@@ -287,4 +316,5 @@ def build(gen, planner, root, title="Video Ses Stüdyosu"):
             r["prompt"].submit(wrap(lambda p, txt, i=i: st.regenerate(i, p, txt)), [r["prompt"], r["times"]], outs)
             r["solo"].click(wrap(lambda i=i: st.toggle_solo(i)), None, outs)
             r["rm"].click(wrap(lambda i=i: st.remove(i)), None, outs)
+            r["cand"].input(wrap(lambda lab, i=i: st.pick(i, lab)), [r["cand"]], outs)
     return demo

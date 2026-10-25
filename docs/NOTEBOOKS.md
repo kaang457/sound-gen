@@ -38,12 +38,14 @@ ve Colab secret `HF_TOKEN`. Ağırlıklar bir kez iner (yerel disk, Drive'da `hf
 | 5 | stüdyo aynı modelle: 8 varyasyon + efekt rafı + mono / stereo WAV |
 
 ## 05_video_to_audio — sessiz video → sesli video (eğitim yok)
-Qwen3-VL (Apache-2.0) + Stable Audio 3 Small-SFX. GPU: L4 / A100 (8B planlayıcı), T4'te 4B. 04'teki HF hazırlığı yeterli.
+Planlayıcı seçilebilir (hepsi Apache-2.0): Qwen3-VL 4B / 8B / 30B-A3B, Gemma 4 26B / 31B, Molmo 2 8B. + Stable Audio 3 Small-SFX + CLAP (aday seçimi). GPU: L4 / A100; 80 GB A100'de Gemma 4 26B. 04'teki HF hazırlığı yeterli.
+
+Planlama iki adım: sahne betimlemesi (kareler + zaman damgaları) → iz planı (yalnız metin). Ses isteği planın alanlarından kurulur (kaynak + eylem + malzeme + karakter + uzaklık). Her iz için `ADAY` kadar aday; CLAP en iyisini seçer, arayüzde değiştirilebilir.
 
 | Hücre | Ne yapar |
 |---|---|
 | 1 | modeller (yerel önbellek + Drive yedeği, `OFFLINE`), planlayıcı boyutu GPU belleğine göre |
-| 2 | **video stüdyosu (arayüz):** video yükle → sahneyi çöz → sesli video + zaman çizelgesi; her iz için ses (dB), sol ↔ sağ, yakın → uzak, sustur, solo, zaman, istek → yeniden üret, sil, tek başına dinle; iz ekle; paket indir |
+| 2 | **video stüdyosu (arayüz):** aday sayısı (`ADAY`); video yükle → sahneyi çöz → sesli video + zaman çizelgesi; her iz için ses (dB), sol ↔ sağ, yakın → uzak, sustur, solo, zaman, istek → yeniden üret, sil, tek başına dinle; iz ekle; paket indir |
 | 3–7 | aynı işler arayüzsüz, kodla (plan, düzeltme, üretim, tek iz değiştirme, indirme) |
 
 Ses seviyesi / konum / sustur / solo model çağırmaz (~1 s, üretilen ses önbellekte). Zaman ve istek değişikliği yalnız o izi yeniden üretir.

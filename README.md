@@ -17,9 +17,9 @@ Kendi modelimiz için sıra: **01 → 02 → 03**. Hemen sonuç için: **04** ve
 ## Videodan ses (hazır modellerle)
 
 ```
-sessiz video ─► Qwen3-VL (Apache-2.0): "hangi sesler, nerede, ne zaman" → iz planı (JSON, düzenlenebilir)
+sessiz video ─► planlayıcı (Qwen3-VL / Gemma 4 / Molmo 2, Apache-2.0): 1) sahne betimlemesi 2) iz planı (JSON, düzenlenebilir)
              ─► hareket enerjisi: olay zamanları görüntüdeki vuruşa / adıma hizalanır
-plan ────────► Stable Audio 3 Small-SFX: iz başına ses (ortam döngülü, sürekli, olaylar her biri farklı)
+plan ────────► Stable Audio 3 Small-SFX: iz başına birkaç aday → CLAP en iyisini seçer (ortam döngülü, sürekli, olaylar)
              ─► mikser (seviye, uzaklık, stereo konum) → izler + stereo miks → ffmpeg → sesli mp4
 ```
 Eğitim yok, harici API yok; ağırlıklar indikten sonra internetsiz çalışır. Kod: `soundgen/v2a.py`.
@@ -77,7 +77,8 @@ Buraya nasıl gelindiği (WaveFlow, taslak modeli, CLAP denemeleri): **[docs/RES
 | MMAudio kodu | MIT | ağ, VAE ve flow matching kodu |
 | MMAudio 44,1 kHz mel-VAE (`v1-44.pth`) | MMAudio sürümüyle (ticari kullanım için doğrulanmalı) | ticari üründe kendi VAE'mizle değiştirilebilir (etiketsiz veriyle eğitilir) |
 | BigVGAN-v2 (NVIDIA) | MIT, "ticari kullanıma hazır" | vocoder |
-| Qwen3-VL-8B / 4B-Instruct (Alibaba) | Apache-2.0 | videodan ses planı (05) |
+| Qwen3-VL, Gemma 4, Molmo 2 | Apache-2.0 | videodan ses planı (05), seçilebilir |
+| LAION CLAP (clap-htsat-unfused) | Apache-2.0 | aday seçimi / ölçüm |
 | Stable Audio 3 Small-SFX (Stability AI) | Stability AI Community License (1 M $ gelir altı ticari serbest) | hazır model (04); T5Gemma metin kodlayıcı Gemma şartlarıyla |
 | DFN5B CLIP ViT-H/14 (Apple) | model kartına bakılmalı | metin kodlayıcı |
 | Eğitim verisi `poc_max` | karışık (NC dahil) | sadece kavram kanıtı |

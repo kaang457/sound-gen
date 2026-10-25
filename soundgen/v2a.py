@@ -36,8 +36,16 @@ EVENT_GEN_S = 4.0                                      # shortest clip asked fro
 LEVEL_DB = {"low": -18.0, "medium": -10.0, "high": -4.0}
 DISTANCE = {"near": 0.05, "mid": 0.35, "far": 0.75}
 PAN = {"left": -0.6, "center": 0.0, "right": 0.6}
-PLANNER_MODELS = {"8b": "Qwen/Qwen3-VL-8B-Instruct", "4b": "Qwen/Qwen3-VL-4B-Instruct",
-                  "2b": "Qwen/Qwen3-VL-2B-Instruct"}
+# planner models: all open weights with commercial-use licences (check the model card before shipping)
+PLANNERS = {
+    "qwen3vl-8b": dict(id="Qwen/Qwen3-VL-8B-Instruct", gb=18, lic="Apache-2.0"),
+    "qwen3vl-4b": dict(id="Qwen/Qwen3-VL-4B-Instruct", gb=9, lic="Apache-2.0"),
+    "qwen3vl-30b-a3b": dict(id="Qwen/Qwen3-VL-30B-A3B-Instruct", gb=62, lic="Apache-2.0"),
+    "gemma4-26b": dict(id="google/gemma-4-26B-A4B-it", gb=52, lic="Apache-2.0"),
+    "gemma4-31b": dict(id="google/gemma-4-31B-it", gb=62, lic="Apache-2.0"),
+    "molmo2-8b": dict(id="allenai/Molmo2-8B", gb=18, lic="Apache-2.0", remote=True),
+}
+PLANNER_MODELS = {"8b": "qwen3vl-8b", "4b": "qwen3vl-4b", "2b": "qwen3vl-4b"}      # older names
 
 
 # ------------------------------------------------------------------------------------------------ video io
@@ -92,84 +100,164 @@ def snap(times, energy, fps, window=0.35):
 
 
 # ------------------------------------------------------------------------------------------------ planner
-PROMPT = """You are a game sound designer. The images are frames of a SILENT gameplay video, each preceded by its \
-timestamp. The video is {dur:.1f} seconds long. List every sound this scene needs: on-screen sources (characters, \
-footsteps, horses, weapons, vehicles, ships, doors, impacts, magic) and off-screen ambience implied by the place \
-(sea, wind, rain, city, forest, church bells far away, crowd).
+DESCRIBE = """You are a game sound designer. The images are frames of a SILENT gameplay video, each preceded by its \
+timestamp; the video is {dur:.1f} seconds long. Write a sound-design breakdown in plain text with four sections:
+1. PLACE: where the scene happens, surface, weather, time of day, and what this place sounds like.
+2. SOURCES: every visible thing that makes sound (characters, animals, vehicles, ships, weapons, objects, water, \
+fire, machines): what it is, what it is made of, where it is in the frame (left / center / right), how far (near / \
+mid / far).
+3. TIMELINE: in time order, every action that makes a sound, with its time in seconds: each step, hit, shot, impact, \
+jump, landing, door, spell, and when movements or engines start and stop. Count repeated actions.
+4. OFF-SCREEN: sounds the place implies but the frames do not show (sea behind the camera, distant bells, wind, crowd).
+Only what the frames support. No music, no speech."""
 
-Return ONLY JSON, no prose:
+PLAN = """Below is a sound-design breakdown of a {dur:.1f}-second silent gameplay video. Turn it into a track plan.
+
+BREAKDOWN:
+{notes}
+
+Return ONLY JSON:
 {{"scene": "<one sentence>",
   "tracks": [
     {{"name": "<short name>",
       "kind": "ambience" | "continuous" | "events",
-      "prompt": "<English sound-effect description for a text-to-audio model: source, action, material, recording character; no music, no speech>",
-      "start": <seconds>, "end": <seconds>,
-      "events": [<seconds>, ...],
-      "event_seconds": <length of one event sound, 0.5-4>,
-      "position": "left" | "center" | "right",
-      "distance": "near" | "mid" | "far",
-      "level": "low" | "medium" | "high"}}
-  ]}}
-
+      "source": "<what makes the sound, e.g. 'a horse', 'heavy rain', 'an old wooden door'>",
+      "action": "<what it does, e.g. 'galloping', 'falling', 'creaking open'>",
+      "material": "<surface / material if it matters, e.g. 'on soft grass', 'on a tin roof', or ''>",
+      "character": "<tone / quality, e.g. 'deep and heavy', 'distant and muffled', or ''>",
+      "start": <s>, "end": <s>, "events": [<s>, ...], "event_seconds": <0.5-4>,
+      "position": "left" | "center" | "right", "distance": "near" | "mid" | "far",
+      "level": "low" | "medium" | "high"}}]}}
 Rules:
-- ambience: background bed for the whole place (usually start 0, end {dur:.1f}); 1-3 ambience tracks.
-- continuous: a source that sounds without gaps while visible or active (engine, horse galloping, river, fire).
-- events: separate short sounds at exact moments (gunshot, sword hit, door slam, bell strike, horn blast, jump \
-landing). Give the time of EACH occurrence in "events", as precisely as the frames allow. Footsteps are events \
-(one per step) when steps are visible; otherwise continuous.
-- Several shots in a gunfight are several events of one track, not one long sound.
-- Only sounds a player would expect; no music, no dialogue. 3-10 tracks in total.
-- Times are seconds from the start of the video, between 0 and {dur:.1f}."""
+- ambience: background bed of the place, usually 0 to {dur:.1f}; 1-3 of them.
+- continuous: sounds without gaps while active (engine, galloping horse, river, fire, rain).
+- events: separate short sounds; list the time of EACH occurrence (each shot of a gunfight, each sword hit, each \
+bell strike). Footsteps are events when single steps are visible, otherwise continuous.
+- 3-10 tracks. No music, no speech. Times between 0 and {dur:.1f}."""
+
+DIST_WORDS = {"near": "close-up recording", "mid": "", "far": "heard from far away"}
+
+
+def compose_prompt(t):
+    """The text-to-audio prompt is built here from the planner's fields (source + action + material + character +
+    distance): the planner describes, we write in the form Stable Audio 3 understands best."""
+    src = str(t.get("source") or "").strip()
+    if not src:
+        return str(t.get("prompt") or t.get("name") or "").strip()
+    act = str(t.get("action") or "").strip()
+    head = f"{src[0].upper()}{src[1:]} {act}".strip()
+    parts = [head]
+    for k in ("material", "character"):
+        v = str(t.get(k) or "").strip()
+        if v:
+            parts.append(v)
+    d = DIST_WORDS.get(t.get("distance"), "")
+    if d and d not in " ".join(parts):
+        parts.append(d)
+    if t.get("kind") == "ambience":
+        parts.append("ambience")
+    return ", ".join(parts)
 
 
 class Planner:
-    """Qwen3-VL (Apache-2.0) watches the frames and writes the sound plan."""
+    """A vision-language model watches the frames and writes the sound plan, in two steps (literature: splitting
+    the reasoning and planning steps improves V2A planning, e.g. ThinkSound / PrismAudio):
+      1. DESCRIBE  frames + timestamps -> free-text breakdown (place, sources, timeline, off-screen)
+      2. PLAN      breakdown (text only, fast) -> JSON tracks with source / action / material / times
+    The Stable Audio prompt is then composed by compose_prompt()."""
 
-    def __init__(self, model="8b", device=None, dtype=None):
+    def __init__(self, model="qwen3vl-8b", device=None, dtype=None, quant="auto"):
         import torch
         from transformers import AutoModelForImageTextToText, AutoProcessor
-        mid = PLANNER_MODELS.get(model, model)
-        self.model_id = mid
+        key = PLANNER_MODELS.get(model, model)
+        spec = PLANNERS.get(key, dict(id=key, gb=20))
+        mid, remote = spec["id"], bool(spec.get("remote"))
+        self.name, self.model_id = key, mid
+        cuda = torch.cuda.is_available()
         if dtype is None:
-            dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
+            dtype = torch.bfloat16 if cuda and torch.cuda.is_bf16_supported() else torch.float16
+        kw = dict(dtype=dtype, device_map=device or ({"": 0} if cuda else "cpu"), trust_remote_code=remote)
+        free = torch.cuda.mem_get_info()[0] / 2**30 if cuda else 0
+        if quant == "4bit" or (quant == "auto" and cuda and spec["gb"] > 0.85 * free):
+            self._bnb()
+            from transformers import BitsAndBytesConfig
+            kw["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+                                                           bnb_4bit_compute_dtype=dtype)
+            print(f"planlayıcı 4-bit yükleniyor ({spec['gb']} GB > boş {free:.0f} GB)", flush=True)
+        if remote:
+            self._remote_deps()
         from . import hfcache
         # whole model on the GPU: "auto" silently puts layers on the CPU when memory is tight (minutes per plan)
-        dm = device or ({"": 0} if torch.cuda.is_available() else "cpu")
-        self.model = hfcache.load(lambda: AutoModelForImageTextToText.from_pretrained(
-            mid, dtype=dtype, device_map=dm).eval(), [mid])
-        on = sorted({str(v) for v in (getattr(self.model, "hf_device_map", None) or {"": dm}).values()})
-        if any("cpu" in d or "disk" in d for d in on) and torch.cuda.is_available():
+        self.model = hfcache.load(lambda: AutoModelForImageTextToText.from_pretrained(mid, **kw).eval(), [mid])
+        on = sorted({str(v) for v in (getattr(self.model, "hf_device_map", None) or {"": kw["device_map"]}).values()})
+        if any("cpu" in d or "disk" in d for d in on) and cuda:
             print(f"UYARI: planlayıcının bir kısmı GPU dışında ({on}); planlama çok yavaş olur", flush=True)
-        self.proc = hfcache.load(lambda: AutoProcessor.from_pretrained(mid), [mid])
+        self.proc = hfcache.load(lambda: AutoProcessor.from_pretrained(mid, trust_remote_code=remote), [mid])
         hfcache.backup()
+        print(f"planlayıcı: {mid} ({spec.get('lic', '?')})", flush=True)
+
+    @staticmethod
+    def _bnb():
+        try:
+            import bitsandbytes  # noqa: F401
+        except ImportError:
+            import subprocess, sys
+            subprocess.run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes"], check=True)
+
+    @staticmethod
+    def _remote_deps():
+        import subprocess, sys
+        for mod, pkg in [("molmo_utils", "molmo_utils"), ("decord", "decord")]:
+            try:
+                __import__(mod)
+            except ImportError:
+                subprocess.run([sys.executable, "-m", "pip", "install", "-q", pkg], check=False)
 
     def ask(self, content, max_new_tokens=1536):
         import time
         import torch
         t0 = time.time()
         msgs = [{"role": "user", "content": content}]
-        inputs = self.proc.apply_chat_template(msgs, tokenize=True, add_generation_prompt=True, return_dict=True,
-                                               return_tensors="pt").to(self.model.device)
+        try:
+            inputs = self.proc.apply_chat_template(msgs, tokenize=True, add_generation_prompt=True, return_dict=True,
+                                                   return_tensors="pt")
+        except Exception:                                              # noqa: BLE001  (remote-code processors)
+            images = [c["image"] for c in content if c.get("type") == "image"]
+            text = self.proc.apply_chat_template(
+                [{"role": "user", "content": [{"type": "image"} if c.get("type") == "image" else c for c in content]}],
+                tokenize=False, add_generation_prompt=True)
+            inputs = self.proc(text=text, images=images or None, return_tensors="pt", padding=True)
+        inputs = inputs.to(self.model.device)
         with torch.inference_mode():
             ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
-        n_in, n_out = inputs["input_ids"].shape[1], ids.shape[1] - inputs["input_ids"].shape[1]
+        n_in = inputs["input_ids"].shape[1]
+        n_out = ids.shape[1] - n_in
         print(f"  planlayıcı: {n_in} girdi token'ı, {n_out} çıktı token'ı, {time.time() - t0:.0f} s"
               + (" (sınıra dayandı: çıktı yarım kalmış olabilir)" if n_out >= max_new_tokens else ""), flush=True)
-        return self.proc.batch_decode(ids[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
+        dec = getattr(self.proc, "batch_decode", None) or self.proc.tokenizer.batch_decode
+        return dec(ids[:, n_in:], skip_special_tokens=True)[0]
 
-    def plan(self, job, fps=2.0, width=448, tries=2):
+    def describe(self, job, fps=2.0, width=448):
         content = []
         for t, img in job.frames(fps=fps, width=width):
             content += [{"type": "text", "text": f"<{t:.1f} seconds>"}, {"type": "image", "image": img}]
-        content.append({"type": "text", "text": PROMPT.format(dur=job.duration)})
+        content.append({"type": "text", "text": DESCRIBE.format(dur=job.duration)})
+        print(f"planlayıcı 1/2: {len(content) // 2} kare ({fps:g} fps) izleniyor, sahne betimleniyor…", flush=True)
+        return self.ask(content, max_new_tokens=1200).strip()
+
+    def plan(self, job, fps=2.0, width=448, tries=2):
+        job.notes = self.describe(job, fps=fps, width=width)
+        print("planlayıcı 2/2: betimlemeden iz planı…", flush=True)
         last = None
-        print(f"planlayıcı: {len(content) // 2} kare ({fps:g} fps) izleniyor…", flush=True)
         for k in range(tries):
-            last = self.ask(content)
+            last = self.ask([{"type": "text", "text": PLAN.format(dur=job.duration, notes=job.notes)}])
             try:
                 j = parse_json(last)
                 job.scene = j.get("scene", "")
-                return clean(j.get("tracks", []), job.duration)
+                tracks = j.get("tracks", [])
+                for t in tracks:
+                    t["prompt"] = compose_prompt(t)
+                return clean(tracks, job.duration)
             except ValueError as e:
                 print(f"  planlayıcı JSON vermedi ({e}); {'tekrar deneniyor' if k + 1 < tries else 'vazgeçildi'}",
                       flush=True)
@@ -238,6 +326,8 @@ class Job:
         self.scene, self.plan, self.snap_events = "", [], snap_events
         self.audio = {}                                  # track name -> stereo [2, T] at gen.sr (placed, mixed level)
         self.clips = {}                                  # track name -> generated audio (cached; reused by remix)
+        self.candidates = 3                              # generated candidates per track
+        self.scorer = None                               # e.g. ClapScorer(): picks the candidate closest to the prompt
         self.sr = None
         self._motion = None
 
@@ -253,12 +343,12 @@ class Job:
     def save_plan(self):
         p = self.dir / "plan.json"
         p.write_text(json.dumps(dict(video=str(self.video), duration=self.duration, scene=self.scene,
-                                     tracks=self.plan), indent=1, ensure_ascii=False))
+                                     notes=getattr(self, "notes", ""), tracks=self.plan), indent=1, ensure_ascii=False))
         return p
 
     def load_plan(self, path=None):
         j = json.loads(Path(path or self.dir / "plan.json").read_text())
-        self.scene = j.get("scene", "")
+        self.scene, self.notes = j.get("scene", ""), j.get("notes", "")
         self.plan = clean(j["tracks"], self.duration)
         return self.plan
 
@@ -292,20 +382,39 @@ class Job:
         return (t["kind"], t["prompt"], t["seed"], int(round((t["end"] - t["start"]) * 2)))
 
     def _generate(self, gen, t):
-        sig = self._sig(t, gen.sr)
+        """k candidates per track (k = self.candidates); with a scorer (CLAP) the best one goes into the mix, the
+        others stay selectable (pick). Events: k x n clips, the n best form candidate 1, the next n candidate 2 ..."""
+        k = max(1, int(self.candidates))
+        sig = self._sig(t, gen.sr) + (k,)
         c = self.clips.get(t["name"])
         if c is not None and c["sig"] == sig:
             return False
         if t["kind"] == "events":
             # Never ask the model for very short clips: at 1-2 s Stable Audio 3 largely ignores the prompt (04's
             # reference set: 1 s sounds matched their prompt worst). Generate >= 4 s, trim to the sound afterwards.
-            sec = max(EVENT_GEN_S, t["event_seconds"] + 1.0)
-            clips = list(gen.raw(t["prompt"], seconds=sec, n=len(t["events"]), seed=t["seed"]))
+            sec, n = max(EVENT_GEN_S, t["event_seconds"] + 1.0), len(t["events"])
         else:
-            clips = [gen.raw(t["prompt"], seconds=min(t["end"] - t["start"] + 0.5, 120.0), n=1, seed=t["seed"])[0]]
-        self.clips[t["name"]] = dict(sig=sig, clips=clips)
-        print(f"    istek: “{t['prompt']}” · tohum {t['seed']}", flush=True)
+            sec, n = min(t["end"] - t["start"] + 0.5, 120.0), 1
+        clips = _batched(gen, t["prompt"], sec, n * k, t["seed"])
+        scores = self.scorer(t["prompt"], clips, gen.sr) if self.scorer else None
+        if scores is not None:
+            order = np.argsort(-np.asarray(scores))
+            clips, scores = [clips[j] for j in order], [float(scores[j]) for j in order]
+        sets = [clips[j * n:(j + 1) * n] for j in range(k)]
+        set_scores = [float(np.mean(scores[j * n:(j + 1) * n])) for j in range(k)] if scores is not None else None
+        self.clips[t["name"]] = dict(sig=sig, sets=sets, scores=set_scores, pick=0, clips=sets[0])
+        sc = (" · CLAP " + " / ".join(f"{x:.2f}" for x in set_scores)) if set_scores else ""
+        print(f"    istek: “{t['prompt']}” · tohum {t['seed']} · {k} aday{sc}", flush=True)
         return True
+
+    def pick(self, key, j):
+        """Use candidate j (0-based) of a track; mixing only."""
+        t = self.track(key)
+        c = self.clips.get(t["name"])
+        if not c or not 0 <= j < len(c["sets"]):
+            raise ValueError("bu iz için böyle bir aday yok")
+        c["pick"], c["clips"] = j, c["sets"][j]
+        return self.remix()
 
     def render(self, gen, only=None, force=False):
         """Generate what is missing / changed (all tracks, or only those in `only`), then place + mix + mux."""
@@ -544,6 +653,27 @@ def _onset(x, sr, rel_db=-24.0):
         return 0
     k = int(np.argmax(lim >= m.max() * 10 ** (rel_db / 20)))
     return max(0, k - int(0.005 * sr))
+
+
+def _batched(gen, prompt, seconds, n, seed, max_batch=16):
+    out = []
+    for k in range(0, n, max_batch):
+        out += list(gen.raw(prompt, seconds=seconds, n=min(max_batch, n - k), seed=seed + 1000 * (k // max_batch)))
+    return out
+
+
+class ClapScorer:
+    """Text-audio similarity with LAION CLAP (laion/clap-htsat-unfused; evaluation model, not the generator's text
+    encoder). Deterministic: scores the first 10 s of each clip (mono)."""
+
+    def __init__(self, device=None):
+        from .evaluate import Clap
+        self.clap = Clap(device)
+
+    def __call__(self, text, clips, sr):
+        wavs = [np.asarray(c, np.float32).mean(0)[: int(10 * sr)] for c in clips]
+        a = np.concatenate([self.clap.audio(wavs[k:k + 16], sr) for k in range(0, len(wavs), 16)])
+        return a @ self.clap.text([text])[0]
 
 
 def _trim_tail(x, sr, seconds, floor_db=-40.0, fade_s=0.25):
