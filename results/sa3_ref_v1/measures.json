@@ -1,0 +1,1381 @@
+{
+ "info": {
+  "model": "stabilityai/stable-audio-3-small-sfx",
+  "commit": "77e0398",
+  "steps": 8,
+  "sr": 44100,
+  "variations": 4,
+  "seed": 1,
+  "prefix": "TrackType: SFX, ",
+  "gpu": "NVIDIA A100-SXM4-40GB",
+  "clap": {
+   "candidates": 32,
+   "top1": 0.4765625,
+   "top3": 0.6015625
+  },
+  "pairs": [
+   {
+    "one": "tek tabanca atışı",
+    "many": "çatışma",
+    "events_one": [
+     6,
+     10,
+     7,
+     7
+    ],
+    "events_many": [
+     20,
+     24,
+     21,
+     17
+    ]
+   }
+  ]
+ },
+ "sounds": [
+  {
+   "i": 1,
+   "category": "Silah",
+   "short": "tek tabanca atışı",
+   "prompt": "A single pistol gunshot, sharp crack with a short punchy tail, close mic, outdoors",
+   "seconds": 2.5,
+   "gen_s": 0.5400938987731934,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/01_tek_tabanca_atisi_v1.wav",
+     "peak_db": -8.362463984878904,
+     "rms_db": -25.47341090026448,
+     "events": 6,
+     "clap_rank": 24,
+     "clap_sim": -0.08804601430892944
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/01_tek_tabanca_atisi_v2.wav",
+     "peak_db": -8.121478071106838,
+     "rms_db": -26.23244254241814,
+     "events": 10,
+     "clap_rank": 19,
+     "clap_sim": -0.04760972410440445
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/01_tek_tabanca_atisi_v3.wav",
+     "peak_db": -7.541681425614438,
+     "rms_db": -24.717312779348283,
+     "events": 7,
+     "clap_rank": 26,
+     "clap_sim": -0.10030214488506317
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/01_tek_tabanca_atisi_v4.wav",
+     "peak_db": -4.900080538835107,
+     "rms_db": -23.454352309912757,
+     "events": 7,
+     "clap_rank": 29,
+     "clap_sim": -0.15211141109466553
+    }
+   ]
+  },
+  {
+   "i": 2,
+   "category": "Silah",
+   "short": "çatışma",
+   "prompt": "A gunfight: rapid bursts of automatic rifle fire and scattered pistol shots from several shooters, outdoor battlefield",
+   "seconds": 6,
+   "gen_s": 0.5475935935974121,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/02_catisma_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.25553235173294,
+     "events": 20,
+     "clap_rank": 1,
+     "clap_sim": 0.646590530872345
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/02_catisma_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -19.157859044848088,
+     "events": 24,
+     "clap_rank": 1,
+     "clap_sim": 0.6812924146652222
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/02_catisma_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.27926176715742,
+     "events": 21,
+     "clap_rank": 1,
+     "clap_sim": 0.6527087092399597
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/02_catisma_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.36306717975052,
+     "events": 17,
+     "clap_rank": 1,
+     "clap_sim": 0.6591646671295166
+    }
+   ]
+  },
+  {
+   "i": 3,
+   "category": "Silah",
+   "short": "pompalı tüfek",
+   "prompt": "A pump-action shotgun: pump rack followed by one heavy shotgun blast with a boomy tail",
+   "seconds": 3,
+   "gen_s": 0.5275657176971436,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/03_pompali_tufek_v1.wav",
+     "peak_db": -5.470104034309026,
+     "rms_db": -36.031740294369754,
+     "events": 6,
+     "clap_rank": 4,
+     "clap_sim": 0.2467714101076126
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/03_pompali_tufek_v2.wav",
+     "peak_db": -9.361943484115674,
+     "rms_db": -31.691118832743506,
+     "events": 4,
+     "clap_rank": 6,
+     "clap_sim": 0.34034010767936707
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/03_pompali_tufek_v3.wav",
+     "peak_db": -9.915044079590519,
+     "rms_db": -32.12043519808991,
+     "events": 8,
+     "clap_rank": 4,
+     "clap_sim": 0.298107773065567
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/03_pompali_tufek_v4.wav",
+     "peak_db": -2.165941305781651,
+     "rms_db": -29.955205464556226,
+     "events": 8,
+     "clap_rank": 4,
+     "clap_sim": 0.40327188372612
+    }
+   ]
+  },
+  {
+   "i": 4,
+   "category": "Silah",
+   "short": "lazer silah",
+   "prompt": "A sci-fi laser gun shot, bright zappy pew with a fast pitch drop and a short electric tail",
+   "seconds": 2,
+   "gen_s": 0.5965285301208496,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/04_lazer_silah_v1.wav",
+     "peak_db": -2.5783059973847826,
+     "rms_db": -24.611878334195755,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.6479582786560059
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/04_lazer_silah_v2.wav",
+     "peak_db": -3.536681929382392,
+     "rms_db": -25.76730420522214,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.6755039095878601
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/04_lazer_silah_v3.wav",
+     "peak_db": -1.8874548988539233,
+     "rms_db": -25.61076993352807,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.628165602684021
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/04_lazer_silah_v4.wav",
+     "peak_db": -3.454230368086013,
+     "rms_db": -25.109457527127542,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.6412460803985596
+    }
+   ]
+  },
+  {
+   "i": 5,
+   "category": "Silah",
+   "short": "kılıç çarpışması",
+   "prompt": "Two metal swords clash, bright ringing steel impact with a short metallic shimmer",
+   "seconds": 2.5,
+   "gen_s": 0.5214388370513916,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/05_kilic_carpismasi_v1.wav",
+     "peak_db": -6.003651830559914,
+     "rms_db": -19.510712149335962,
+     "events": 2,
+     "clap_rank": 24,
+     "clap_sim": -0.07133878767490387
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/05_kilic_carpismasi_v2.wav",
+     "peak_db": -4.693790172669026,
+     "rms_db": -20.75365828554752,
+     "events": 2,
+     "clap_rank": 28,
+     "clap_sim": -0.13458941876888275
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/05_kilic_carpismasi_v3.wav",
+     "peak_db": -3.645697848316702,
+     "rms_db": -18.88403810694042,
+     "events": 3,
+     "clap_rank": 25,
+     "clap_sim": -0.03973592817783356
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/05_kilic_carpismasi_v4.wav",
+     "peak_db": -5.058078556935755,
+     "rms_db": -19.69906539312687,
+     "events": 0,
+     "clap_rank": 26,
+     "clap_sim": -0.05263222008943558
+    }
+   ]
+  },
+  {
+   "i": 6,
+   "category": "Silah",
+   "short": "ok ve yay",
+   "prompt": "A bow releases an arrow: string twang, fast whoosh, the arrow thuds into wood",
+   "seconds": 2.5,
+   "gen_s": 0.508061408996582,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/06_ok_ve_yay_v1.wav",
+     "peak_db": -5.7122913680490495,
+     "rms_db": -23.542941291084087,
+     "events": 9,
+     "clap_rank": 19,
+     "clap_sim": -0.05302464962005615
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/06_ok_ve_yay_v2.wav",
+     "peak_db": -6.093000491259351,
+     "rms_db": -23.678316635112218,
+     "events": 9,
+     "clap_rank": 21,
+     "clap_sim": -0.03079788014292717
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/06_ok_ve_yay_v3.wav",
+     "peak_db": -6.041831626706536,
+     "rms_db": -23.321640864899514,
+     "events": 8,
+     "clap_rank": 19,
+     "clap_sim": -0.029947184026241302
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/06_ok_ve_yay_v4.wav",
+     "peak_db": -5.1420008488079185,
+     "rms_db": -22.97049519047348,
+     "events": 6,
+     "clap_rank": 19,
+     "clap_sim": -0.053473301231861115
+    }
+   ]
+  },
+  {
+   "i": 7,
+   "category": "Patlama / darbe",
+   "short": "büyük patlama",
+   "prompt": "A large explosion, deep boom with debris falling and a long rumbling tail",
+   "seconds": 5,
+   "gen_s": 0.5131213665008545,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/07_buyuk_patlama_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -16.45169556459658,
+     "events": 6,
+     "clap_rank": 1,
+     "clap_sim": 0.6812584400177002
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/07_buyuk_patlama_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -17.162698514455712,
+     "events": 3,
+     "clap_rank": 1,
+     "clap_sim": 0.6490142345428467
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/07_buyuk_patlama_v3.wav",
+     "peak_db": -0.016981216822360503,
+     "rms_db": -17.34090931171203,
+     "events": 2,
+     "clap_rank": 1,
+     "clap_sim": 0.7272825241088867
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/07_buyuk_patlama_v4.wav",
+     "peak_db": -0.6286994458431008,
+     "rms_db": -17.198408965739493,
+     "events": 11,
+     "clap_rank": 1,
+     "clap_sim": 0.6892278790473938
+    }
+   ]
+  },
+  {
+   "i": 8,
+   "category": "Patlama / darbe",
+   "short": "uzak patlama",
+   "prompt": "A distant explosion heard from far away, muffled low boom echoing across a valley",
+   "seconds": 5,
+   "gen_s": 0.5214745998382568,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/08_uzak_patlama_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -21.0688737897922,
+     "events": 3,
+     "clap_rank": 2,
+     "clap_sim": 0.4714469611644745
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/08_uzak_patlama_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.680729132842778,
+     "events": 0,
+     "clap_rank": 2,
+     "clap_sim": 0.5490106344223022
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/08_uzak_patlama_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.438880578442756,
+     "events": 1,
+     "clap_rank": 2,
+     "clap_sim": 0.4737092852592468
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/08_uzak_patlama_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -21.587592333828738,
+     "events": 2,
+     "clap_rank": 2,
+     "clap_sim": 0.5651926398277283
+    }
+   ]
+  },
+  {
+   "i": 9,
+   "category": "Patlama / darbe",
+   "short": "yumruk",
+   "prompt": "A heavy punch impact, meaty thud with a fast cloth whoosh, fighting game",
+   "seconds": 1.5,
+   "gen_s": 0.6029059886932373,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/09_yumruk_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -8.57342601648037,
+     "events": 3,
+     "clap_rank": 3,
+     "clap_sim": 0.1691468060016632
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/09_yumruk_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -12.295119735535241,
+     "events": 3,
+     "clap_rank": 15,
+     "clap_sim": 0.06175584718585014
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/09_yumruk_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -9.160218297316124,
+     "events": 4,
+     "clap_rank": 6,
+     "clap_sim": 0.16325166821479797
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/09_yumruk_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -15.659414641635404,
+     "events": 0,
+     "clap_rank": 20,
+     "clap_sim": -0.012039246037602425
+    }
+   ]
+  },
+  {
+   "i": 10,
+   "category": "Patlama / darbe",
+   "short": "cam kırılması",
+   "prompt": "A window pane shatters, glass breaking and shards falling on a hard floor",
+   "seconds": 3,
+   "gen_s": 0.5115721225738525,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/10_cam_kirilmasi_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.138126840747347,
+     "events": 2,
+     "clap_rank": 1,
+     "clap_sim": 0.5380318760871887
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/10_cam_kirilmasi_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -22.70559651167052,
+     "events": 4,
+     "clap_rank": 1,
+     "clap_sim": 0.606392502784729
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/10_cam_kirilmasi_v3.wav",
+     "peak_db": -0.6378232803354539,
+     "rms_db": -24.886931874002972,
+     "events": 4,
+     "clap_rank": 1,
+     "clap_sim": 0.6258749961853027
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/10_cam_kirilmasi_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -23.92568457880257,
+     "events": 3,
+     "clap_rank": 1,
+     "clap_sim": 0.5586534738540649
+    }
+   ]
+  },
+  {
+   "i": 11,
+   "category": "Bilim kurgu",
+   "short": "uzay gemisi motoru",
+   "prompt": "A large spaceship engine idling, deep steady sci-fi hum with soft mechanical whir, loopable",
+   "seconds": 6,
+   "gen_s": 0.5677261352539062,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/11_uzay_gemisi_motoru_v1.wav",
+     "peak_db": -11.387817491491885,
+     "rms_db": -23.16020622739371,
+     "events": 0,
+     "clap_rank": 1,
+     "clap_sim": 0.41728469729423523
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/11_uzay_gemisi_motoru_v2.wav",
+     "peak_db": -11.139632331855484,
+     "rms_db": -21.709550664224086,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.43571165204048157
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/11_uzay_gemisi_motoru_v3.wav",
+     "peak_db": -10.322907252427383,
+     "rms_db": -22.71622900502357,
+     "events": 10,
+     "clap_rank": 1,
+     "clap_sim": 0.35909104347229004
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/11_uzay_gemisi_motoru_v4.wav",
+     "peak_db": -11.798631535645756,
+     "rms_db": -22.134907781397906,
+     "events": 0,
+     "clap_rank": 1,
+     "clap_sim": 0.44317108392715454
+    }
+   ]
+  },
+  {
+   "i": 12,
+   "category": "Bilim kurgu",
+   "short": "uzay gemisi geçişi",
+   "prompt": "A sci-fi spaceship flies past fast from left to right, roaring jet whoosh with doppler pitch shift",
+   "seconds": 5,
+   "gen_s": 0.526801586151123,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/12_uzay_gemisi_gecisi_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -21.918776164613725,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.7461254596710205
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/12_uzay_gemisi_gecisi_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -21.674974744745825,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.693966269493103
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/12_uzay_gemisi_gecisi_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -23.080729464315333,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.6698758006095886
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/12_uzay_gemisi_gecisi_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -21.63456590250056,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.6342568397521973
+    }
+   ]
+  },
+  {
+   "i": 13,
+   "category": "Bilim kurgu",
+   "short": "enerji kalkanı",
+   "prompt": "A sci-fi energy shield powering up, rising electric hum with a crisp shimmering lock-in",
+   "seconds": 3,
+   "gen_s": 0.5721950531005859,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/13_enerji_kalkani_v1.wav",
+     "peak_db": -3.6909875058356834,
+     "rms_db": -21.531686558805923,
+     "events": 2,
+     "clap_rank": 9,
+     "clap_sim": 0.07916651666164398
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/13_enerji_kalkani_v2.wav",
+     "peak_db": -3.543056894540536,
+     "rms_db": -21.189742943854167,
+     "events": 2,
+     "clap_rank": 5,
+     "clap_sim": 0.15881983935832977
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/13_enerji_kalkani_v3.wav",
+     "peak_db": -3.8480839895603296,
+     "rms_db": -20.160945868941372,
+     "events": 2,
+     "clap_rank": 6,
+     "clap_sim": 0.14157114923000336
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/13_enerji_kalkani_v4.wav",
+     "peak_db": -4.288398785914735,
+     "rms_db": -20.089061286850924,
+     "events": 2,
+     "clap_rank": 4,
+     "clap_sim": 0.19153474271297455
+    }
+   ]
+  },
+  {
+   "i": 14,
+   "category": "Bilim kurgu",
+   "short": "ışınlanma",
+   "prompt": "A sci-fi teleport effect, swirling sparkly whoosh ending in a soft electric pop",
+   "seconds": 3,
+   "gen_s": 0.588019609451294,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/14_isinlanma_v1.wav",
+     "peak_db": -9.848890754195667,
+     "rms_db": -30.009299467088585,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.49079766869544983
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/14_isinlanma_v2.wav",
+     "peak_db": -12.471562090282681,
+     "rms_db": -32.38604162461536,
+     "events": 1,
+     "clap_rank": 2,
+     "clap_sim": 0.3185524046421051
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/14_isinlanma_v3.wav",
+     "peak_db": -12.122157931968191,
+     "rms_db": -31.901357158840167,
+     "events": 2,
+     "clap_rank": 1,
+     "clap_sim": 0.3710660934448242
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/14_isinlanma_v4.wav",
+     "peak_db": -12.583697518599228,
+     "rms_db": -30.88507740243188,
+     "events": 1,
+     "clap_rank": 2,
+     "clap_sim": 0.4246169924736023
+    }
+   ]
+  },
+  {
+   "i": 15,
+   "category": "Yaratık",
+   "short": "zombi hırıltısı",
+   "prompt": "A zombie growl, wet raspy throaty groan, slow and menacing, close mic",
+   "seconds": 4,
+   "gen_s": 0.5212554931640625,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/15_zombi_hiriltisi_v1.wav",
+     "peak_db": -6.222257186631259,
+     "rms_db": -23.32019625610347,
+     "events": 1,
+     "clap_rank": 2,
+     "clap_sim": 0.5658712983131409
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/15_zombi_hiriltisi_v2.wav",
+     "peak_db": -4.990012900181883,
+     "rms_db": -21.956999435638565,
+     "events": 4,
+     "clap_rank": 2,
+     "clap_sim": 0.5971971750259399
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/15_zombi_hiriltisi_v3.wav",
+     "peak_db": -5.5100025410193,
+     "rms_db": -23.14716982019124,
+     "events": 3,
+     "clap_rank": 2,
+     "clap_sim": 0.5834817886352539
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/15_zombi_hiriltisi_v4.wav",
+     "peak_db": -1.9403210975878695,
+     "rms_db": -21.93609585645313,
+     "events": 1,
+     "clap_rank": 2,
+     "clap_sim": 0.6111474633216858
+    }
+   ]
+  },
+  {
+   "i": 16,
+   "category": "Yaratık",
+   "short": "canavar kükremesi",
+   "prompt": "A huge monster roar, deep guttural bellow with a gritty distorted edge",
+   "seconds": 4,
+   "gen_s": 0.5259766578674316,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/16_canavar_kukremesi_v1.wav",
+     "peak_db": -0.23209596656312464,
+     "rms_db": -13.277048522876493,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.6839720010757446
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/16_canavar_kukremesi_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -12.733935775024587,
+     "events": 3,
+     "clap_rank": 1,
+     "clap_sim": 0.6957512497901917
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/16_canavar_kukremesi_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -12.97701648167864,
+     "events": 2,
+     "clap_rank": 1,
+     "clap_sim": 0.6400803923606873
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/16_canavar_kukremesi_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -12.356289376139832,
+     "events": 1,
+     "clap_rank": 1,
+     "clap_sim": 0.6352661848068237
+    }
+   ]
+  },
+  {
+   "i": 17,
+   "category": "Yaratık",
+   "short": "ejderha kanatları",
+   "prompt": "A dragon flapping its huge leathery wings, heavy slow whooshes of air",
+   "seconds": 4,
+   "gen_s": 0.5090963840484619,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/17_ejderha_kanatlari_v1.wav",
+     "peak_db": -1.1987020452737778,
+     "rms_db": -20.553010090249522,
+     "events": 3,
+     "clap_rank": 1,
+     "clap_sim": 0.5668392181396484
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/17_ejderha_kanatlari_v2.wav",
+     "peak_db": -1.8716575808199902,
+     "rms_db": -22.96647850937934,
+     "events": 3,
+     "clap_rank": 1,
+     "clap_sim": 0.6037589311599731
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/17_ejderha_kanatlari_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -22.098563863939646,
+     "events": 4,
+     "clap_rank": 1,
+     "clap_sim": 0.5881218910217285
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/17_ejderha_kanatlari_v4.wav",
+     "peak_db": -2.453653126081516,
+     "rms_db": -21.330089864458653,
+     "events": 3,
+     "clap_rank": 1,
+     "clap_sim": 0.5532393455505371
+    }
+   ]
+  },
+  {
+   "i": 18,
+   "category": "Yaratık",
+   "short": "köpek havlaması",
+   "prompt": "A medium-size dog barking several times, outdoors",
+   "seconds": 4,
+   "gen_s": 0.5040650367736816,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/18_kopek_havlamasi_v1.wav",
+     "peak_db": -0.5968412872742376,
+     "rms_db": -21.682215875432163,
+     "events": 8,
+     "clap_rank": 1,
+     "clap_sim": 0.5448784232139587
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/18_kopek_havlamasi_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.139265744767762,
+     "events": 8,
+     "clap_rank": 1,
+     "clap_sim": 0.5249869227409363
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/18_kopek_havlamasi_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -21.03747673277644,
+     "events": 8,
+     "clap_rank": 1,
+     "clap_sim": 0.5255988836288452
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/18_kopek_havlamasi_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -20.409881337983272,
+     "events": 7,
+     "clap_rank": 1,
+     "clap_sim": 0.5175307393074036
+    }
+   ]
+  },
+  {
+   "i": 19,
+   "category": "Hareket / foley",
+   "short": "çakılda ayak sesi",
+   "prompt": "Footsteps walking on gravel, steady pace, crunchy close-mic foley",
+   "seconds": 5,
+   "gen_s": 0.5074892044067383,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/19_cakilda_ayak_sesi_v1.wav",
+     "peak_db": -8.818520940495322,
+     "rms_db": -33.74626287174926,
+     "events": 25,
+     "clap_rank": 1,
+     "clap_sim": 0.569136381149292
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/19_cakilda_ayak_sesi_v2.wav",
+     "peak_db": -6.261412277601889,
+     "rms_db": -33.3258699702922,
+     "events": 22,
+     "clap_rank": 1,
+     "clap_sim": 0.5127680897712708
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/19_cakilda_ayak_sesi_v3.wav",
+     "peak_db": -6.9886895727188545,
+     "rms_db": -34.69201475908566,
+     "events": 17,
+     "clap_rank": 1,
+     "clap_sim": 0.5304161906242371
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/19_cakilda_ayak_sesi_v4.wav",
+     "peak_db": -9.349490593612641,
+     "rms_db": -37.53472250730706,
+     "events": 20,
+     "clap_rank": 1,
+     "clap_sim": 0.5144349932670593
+    }
+   ]
+  },
+  {
+   "i": 20,
+   "category": "Hareket / foley",
+   "short": "ahşapta ayak sesi",
+   "prompt": "Footsteps walking on a creaky old wooden floor indoors, boots",
+   "seconds": 5,
+   "gen_s": 0.49762415885925293,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/20_ahsapta_ayak_sesi_v1.wav",
+     "peak_db": -8.191985211491488,
+     "rms_db": -35.47874878653141,
+     "events": 18,
+     "clap_rank": 1,
+     "clap_sim": 0.5652916431427002
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/20_ahsapta_ayak_sesi_v2.wav",
+     "peak_db": -5.606513418805127,
+     "rms_db": -33.000530167767494,
+     "events": 13,
+     "clap_rank": 1,
+     "clap_sim": 0.5747236609458923
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/20_ahsapta_ayak_sesi_v3.wav",
+     "peak_db": -10.913227950895582,
+     "rms_db": -36.85658593923566,
+     "events": 16,
+     "clap_rank": 1,
+     "clap_sim": 0.5356477499008179
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/20_ahsapta_ayak_sesi_v4.wav",
+     "peak_db": -7.4063141719644685,
+     "rms_db": -38.38924255146411,
+     "events": 16,
+     "clap_rank": 1,
+     "clap_sim": 0.514107346534729
+    }
+   ]
+  },
+  {
+   "i": 21,
+   "category": "Hareket / foley",
+   "short": "at dörtnala",
+   "prompt": "A horse galloping on a dirt road, rhythmic hoof beats passing by",
+   "seconds": 5,
+   "gen_s": 0.5286009311676025,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/21_at_dortnala_v1.wav",
+     "peak_db": -1.1066845116278237,
+     "rms_db": -23.612563675431957,
+     "events": 26,
+     "clap_rank": 1,
+     "clap_sim": 0.47265493869781494
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/21_at_dortnala_v2.wav",
+     "peak_db": -1.8663981863885948,
+     "rms_db": -24.327820601215645,
+     "events": 26,
+     "clap_rank": 1,
+     "clap_sim": 0.49947047233581543
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/21_at_dortnala_v3.wav",
+     "peak_db": 0.0,
+     "rms_db": -22.04836710758522,
+     "events": 24,
+     "clap_rank": 1,
+     "clap_sim": 0.49318960309028625
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/21_at_dortnala_v4.wav",
+     "peak_db": -0.9396889050740137,
+     "rms_db": -25.83527305267197,
+     "events": 18,
+     "clap_rank": 3,
+     "clap_sim": 0.3838549256324768
+    }
+   ]
+  },
+  {
+   "i": 22,
+   "category": "Hareket / foley",
+   "short": "kapı gıcırtısı",
+   "prompt": "An old wooden door slowly creaks open with a long squeaky hinge",
+   "seconds": 4,
+   "gen_s": 0.5040318965911865,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/22_kapi_gicirtisi_v1.wav",
+     "peak_db": -18.73621449983291,
+     "rms_db": -39.87411204619904,
+     "events": 3,
+     "clap_rank": 1,
+     "clap_sim": 0.5252626538276672
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/22_kapi_gicirtisi_v2.wav",
+     "peak_db": -22.123865658416165,
+     "rms_db": -40.203955003112775,
+     "events": 5,
+     "clap_rank": 1,
+     "clap_sim": 0.501471221446991
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/22_kapi_gicirtisi_v3.wav",
+     "peak_db": -19.991521824960778,
+     "rms_db": -37.371009668478095,
+     "events": 2,
+     "clap_rank": 1,
+     "clap_sim": 0.47413530945777893
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/22_kapi_gicirtisi_v4.wav",
+     "peak_db": -18.79139238558144,
+     "rms_db": -37.632398589911276,
+     "events": 5,
+     "clap_rank": 1,
+     "clap_sim": 0.5478634834289551
+    }
+   ]
+  },
+  {
+   "i": 23,
+   "category": "Hareket / foley",
+   "short": "sandık açılışı",
+   "prompt": "A heavy wooden treasure chest unlocks with a metal latch click and the lid creaks open",
+   "seconds": 3,
+   "gen_s": 0.569403886795044,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/23_sandik_acilisi_v1.wav",
+     "peak_db": -3.6780234890438845,
+     "rms_db": -34.1399845280549,
+     "events": 10,
+     "clap_rank": 1,
+     "clap_sim": 0.3005934953689575
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/23_sandik_acilisi_v2.wav",
+     "peak_db": -1.9562439061497656,
+     "rms_db": -34.16033885631917,
+     "events": 10,
+     "clap_rank": 1,
+     "clap_sim": 0.38720160722732544
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/23_sandik_acilisi_v3.wav",
+     "peak_db": -1.4406094635380127,
+     "rms_db": -33.8768724233288,
+     "events": 10,
+     "clap_rank": 1,
+     "clap_sim": 0.436104416847229
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/23_sandik_acilisi_v4.wav",
+     "peak_db": -6.667556622046624,
+     "rms_db": -36.31653083976292,
+     "events": 9,
+     "clap_rank": 1,
+     "clap_sim": 0.3529711961746216
+    }
+   ]
+  },
+  {
+   "i": 24,
+   "category": "Büyü / arayüz",
+   "short": "ateş topu büyüsü",
+   "prompt": "A fireball spell: whooshing burst of fire launched forward with a crackling roar",
+   "seconds": 3,
+   "gen_s": 0.5125937461853027,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/24_ates_topu_buyusu_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -18.531232921408606,
+     "events": 1,
+     "clap_rank": 6,
+     "clap_sim": 0.29575997591018677
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/24_ates_topu_buyusu_v2.wav",
+     "peak_db": 0.0,
+     "rms_db": -18.290329527668828,
+     "events": 1,
+     "clap_rank": 5,
+     "clap_sim": 0.27645108103752136
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/24_ates_topu_buyusu_v3.wav",
+     "peak_db": -0.23645307206611088,
+     "rms_db": -18.53554017026504,
+     "events": 1,
+     "clap_rank": 6,
+     "clap_sim": 0.2983800768852234
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/24_ates_topu_buyusu_v4.wav",
+     "peak_db": 0.0,
+     "rms_db": -17.860375935274334,
+     "events": 1,
+     "clap_rank": 5,
+     "clap_sim": 0.2881503403186798
+    }
+   ]
+  },
+  {
+   "i": 25,
+   "category": "Büyü / arayüz",
+   "short": "iyileştirme büyüsü",
+   "prompt": "A healing magic spell, soft glittering chimes rising with a warm shimmer",
+   "seconds": 3,
+   "gen_s": 0.508577823638916,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/25_iyilestirme_buyusu_v1.wav",
+     "peak_db": -7.204707909242602,
+     "rms_db": -28.945539743700696,
+     "events": 1,
+     "clap_rank": 16,
+     "clap_sim": 0.044738300144672394
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/25_iyilestirme_buyusu_v2.wav",
+     "peak_db": -6.088724887117854,
+     "rms_db": -27.825116561393997,
+     "events": 1,
+     "clap_rank": 16,
+     "clap_sim": 0.051782846450805664
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/25_iyilestirme_buyusu_v3.wav",
+     "peak_db": -5.9951901741302995,
+     "rms_db": -26.058859903842098,
+     "events": 1,
+     "clap_rank": 16,
+     "clap_sim": 0.024999499320983887
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/25_iyilestirme_buyusu_v4.wav",
+     "peak_db": -7.17559316811183,
+     "rms_db": -28.872742430651535,
+     "events": 1,
+     "clap_rank": 17,
+     "clap_sim": -0.007550422102212906
+    }
+   ]
+  },
+  {
+   "i": 26,
+   "category": "Büyü / arayüz",
+   "short": "menü tıklaması",
+   "prompt": "A clean short user interface button click, soft and modern",
+   "seconds": 1,
+   "gen_s": 0.4984257221221924,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/26_menu_tiklamasi_v1.wav",
+     "peak_db": -8.847835479417638,
+     "rms_db": -40.245523399203485,
+     "events": 0,
+     "clap_rank": 6,
+     "clap_sim": 0.11769404262304306
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/26_menu_tiklamasi_v2.wav",
+     "peak_db": -8.877249288894834,
+     "rms_db": -38.012789102628325,
+     "events": 1,
+     "clap_rank": 3,
+     "clap_sim": 0.26177626848220825
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/26_menu_tiklamasi_v3.wav",
+     "peak_db": -7.486276896779579,
+     "rms_db": -39.09753664907092,
+     "events": 0,
+     "clap_rank": 8,
+     "clap_sim": 0.09007001668214798
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/26_menu_tiklamasi_v4.wav",
+     "peak_db": -7.587276751512411,
+     "rms_db": -40.50803383877665,
+     "events": 0,
+     "clap_rank": 15,
+     "clap_sim": -0.004806107841432095
+    }
+   ]
+  },
+  {
+   "i": 27,
+   "category": "Büyü / arayüz",
+   "short": "altın toplama",
+   "prompt": "A coin pickup sound for a video game, bright short metallic ching",
+   "seconds": 1,
+   "gen_s": 0.5120108127593994,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/27_altin_toplama_v1.wav",
+     "peak_db": -7.78766996148766,
+     "rms_db": -28.02637251778027,
+     "events": 0,
+     "clap_rank": 28,
+     "clap_sim": -0.17761069536209106
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/27_altin_toplama_v2.wav",
+     "peak_db": -4.021540699007803,
+     "rms_db": -23.148816551125307,
+     "events": 0,
+     "clap_rank": 28,
+     "clap_sim": -0.21361157298088074
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/27_altin_toplama_v3.wav",
+     "peak_db": -7.65356211300197,
+     "rms_db": -27.580335716020645,
+     "events": 0,
+     "clap_rank": 23,
+     "clap_sim": -0.16687582433223724
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/27_altin_toplama_v4.wav",
+     "peak_db": -5.6551739922251105,
+     "rms_db": -24.486306981974764,
+     "events": 0,
+     "clap_rank": 29,
+     "clap_sim": -0.20813682675361633
+    }
+   ]
+  },
+  {
+   "i": 28,
+   "category": "Büyü / arayüz",
+   "short": "güçlendirme",
+   "prompt": "A video game power-up pickup, quick rising synth arpeggio with sparkle",
+   "seconds": 2,
+   "gen_s": 0.5108156204223633,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/28_guclendirme_v1.wav",
+     "peak_db": -6.6766996646151355,
+     "rms_db": -25.917475725250704,
+     "events": 1,
+     "clap_rank": 6,
+     "clap_sim": 0.2098734974861145
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/28_guclendirme_v2.wav",
+     "peak_db": -6.8382807989962355,
+     "rms_db": -26.40711198393237,
+     "events": 1,
+     "clap_rank": 7,
+     "clap_sim": 0.09775600582361221
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/28_guclendirme_v3.wav",
+     "peak_db": -6.230943076993149,
+     "rms_db": -25.318786154740774,
+     "events": 0,
+     "clap_rank": 7,
+     "clap_sim": 0.1555173397064209
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/28_guclendirme_v4.wav",
+     "peak_db": -6.309509448584546,
+     "rms_db": -25.192550937978208,
+     "events": 1,
+     "clap_rank": 7,
+     "clap_sim": 0.14413833618164062
+    }
+   ]
+  },
+  {
+   "i": 29,
+   "category": "Ortam",
+   "short": "teneke çatıda yağmur",
+   "prompt": "Heavy rain falling on a tin roof, steady dense patter, loopable ambience",
+   "seconds": 8,
+   "gen_s": 0.582789421081543,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/29_teneke_catida_yagmur_v1.wav",
+     "peak_db": 0.0,
+     "rms_db": -23.518416215130088,
+     "events": 13,
+     "clap_rank": 1,
+     "clap_sim": 0.4624560475349426
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/29_teneke_catida_yagmur_v2.wav",
+     "peak_db": -1.7566802268279726,
+     "rms_db": -25.116133790507355,
+     "events": 14,
+     "clap_rank": 1,
+     "clap_sim": 0.5383104085922241
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/29_teneke_catida_yagmur_v3.wav",
+     "peak_db": -1.1841079959629783,
+     "rms_db": -24.171303371037297,
+     "events": 15,
+     "clap_rank": 1,
+     "clap_sim": 0.41558754444122314
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/29_teneke_catida_yagmur_v4.wav",
+     "peak_db": -1.455641292449306,
+     "rms_db": -25.24885727142359,
+     "events": 14,
+     "clap_rank": 1,
+     "clap_sim": 0.42255115509033203
+    }
+   ]
+  },
+  {
+   "i": 30,
+   "category": "Ortam",
+   "short": "orman",
+   "prompt": "Forest ambience in the morning, birds chirping, light breeze in the leaves",
+   "seconds": 8,
+   "gen_s": 0.543485164642334,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/30_orman_v1.wav",
+     "peak_db": -12.225511333511088,
+     "rms_db": -38.014582744365384,
+     "events": 12,
+     "clap_rank": 5,
+     "clap_sim": 0.10971701145172119
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/30_orman_v2.wav",
+     "peak_db": -10.995559274792225,
+     "rms_db": -34.85227940303766,
+     "events": 12,
+     "clap_rank": 7,
+     "clap_sim": 0.13089612126350403
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/30_orman_v3.wav",
+     "peak_db": -10.49157060316464,
+     "rms_db": -32.23825604869087,
+     "events": 19,
+     "clap_rank": 7,
+     "clap_sim": 0.07426702231168747
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/30_orman_v4.wav",
+     "peak_db": -17.29119714206811,
+     "rms_db": -37.16980450495392,
+     "events": 21,
+     "clap_rank": 7,
+     "clap_sim": 0.037203170359134674
+    }
+   ]
+  },
+  {
+   "i": 31,
+   "category": "Ortam",
+   "short": "mağarada rüzgâr",
+   "prompt": "Wind howling through a dark cave, hollow low drone with distant water drips",
+   "seconds": 8,
+   "gen_s": 0.6288309097290039,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/31_magarada_ruzgar_v1.wav",
+     "peak_db": -3.07746368339135,
+     "rms_db": -21.646729842938228,
+     "events": 3,
+     "clap_rank": 4,
+     "clap_sim": 0.4267301559448242
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/31_magarada_ruzgar_v2.wav",
+     "peak_db": -1.405636032642975,
+     "rms_db": -19.7919745578558,
+     "events": 2,
+     "clap_rank": 3,
+     "clap_sim": 0.38086673617362976
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/31_magarada_ruzgar_v3.wav",
+     "peak_db": -1.9668753513424997,
+     "rms_db": -20.46423507829556,
+     "events": 3,
+     "clap_rank": 5,
+     "clap_sim": 0.3839290738105774
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/31_magarada_ruzgar_v4.wav",
+     "peak_db": -1.1792487568778856,
+     "rms_db": -19.106469593723595,
+     "events": 4,
+     "clap_rank": 2,
+     "clap_sim": 0.4153394103050232
+    }
+   ]
+  },
+  {
+   "i": 32,
+   "category": "Ortam",
+   "short": "kamp ateşi",
+   "prompt": "A crackling campfire, wood pops and soft flames, close mic",
+   "seconds": 6,
+   "gen_s": 0.5600900650024414,
+   "vars": [
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/32_kamp_atesi_v1.wav",
+     "peak_db": -2.004188220914876,
+     "rms_db": -29.044819019840308,
+     "events": 23,
+     "clap_rank": 5,
+     "clap_sim": 0.2325320690870285
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/32_kamp_atesi_v2.wav",
+     "peak_db": -1.4757242832183735,
+     "rms_db": -26.863204310503825,
+     "events": 23,
+     "clap_rank": 7,
+     "clap_sim": 0.19729335606098175
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/32_kamp_atesi_v3.wav",
+     "peak_db": -1.5870185094457785,
+     "rms_db": -27.663740791022864,
+     "events": 22,
+     "clap_rank": 3,
+     "clap_sim": 0.2623354196548462
+    },
+    {
+     "wav": "/content/drive/MyDrive/sound-gen/runs/sa3_ref_v1/wav/32_kamp_atesi_v4.wav",
+     "peak_db": -2.9098465522732972,
+     "rms_db": -26.95597763202067,
+     "events": 23,
+     "clap_rank": 7,
+     "clap_sim": 0.18353798985481262
+    }
+   ]
+  }
+ ]
+}
