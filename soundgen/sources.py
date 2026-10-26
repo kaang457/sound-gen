@@ -12,6 +12,8 @@ Sources (all run in Colab; each has a size / count budget):
     freesound_laion   ~455 k Freesound clips with per-clip licence flags (HF parquet, 679 GB in total: streamed
                       shard by shard, only kept clips are stored)
     clotho            ~7 k Freesound clips with 5 human captions each (Zenodo); per-file licence in its metadata
+    fsd50k            ~51 k human-labelled Freesound clips; only the CC0 / CC-BY ones (per-clip licence)
+    fsdnoisy18k       18.5 k Freesound clips (42.5 h, 20 classes), every clip CC0 or CC-BY
     opengameart       game sound-effect packs (CC0 / CC-BY / OGA-BY), item pages scraped politely
     kenney            Kenney.nl audio packs, all CC0
     wikimedia         Wikimedia Commons audio categories (sound effects, animals, vehicles, weapons, nature ...)
@@ -307,6 +309,76 @@ def clotho(store, raw, splits=("development", "validation", "evaluation")):
                          author=r.get("manufacturer", ""), url=r.get("sound_link", ""), title=fn):
                 kept += 1
         print(f"clotho {split}: +{kept}")
+
+
+# ------------------------------------------------------------------------------------------------ fsd50k / fsdnoisy18k
+def _label_words(labels):
+    return ", ".join(l.replace("_and_", " and ").replace("_", " ") for l in labels)
+
+
+def fsd50k(store, raw, splits=("dev", "eval")):
+    """FSD50K (~51 k human-labelled Freesound clips): only the CC0 / CC-BY clips (per-clip licence in its metadata).
+    ~24 GB download for both splits."""
+    from .data import fetch_fsd50k
+    for split in splits:
+        out, keep, clips = fetch_fsd50k(raw, [], exclude=[], commercial=True, keep_all=True, split=split)
+        kept = 0
+        for fname, labels in keep.items():
+            src = Path(out) / f"{fname}.wav"
+            c = clips.get(str(fname), {})
+            name, ok = licence(c.get("license"))
+            if not ok or not src.exists():
+                continue
+            title = c.get("title", "")
+            cap = f"{_label_words(labels)}. {re.sub(r'[_-]+', ' ', Path(title).stem)}"
+            if store.add("fsd50k", fname, src, cap, name, c.get("license", ""), author=c.get("uploader", ""),
+                         url=f"https://freesound.org/s/{fname}/", title=title):
+                kept += 1
+        print(f"fsd50k {split}: +{kept}")
+
+
+FSDNOISY = "https://zenodo.org/records/2529934/files/"
+
+
+def fsdnoisy18k(store, raw):
+    """FSDnoisy18k: 18.5 k Freesound clips, 42.5 h, 20 classes; every clip CC0 or CC-BY (dataset CC-BY 4.0)."""
+    import zipfile
+    raw = Path(raw) / "fsdnoisy18k"
+    raw.mkdir(parents=True, exist_ok=True)
+    files = {k: _download(FSDNOISY + f"FSDnoisy18k.{k}.zip?download=1", raw / f"{k}.zip")
+             for k in ("meta", "doc", "audio_test", "audio_train")}
+    labels, lic = {}, {}
+    with zipfile.ZipFile(files["meta"]) as z:
+        for n in z.namelist():
+            if n.endswith(".csv"):
+                for r in csv.DictReader(z.read(n).decode("utf-8", "replace").splitlines()):
+                    if r.get("fname"):
+                        labels[r["fname"]] = r.get("label", "")
+    with zipfile.ZipFile(files["doc"]) as z:
+        for n in z.namelist():
+            if "licen" in n.lower() and n.endswith(".csv"):
+                rows = list(csv.DictReader(z.read(n).decode("utf-8", "replace").splitlines()))
+                for r in rows:
+                    key = r.get("fname") or r.get("filename") or next(iter(r.values()), "")
+                    lic[key] = next((v for k, v in r.items() if "licen" in k.lower()), "")
+    kept = 0
+    for k in ("audio_test", "audio_train"):
+        with zipfile.ZipFile(files[k]) as z:
+            for n in z.namelist():
+                if not n.endswith(".wav"):
+                    continue
+                fn = Path(n).name
+                l_raw = lic.get(fn) or lic.get(Path(fn).stem) or "CC0 or CC-BY (FSDnoisy18k: every clip)"
+                name, ok = licence(l_raw)
+                if not ok and "every clip" in l_raw:
+                    name, ok = "CC0/CC-BY", True
+                if not ok or store.has("fsdnoisy18k", fn):
+                    continue
+                cap = _label_words([labels.get(fn, "")]) or "sound"
+                if store.add("fsdnoisy18k", fn, z.read(n), cap, name, l_raw, url="https://zenodo.org/records/2529934",
+                             title=fn, ext_hint=".wav"):
+                    kept += 1
+    print(f"fsdnoisy18k: +{kept}")
 
 
 # ------------------------------------------------------------------------------------------------ opengameart

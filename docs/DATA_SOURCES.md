@@ -13,6 +13,8 @@ Sampling+, GPL, lisansı bilinmeyen.
 | Kaynak | İçerik | Lisans | Ölçek | Not |
 |---|---|---|---|---|
 | Freesound (HF: `benjamin-paine/freesound-laion-640k`) | ~506 bin Freesound klibi, klip başına lisans ve "ticari kullanım" alanı | CC0 / CC-BY süzülür | toplam 679 GB; varsayılan 40 GB, oyunla ilgili kelimeler | Stable Audio Open da aynı havuzun CC0 / CC-BY kısmıyla eğitildi (266 bin CC0 + 195 bin CC-BY). Üçüncü taraf yüklemesi: lisans Freesound meta verisinden |
+| FSD50K (Zenodo) | ~51 bin insan etiketli Freesound klibi, 200 sınıf | klip başına; CC0 / CC-BY süzülür | ~24 GB indirme | etiketler AudioSet ontolojisinden |
+| FSDnoisy18k (Zenodo) | 18,5 bin klip, 42,5 saat, 20 sınıf | her klip CC0 veya CC-BY; set CC-BY 4.0 | 9,5 GB | tamamı kullanılabilir |
 | Clotho v2 (Zenodo) | ~7 bin Freesound klibi, her birine 5 insan yazımı açıklama | dosya başına; CC0 / CC-BY süzülür | 6,5 GB | açıklama kalitesi en yüksek kaynak |
 | OpenGameArt | oyun ses efekti paketleri | CC0 / CC-BY / OGA-BY süzülür | binlerce paket; varsayılan 400 öğe | sayfalar yavaş ve kibar taranır |
 | Kenney.nl | darbe, arayüz, RPG, bilim kurgu, dijital, kumarhane ses paketleri | CC0 | < 1 GB | oyun sesi için çok temiz |
@@ -24,6 +26,9 @@ Sampling+, GPL, lisansı bilinmeyen.
 
 | Kaynak | Ne | Lisans | Nasıl |
 |---|---|---|---|
+| STARSS22 (Sony + Tampere Ü.) | gerçek mekânlarda 360° mikrofonla kayıt, olaylar zaman ve yönle etiketli | MIT | Zenodo; uzamsal ses / yön araştırması için (konuşma da içerir) |
+| FAIR-Play (Meta) | müzik odasında binaural kayıt + video | CC-BY 4.0 | GitHub; müzik aleti, efekt değil; uzamsal ses için |
+| FUSS (Google) | FSD50K'nın CC0 klipleri + karışımlar | klipler CC0, set CC-BY 4.0 | FSD50K ile örtüşüyor; ayrıca indirmeye gerek yok |
 | Pro Sound Effects (AI eğitim seti) | 1,27 M ses, 5.000+ saat | ticari eğitim lisansı | teklif |
 | BOOM Library | sinematik ve oyun sesleri | eğitim lisansı ayrıca | teklif |
 | Shutterstock (ses) | büyük SFX kütüphanesi | eğitim lisansı ayrıca | teklif |
@@ -47,6 +52,11 @@ Sampling+, GPL, lisansı bilinmeyen.
 | AudioSet, VGGSound, AudioCaps | YouTube videoları; lisans yok |
 | WavCaps | akademik kullanım; BBC ve AudioSet içerir |
 | FSD50K / Clotho'nun NC klipleri | süzülüyor; yalnız CC0 / CC-BY kısmı kullanılıyor |
+| ToyADMOS | NTT değerlendirme lisansı: yalnız değerlendirme |
+| Animal Sound Dataset (GitHub, YashNita) | lisans yok, kaynağı belirsiz |
+| Knocking Sound Effects (Zenodo) | kayıtta lisans yok: izin istenmeden kullanılamaz (yazarlara sorulabilir, foley sanatçısı kaydı) |
+| MIVIA, TUT Sound Events 2017, DCASE 2016, Visually Indicated Sounds | araştırma amaçlı / lisans belirsiz |
+| MIMII, SoundingEarth | bildiğim kadarıyla SA ya da NC lisanslı; doğrulanmadı, varsayılan olarak dışarıda |
 | Zapsplat, Mixkit vb. ücretsiz siteler | lisansları kütüphane dışı kullanım ve yeniden dağıtımı kısıtlıyor; AI eğitimi izni yok sayılmalı |
 | Oyunlardan / filmlerden kayıt | yayıncının telif hakkı; kullanıcı sözleşmeleri içerik çıkarmayı yasaklıyor |
 
