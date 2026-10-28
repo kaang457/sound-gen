@@ -12,6 +12,7 @@ Hedef: Unreal için bir ses aracı.
 | [04_stable_audio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/04_stable_audio.ipynb) | **hazır model, eğitim yok:** Stable Audio 3 Small-SFX ile ~30 oyun sesi referans seti (GitHub'a sayfa + tablo) ve aynı stüdyo | herhangi bir GPU |
 | [05_video_to_audio](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/05_video_to_audio.ipynb) | **sessiz gameplay videosu → sesli video:** Qwen3-VL sahneyi izler, iz planı çıkarır; Stable Audio 3 her izi üretir; arayüzde her iz ayrı: ses, sustur, solo, konum, zaman, istek → yeniden üret | L4 / A100 |
 | [06_licensed_data](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/06_licensed_data.ipynb) | **ticari kullanılabilir açık lisanslı ses:** Freesound CC0/CC-BY, Clotho, OpenGameArt, Kenney, Wikimedia, iNaturalist; lisans süzme, açıklama, atıf listesi; Stable Audio 3 LoRA'ya hazır klasör. Katalog: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | gerekmez |
+| [07_sa3_finetune](https://colab.research.google.com/github/kaang457/sound-gen/blob/main/notebooks/07_sa3_finetune.ipynb) | **Stable Audio 3'e LoRA ince ayarı:** veri çek (araştırma modunda BBC, Clotho, FSD50K, FSDnoisy18k, Freesound, Kenney, OpenGameArt, SoundBible) → eğit (Stability'nin `train_lora.py`'si, devam edebilir) → hazır modellerle karşılaştır → stüdyo | veri: CPU · eğitim: A100 / L4 |
 
 Kendi modelimiz için sıra: **01 → 02 → 03**. Hemen sonuç için: **04** ve **05** (tek başlarına çalışır).
 
@@ -91,6 +92,7 @@ soundgen/
   mm/features.py   paket → açıklamalar → VAE latentleri + CLIP metin token'ları (önbellek)
   mm/train.py      flow matching eğitimi (GPU'da, veri yükleyicisiz), EMA, devam etme, zaman bütçesi
   mm/generate.py   istek → 3 varyasyon + 5 karışım → ses
+  sa3_lora.py      Stable Audio 3 LoRA: eğitim klasörü, eğitim (devam eden), karşılaştırma
   sources.py       açık lisanslı ses indirici (lisans süzme, açıklama, manifest)
   v2a_ui.py        video stüdyosu (Gradio): iz başına düzenleme, zaman çizelgesi
   v2a.py           sessiz video → iz planı (Qwen3-VL) → izler (SA3) → miks → mp4; tek iz yeniden üretme
@@ -100,7 +102,7 @@ soundgen/
   studio.py, studio_ui.py   stüdyo motoru + Gradio arayüzü
   data.py          veri indirme ve 48 kHz paket
   audio.py, evaluate.py, colab.py, smoke.py (python -m soundgen.smoke [--mm])
-notebooks/         01_data, 02_train, 03_studio, 04_stable_audio, 05_video_to_audio, 06_licensed_data
+notebooks/         01_data, 02_train, 03_studio, 04_stable_audio, 05_video_to_audio, 06_licensed_data, 07_sa3_finetune
 docs/              ARCHITECTURE.md, RESEARCH.md, NOTEBOOKS.md
 results/           koşu başına test sayfası, sesler, ölçümler (modeller Drive'da)
 ```

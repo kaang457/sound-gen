@@ -50,3 +50,15 @@ Planlama iki adım: sahne betimlemesi (kareler + zaman damgaları) → iz planı
 
 Ses seviyesi / konum / sustur / solo model çağırmaz (~1 s, üretilen ses önbellekte). Zaman ve istek değişikliği yalnız o izi yeniden üretir.
 Çıktılar Drive'da `MyDrive/sound-gen/v2a/<video adı>/`. Videolar GitHub'a gönderilmez (repo herkese açık).
+
+## 07_sa3_finetune — Stable Audio 3'e LoRA ince ayarı
+Hücre 0–3 CPU'da (veri çekme, saatler), 4–6 A100 / L4'te. HF: ek olarak `stable-audio-3-small-sfx-base` lisans onayı.
+
+| Hücre | Ne yapar |
+|---|---|
+| 1 | ayarlar: `RUN`, `RESEARCH` (True: lisans süzmesi yok, ürün için değil), kaynak başına bütçe |
+| 2 | veri çek → Drive `lora_audio_research/` (ses + açıklama + manifest); BBC oyuna en yakın olanlar önce, WavCaps listesinden tek tek |
+| 3 | eğitim klasörü: yerel kopya, açıklamalara `TrackType: SFX,` öneki, açıklaması zayıf / tekrar eden klipler atılır |
+| 4 | LoRA (DoRA, rank 16) `small-sfx-base` üzerinde, 10 s kırpma; kayıtlar Drive `sa3_lora/<RUN>/`; kesilirse kaldığı yerden; kayıp eğrisi |
+| 5 | aynı 32 istek: hazır small-sfx · hazır base · base + LoRA; CLAP eşleşmesi; sayfalar + tablo → GitHub `results/<RUN>/` |
+| 6 | stüdyo LoRA ile (05'te: `sa3.load(P.drive, "small-sfx-base", lora=CKPT)`) |

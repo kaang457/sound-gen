@@ -29,9 +29,10 @@ SA3_COMMIT = "77e0398"                              # tested with this commit (1
 GATED = {"small-sfx": ["stabilityai/stable-audio-3-small-sfx", "google/t5gemma-b-b-ul2"],
          "small-sfx-base": ["stabilityai/stable-audio-3-small-sfx-base", "google/t5gemma-b-b-ul2"]}
 PREFIX = "TrackType: SFX, "                         # Stability's prompt guide: "more semantically reasonable SFX"
+CACHE = Path.home() / ".cache" / "soundgen"
 
 
-def load(drive_dir=None, model="small-sfx", offline=False):
+def load(drive_dir=None, model="small-sfx", offline=False, lora=None, lora_strength=1.0):
     """Everything cell 1 of the notebooks needs: local HF cache (+ Drive backup), install, access check, model.
     Kept here (not in the notebook) so a `git pull` in cell 0 brings fixes without reopening the notebook."""
     from . import hfcache
@@ -39,7 +40,7 @@ def load(drive_dir=None, model="small-sfx", offline=False):
     install()
     if not offline:
         check_access(model)
-    gen = SA3(model)
+    gen = SA3(model, lora=lora, lora_strength=lora_strength)
     hfcache.backup()
     return gen
 
@@ -81,6 +82,36 @@ def install():
     return need
 
 
+def install_train():
+    """Extra packages for Stable Audio 3's LoRA trainer + the trainer script itself (not part of the pip package)."""
+    install()
+    need = []
+    for mod, pkg in [("pytorch_lightning", "pytorch_lightning==2.5.5"), ("dill", "dill"), ("wandb", "wandb")]:
+        try:
+            __import__(mod)
+        except ImportError:
+            need.append(pkg)
+    if need:
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", *need], check=True)
+    # torchaudio >= 2.9 reads audio through torchcodec
+    try:
+        from importlib.metadata import version
+        from packaging.version import Version
+        if Version(version("torchaudio").split("+")[0]) >= Version("2.9"):
+            try:
+                import torchcodec  # noqa: F401
+            except ImportError:
+                subprocess.run([sys.executable, "-m", "pip", "install", "-q", "torchcodec"], check=True)
+    except Exception:                                                  # noqa: BLE001
+        pass
+    repo = CACHE / "stable-audio-3"
+    if not (repo / "scripts" / "train_lora.py").exists():
+        repo.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "clone", "-q", SA3_GIT, str(repo)], check=True)
+        subprocess.run(["git", "-C", str(repo), "checkout", "-q", SA3_COMMIT], check=True)
+    return repo / "scripts" / "train_lora.py"
+
+
 def check_access(model="small-sfx"):
     """Fail early, with the page to open, if the token cannot read a gated repo."""
     import os
@@ -103,7 +134,7 @@ class SA3:
     """Stable Audio 3 behind the studio's generator interface: generate(...) -> list of sound dicts."""
     kind = "Stable Audio 3"
 
-    def __init__(self, model="small-sfx", device=None, steps=None, prefix=PREFIX):
+    def __init__(self, model="small-sfx", device=None, steps=None, prefix=PREFIX, lora=None, lora_strength=1.0):
         import torch
         from stable_audio_3 import StableAudioModel
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -115,6 +146,14 @@ class SA3:
         self.steps = steps or (50 if self.base else 8)        # post-trained: 8 (more does not help); base: ~50
         self.prefix = prefix
         self.step = None                                       # (our generators report their training step)
+        self.lora = None
+        if lora:
+            # LoRAs are trained on the -base checkpoints (Stable Audio 3's trainer only accepts those)
+            paths = [str(x) for x in (lora if isinstance(lora, (list, tuple)) else [lora])]
+            self.m.load_lora(paths)
+            self.m.set_lora_strength(float(lora_strength))
+            self.lora = paths
+            self.name = f"{model}+lora"
 
     def raw(self, prompt, seconds=4.0, n=4, seed=0, cfg=None, negative=None):
         """-> float32 [n, 2, T] stereo in [-1, 1]. cfg / negative only act on the -base checkpoints."""

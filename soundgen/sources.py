@@ -19,6 +19,9 @@ Sources (all run in Colab; each has a size / count budget):
     wikimedia         Wikimedia Commons audio categories (sound effects, animals, vehicles, weapons, nature ...)
     inaturalist       animal sounds from iNaturalist observations with CC0 / CC-BY sound licences (API)
     blender_films     Blender open movies (CC-BY): video + final mix, for testing / evaluating video-to-audio
+    bbc / soundbible  (RESEARCH only) single files listed by WavCaps, with professional descriptions
+
+RESEARCH = True keeps every licence (offline proof of concept; outputs not for commercial use).
 """
 import csv
 import hashlib
@@ -38,8 +41,16 @@ FIELDS = ["source", "id", "path", "seconds", "license", "license_url", "author",
 
 
 # ------------------------------------------------------------------------------------------------ licences
+RESEARCH = False        # True: keep every licence (offline research / proof of concept); the name is still recorded
+
+
 def licence(text_or_url):
-    """Normalise a licence string / URL. -> (short name, kept?)"""
+    """Normalise a licence string / URL. -> (short name, kept?). With RESEARCH = True everything is kept."""
+    name, ok = _licence(text_or_url)
+    return name, ok or RESEARCH
+
+
+def _licence(text_or_url):
     s = str(text_or_url or "").strip().lower()
     if not s:
         return "unknown", False
@@ -222,7 +233,7 @@ def freesound_laion(store, budget_gb=40.0, max_seconds=30.0, game_only=True, max
                         continue
                     lic_raw = r.get("license")
                     lic_name, ok = licence(_hf_label(pf, "license", lic_raw))
-                    if not ok or r.get("commercial_use") is False:
+                    if not ok or (r.get("commercial_use") is False and not RESEARCH):
                         continue
                     tags = r.get("tags") or []
                     text = " ".join([str(r.get("title") or ""), " ".join(map(str, tags)), str(r.get("description") or "")])
@@ -321,7 +332,7 @@ def fsd50k(store, raw, splits=("dev", "eval")):
     ~24 GB download for both splits."""
     from .data import fetch_fsd50k
     for split in splits:
-        out, keep, clips = fetch_fsd50k(raw, [], exclude=[], commercial=True, keep_all=True, split=split)
+        out, keep, clips = fetch_fsd50k(raw, [], exclude=[], commercial=not RESEARCH, keep_all=True, split=split)
         kept = 0
         for fname, labels in keep.items():
             src = Path(out) / f"{fname}.wav"
@@ -379,6 +390,107 @@ def fsdnoisy18k(store, raw):
                              title=fn, ext_hint=".wav"):
                     kept += 1
     print(f"fsdnoisy18k: +{kept}")
+
+
+# ------------------------------------------------------------------------------------------------ BBC / SoundBible
+# WavCaps (Mei et al. 2023) publishes, for every BBC Sound Effects / SoundBible clip, the original professional
+# description, a cleaned caption and a per-file download link, so single files can be fetched (no 562 GB archive).
+# BBC: RemArc licence = personal, educational and research use only -> RESEARCH mode only. SoundBible: mixed.
+WAVCAPS_JSON = "https://raw.githubusercontent.com/XinhaoMei/WavCaps/master/data/json_files/{}"
+
+
+def _wavcaps_list(name):
+    path = {"bbc": "BBC_Sound_Effects/bbc_final.json", "soundbible": "SoundBible/sb_final.json"}[name]
+    return json.loads(_get(WAVCAPS_JSON.format(path), timeout=300))["data"]
+
+
+GAME_CORE = ("gun", "rifle", "pistol", "shot", "machine gun", "explosion", "explod", "bomb", "blast", "impact", "hit",
+             "punch", "smash", "crash", "break", "sword", "metal", "clang", "glass", "footstep", "walking", "running",
+             "door", "slam", "creak", "whoosh", "swish", "engine", "car ", "motorcycle", "aircraft", "helicopter",
+             "jet", "horse", "gallop", "hooves", "roar", "growl", "monster", "dog", "thunder", "fire", "rain", "wind",
+             "sea", "waves", "bell", "horn", "ship", "train", "alarm", "siren", "machine", "mechanism", "lever",
+             "chain", "wood", "stone", "debris", "rocket", "laser", "electric", "buzz", "button", "click", "coin")
+
+
+def game_score(text):
+    t = text.lower()
+    return sum(w in t for w in GAME_CORE)
+
+
+def _match(text, words):
+    t = text.lower()
+    return any(w in t for w in words)
+
+
+def bbc_wavcaps(store, max_files=6000, game_only=True, max_seconds=30.0, max_clip_minutes=10, delay=0.2):
+    """BBC Sound Effects (RemArc: research use) chosen by their professional descriptions; first max_seconds of
+    each file. Caption = BBC's own description (e.g. 'Heavy wooden door slammed shut, interior')."""
+    if not RESEARCH:
+        print("bbc: yalnız RESEARCH = True ile (BBC RemArc lisansı ticari değil)")
+        return
+    items = _wavcaps_list("bbc")
+    items = [x for x in items if float(x.get("duration") or 0) <= max_clip_minutes * 60
+             and (not game_only or _match(f"{x.get('description', '')} {x.get('category', '')}", GAME_WORDS))]
+    # most game-like first (weapons, impacts, doors, steps, engines ...), short one-shots before long ambiences
+    items.sort(key=lambda x: (-game_score(x.get("description", "")), float(x.get("duration") or 0)))
+    print(f"bbc: {len(items)} uygun klip (oyunla ilgili açıklama); hedef {max_files}")
+    got = store.count("bbc")
+    for x in items:
+        if got >= max_files:
+            break
+        if store.has("bbc", x["id"]):
+            continue
+        try:
+            z = _get(x["download_link"], binary=True, timeout=300)
+        except Exception as e:                                         # noqa: BLE001
+            print(f"  bbc {x['id']}: {type(e).__name__}")
+            continue
+        data, ext = _first_audio_in_zip(z) if x["download_link"].endswith(".zip") else (z, ".wav")
+        if data is None:
+            continue
+        cap = (x.get("description") or x.get("caption") or "").strip()
+        if store.add("bbc", x["id"], data, cap, "BBC RemArc (research)", "https://sound-effects.bbcrewind.co.uk/licensing",
+                     author="BBC", url=x["download_link"], title=x.get("description", "")[:80],
+                     max_seconds=max_seconds, ext_hint=ext):
+            got += 1
+            if got % 200 == 0:
+                print(f"  bbc: {got} dosya, {store.gb('bbc'):.1f} GB", flush=True)
+        time.sleep(delay)
+    print(f"bbc: toplam {store.count('bbc')}")
+
+
+def soundbible_wavcaps(store, max_seconds=30.0, delay=0.3):
+    """SoundBible (~1.2 k clips; licences vary per clip: public domain, CC-BY, Sampling+ ...)."""
+    items = _wavcaps_list("soundbible")
+    got = 0
+    for x in items:
+        if store.has("soundbible", x["id"]):
+            continue
+        try:
+            data = _get(x["download_link"], binary=True, timeout=120)
+        except Exception:                                              # noqa: BLE001
+            continue
+        cap = f"{x.get('title', '')}. {x.get('description', '')}".strip(". ")
+        name, ok = licence("unknown (SoundBible, varies per clip)")
+        if ok and store.add("soundbible", x["id"], data, cap, name, author=x.get("author", ""),
+                            url="https://soundbible.com/" + x.get("href", ""), title=x.get("title", ""),
+                            max_seconds=max_seconds, ext_hint=".wav"):
+            got += 1
+        time.sleep(delay)
+    print(f"soundbible: +{got}")
+
+
+def _first_audio_in_zip(blob):
+    import io
+    import zipfile
+    try:
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            for n in z.namelist():
+                if Path(n).suffix.lower() in AUDIO_EXT and not Path(n).name.startswith("._"):
+                    return z.read(n), Path(n).suffix.lower()
+    except zipfile.BadZipFile:
+        pass
+    return None, None
 
 
 # ------------------------------------------------------------------------------------------------ opengameart
@@ -577,8 +689,8 @@ def inaturalist(store, taxa=("Aves", "Mammalia", "Amphibia", "Insecta"), per_tax
     for name in taxa:
         tid, got, page = INAT_TAXA[name], 0, 1
         while got < per_taxon and page <= 50:
-            q = dict(sounds="true", sound_license="cc0,cc-by", quality_grade="research", taxon_id=tid,
-                     per_page=200, page=page, order_by="votes")
+            q = dict(sounds="true", quality_grade="research", taxon_id=tid, per_page=200, page=page,
+                     order_by="votes", **({} if RESEARCH else {"sound_license": "cc0,cc-by"}))
             try:
                 j = _json(INAT + "?" + urllib.parse.urlencode(q))
             except Exception as e:                                     # noqa: BLE001
